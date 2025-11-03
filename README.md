@@ -7,3 +7,22 @@ It will handle:
 - Members
 - Roles
 - Channels
+
+## Prerequisites
+
+- [Docker](https://www.docker.com/get-started/)
+- Rust and Cargo
+- [slqx-cli](https://crates.io/crates/sqlx-cli)
+
+## Quickstart
+
+Launch postgres:
+
+```bash
+docker compose up -d postgres
+```
+Run migrations:
+
+```bash
+slqx migrate run --source db/migrations
+```

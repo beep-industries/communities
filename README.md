@@ -12,7 +12,7 @@ It will handle:
 
 - [Docker](https://www.docker.com/get-started/)
 - Rust and Cargo
-- [slqx-cli](https://crates.io/crates/sqlx-cli)
+- [sqlx-cli](https://crates.io/crates/sqlx-cli)
 
 ## Quickstart
 
@@ -21,10 +21,11 @@ Launch postgres:
 ```bash
 docker compose up -d postgres
 ```
+
 Run migrations:
 
 ```bash
-slqx migrate run --source db/migrations
+sqlx migrate run --source db/migrations
 ```
 
 ## Persistence

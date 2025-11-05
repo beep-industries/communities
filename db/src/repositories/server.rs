@@ -20,7 +20,7 @@ impl ServerRepository {
             r#"
             INSERT INTO servers (name, banner_url, picture_url, description, owner_id)
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, name, banner_url, picture_url, description, owner_id, created_at::text, updated_at::text
+            RETURNING id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
             "#
         )
         .bind(&server_info.name)
@@ -37,10 +37,10 @@ impl ServerRepository {
     pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Server>, sqlx::Error> {
         let server = sqlx::query_as::<_, Server>(
             r#"
-            SELECT id, name, banner_url, picture_url, description, owner_id, created_at::text, updated_at::text
+            SELECT id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
             FROM servers
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(&self.database.pool)

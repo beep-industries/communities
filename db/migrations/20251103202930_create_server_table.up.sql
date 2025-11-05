@@ -18,7 +18,7 @@ CREATE TABLE servers (
     description TEXT,
     owner_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- Create trigger to automatically update updated_at on UPDATE

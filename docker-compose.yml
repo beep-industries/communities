@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./compose/init-uuid.sql:/docker-entrypoint-initdb.d/01-init-uuid.sql
     restart: unless-stopped
 
 volumes:

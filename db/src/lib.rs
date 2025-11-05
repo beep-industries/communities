@@ -1,3 +1,7 @@
+pub mod database;
+pub mod models;
+pub mod repositories;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }

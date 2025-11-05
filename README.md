@@ -33,3 +33,11 @@ To persist data we use PostgreSQL. To handle uuid inside the database we use the
 In dev mode it should be enabled automatically due to the init script you can find in [`compose/init-uuid.sql`](compose/init-uuid.sql).
 
 The sql migration files are located in the [`db/migrations`](db/migrations) folder.
+
+## Examples
+
+You can run examples:
+
+```bash
+cargo run --example create_server # Show sqlx integration
+```

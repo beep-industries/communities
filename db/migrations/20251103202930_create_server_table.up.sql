@@ -11,7 +11,7 @@ $$ language 'plpgsql';
 
 -- Create the servers table
 CREATE TABLE servers (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     banner_url VARCHAR(512),
     picture_url VARCHAR(512),

@@ -23,6 +23,12 @@ impl From<ServerId> for Uuid {
     }
 }
 
+impl From<Uuid> for OwnerId {
+    fn from(uuid: Uuid) -> Self {
+        OwnerId(uuid)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct OwnerId(pub Uuid);
 
@@ -36,7 +42,7 @@ pub struct Server {
     pub owner_id: OwnerId,
 
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

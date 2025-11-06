@@ -16,10 +16,16 @@ It will handle:
 
 ## Quickstart
 
+
 Launch postgres:
 
 ```bash
 docker compose up -d postgres
+```
+Create the .env file to let sqlx know how to connect to the database:
+
+```bash
+cp .env.example .env
 ```
 
 Run migrations:

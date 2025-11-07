@@ -1,0 +1,53 @@
+use crate::domain::{
+    common::CoreError,
+    server::entities::{InsertServerInput, Server, ServerId},
+};
+
+pub trait ServerRepository: Send + Sync {
+    fn insert(
+        &self,
+        input: InsertServerInput,
+    ) -> impl Future<Output = Result<Server, CoreError>> + Send;
+    fn find_by_id(
+        &self,
+        id: &ServerId,
+    ) -> impl Future<Output = Result<Option<Server>, CoreError>> + Send;
+}
+
+/// A service for managing server operations in the application.
+///
+/// This trait defines the core business logic operations that can be performed on servers.
+/// It follows the ports and adapters pattern, where this trait acts as a port that defines
+/// the interface for server-related operations. Implementations of this trait will provide
+/// the actual business logic while maintaining separation of concerns.
+///
+/// The trait requires `Send + Sync` to ensure thread safety in async contexts, making it
+/// suitable for use in web servers and other concurrent applications
+///
+/// # Thread Safety
+///
+/// All implementations must be thread-safe (`Send + Sync`) to support concurrent access
+/// in multi-threaded environments.
+pub trait ServerService: Send + Sync {
+    /// Retrieves a server by its unique identifier.
+    ///
+    /// This meethod performs the core business logic for fetching a server, including
+    /// any necessary authorization checks and data validation. The implementation
+    /// should handle cases where the server doesn't exist gracefully.
+    ///
+    /// # Arguments
+    ///
+    /// * `server_id` - A reference to the unique identifier of the server to retrieve.
+    ///   This should be a valid [`ServerId`] that represents an existing server.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Future` that resolves to:
+    /// - `Ok(Server)` - The server was found and the user has permission to access it
+    /// - `Err(CoreError::ServerNotFound)` - No server exists with the given ID
+    /// - `Err(CoreError)` - Other errors such as database connectivity issues or authorization failures
+    fn get_server(
+        &self,
+        server_id: &ServerId,
+    ) -> impl Future<Output = Result<Server, CoreError>> + Send;
+}

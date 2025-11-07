@@ -31,7 +31,7 @@ cp .env.example .env
 Run migrations:
 
 ```bash
-sqlx migrate run --source db/migrations
+sqlx migrate run --source core/migrations
 ```
 
 ## Persistence
@@ -39,12 +39,4 @@ sqlx migrate run --source db/migrations
 To persist data we use PostgreSQL. To handle uuid inside the database we use the `pg-crypto` extension.
 In dev mode it should be enabled automatically due to the init script you can find in [`compose/init-uuid.sql`](compose/init-uuid.sql).
 
-The sql migration files are located in the [`db/migrations`](db/migrations) folder.
-
-## Examples
-
-You can run examples:
-
-```bash
-cargo run --example create_server # Show sqlx integration
-```
+The sql migration files are located in the [`core/migrations`](core/migrations) folder.

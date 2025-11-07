@@ -48,6 +48,12 @@ pub struct InsertFriendInput {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateFriendInput {
+    pub user_id_1: UserId,
+    pub user_id_2: UserId,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DeleteFriendInput {
     pub user_id_1: UserId,
     pub user_id_2: UserId,
@@ -75,6 +81,13 @@ pub struct FriendRequest {
 pub struct InsertFriendRequestInput {
     pub user_id_requested: UserId,
     pub user_id_invited: UserId,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateFriendRequestInput {
+    pub user_id_requested: UserId,
+    pub user_id_invited: UserId,
+    pub status: i8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

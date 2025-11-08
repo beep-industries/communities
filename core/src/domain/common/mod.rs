@@ -15,6 +15,9 @@ pub enum CoreError {
 
     #[error("Failed to manipulate with friendship data")]
     FriendshipDataError,
+    
+    #[error("Health check failed")]
+    Unhealthy,
 }
 
 #[derive(Debug, Deserialize)]

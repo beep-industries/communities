@@ -1,6 +1,9 @@
 use crate::domain::{
     common::{CoreError, services::Service},
-    health::{entities::IsHealthy, port::{HealthRepository, HealthService}},
+    health::{
+        entities::IsHealthy,
+        port::{HealthRepository, HealthService},
+    },
     server::ports::ServerRepository,
 };
 

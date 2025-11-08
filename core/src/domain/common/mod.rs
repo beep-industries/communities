@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::domain::server::entities::ServerId;
+use crate::domain::{friend::entities::UserId, server::entities::ServerId};
 
 pub mod services;
 
@@ -18,6 +18,18 @@ pub enum CoreError {
     
     #[error("Health check failed")]
     Unhealthy,
+    /// == Friends Errors ==
+    #[error("Friend with id {id} not found")]
+    FriendNotFound { id: String },
+
+    #[error("Failed to insert friend with name {name}")]
+    FailedToInsertFriend { name: String },
+
+    #[error("Friend relationship already exists between {user1} and {user2}")]
+    FriendshipAlreadyExists { user1: UserId, user2: UserId },
+
+    #[error("Failed to remove friendship between {user1} and {user2}")]
+    FailedToRemoveFriendship { user1: UserId, user2: UserId },
 }
 
 #[derive(Debug, Deserialize)]

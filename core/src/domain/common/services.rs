@@ -1,23 +1,20 @@
-use crate::domain::{friend::ports::{FriendRepository, FriendRequestRepository}, server::ports::ServerRepository};
+use crate::domain::{friend::ports::FriendshipRepository, server::ports::ServerRepository};
 
-pub struct Service<S, F, FR>
+pub struct Service<S, F>
 where
     S: ServerRepository,
-    F: FriendRepository,
-    FR: FriendRequestRepository,
+    F: FriendshipRepository,
 {
     pub(crate) server_repository: S,
-    pub(crate) friend_repository: F,
-    pub(crate) friend_request_repository: FR,
+    pub(crate) friendship_repository: F
 }
 
-impl<S, F, FR> Service<S, F, FR>
+impl<S, F> Service<S, F>
 where
     S: ServerRepository,
-    F: FriendRepository,
-    FR: FriendRequestRepository,
+    F: FriendshipRepository,
 {
-    pub fn new(server_repository: S, friend_repository: F, friend_request_repository: FR) -> Self {
-        Self { server_repository, friend_repository, friend_request_repository }
+    pub fn new(server_repository: S, friendship_repository: F) -> Self {
+        Self { server_repository, friendship_repository }
     }
 }

@@ -1,50 +1,43 @@
 use crate::domain::{
-    common::{CoreError, GetPaginated}, friend::entities::{AcceptFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, InsertFriendInput, InsertFriendRequestInput, UpdateFriendInput, UpdateFriendRequestInput, UserId}
+    common::{CoreError, GetPaginated}, friend::entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId}
 };
 
-pub trait FriendRepository: Send + Sync {
-    fn find_all(
+pub trait FriendshipRepository: Send + Sync {
+    // === Friends ===
+    fn list_friends(
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<Friend>, u64), CoreError>> + Send;
-    fn find_by_id(
-        &self,
-        id: &UserId,
-    ) -> impl Future<Output = Result<Option<Friend>, CoreError>> + Send;
-    fn insert(
-        &self,
-        input: InsertFriendInput,
-    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
-    fn update(
-        &self,
-        input: UpdateFriendInput,
-    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
-    fn delete(
+
+    fn remove_friend(
         &self,
         input: DeleteFriendInput,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
-}
 
-pub trait FriendRequestRepository: Send + Sync {
-    fn find_all(
+    // === Friend Requests ===
+    fn list_requests(
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), CoreError>> + Send;
-    fn find_by_id(
+
+    fn create_request(
         &self,
-        id: &UserId,
-    ) -> impl Future<Output = Result<Option<FriendRequest>, CoreError>> + Send;
-    fn insert(
-        &self,
-        input: InsertFriendRequestInput,
+        input: CreateFriendRequestInput,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
-    fn update(
+
+    fn accept_request(
         &self,
-        input: UpdateFriendRequestInput,
+        input: AcceptFriendRequestInput,
+    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
+
+    fn decline_request(
+        &self,
+        input: DeclineFriendRequestInput,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
-    fn delete(
+
+    fn remove_request(
         &self,
         input: DeleteFriendRequestInput,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
@@ -70,14 +63,7 @@ pub trait FriendService: Send + Sync {
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<Friend>, u64), CoreError>> + Send;
-    fn create_friend(
-        &self,
-        input: InsertFriendInput,
-    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
-    fn update_friend(
-        &self,
-        input: UpdateFriendInput,
-    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
+
     fn delete_friend(
         &self,
         input: DeleteFriendInput,
@@ -90,18 +76,22 @@ pub trait FriendRequestService: Send + Sync {
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), CoreError>> + Send;
+
     fn create_friend_request(
         &self,
-        input: InsertFriendRequestInput,
+        input: CreateFriendRequestInput,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
+
     fn accept_friend_request(
         &self,
         input: AcceptFriendRequestInput,
     ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
+
     fn decline_friend_request(
         &self,
         input: DeclineFriendRequestInput,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
+
     fn delete_friend_request(
         &self,
         input: DeleteFriendRequestInput,

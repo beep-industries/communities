@@ -42,7 +42,7 @@ pub struct Friend {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct InsertFriendInput {
+pub struct CreateFriendInput {
     pub user_id_1: UserId,
     pub user_id_2: UserId,
 }
@@ -67,12 +67,13 @@ pub struct FriendRequestRow {
 pub struct FriendRequest {
     pub user_id_requested: UserId,
     pub user_id_invited: UserId,
+    pub status: i16,
 
     pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct InsertFriendRequestInput {
+pub struct CreateFriendRequestInput {
     pub user_id_requested: UserId,
     pub user_id_invited: UserId,
 }

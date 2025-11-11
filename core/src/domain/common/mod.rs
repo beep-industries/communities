@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use thiserror::Error;
 
 use crate::domain::server::entities::ServerId;
@@ -11,4 +12,22 @@ pub enum CoreError {
 
     #[error("Failed to insert server with name {name}")]
     FailedToInsertServer { name: String },
+
+    #[error("Failed to manipulate with friendship data")]
+    FriendshipDataError,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetPaginated {
+    pub page: u32,
+    pub limit: u32,
+}
+
+impl Default for GetPaginated {
+    fn default() -> Self {
+        Self {
+            page: 1,
+            limit: 20
+        }
+    }
 }

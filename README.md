@@ -43,6 +43,6 @@ The sql migration files are located in the [`core/migrations`](core/migrations) 
 
 ## How to create a SQLx migration
 
-````
+```
 sqlx migrate add <migration-name> --source core/migrations
 ```

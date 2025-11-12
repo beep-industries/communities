@@ -1,0 +1,6 @@
+[package]
+name = "api"
+description = "API service for managing communities"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true

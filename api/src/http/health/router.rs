@@ -1,4 +1,4 @@
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 
 use super::handler::{health_live, health_ready};
 use crate::http::server::AppState;

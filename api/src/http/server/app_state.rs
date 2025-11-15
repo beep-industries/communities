@@ -1,9 +1,8 @@
+use core::domain::common::services::Service;
 use core::domain::{
-    friend::ports::FriendshipRepository,
-    health::port::HealthRepository,
+    friend::ports::FriendshipRepository, health::port::HealthRepository,
     server::ports::ServerRepository,
 };
-use core::domain::common::services::Service;
 use std::sync::Arc;
 
 /// Application state shared across request handlers

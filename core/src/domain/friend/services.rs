@@ -1,9 +1,18 @@
-use crate::domain::{common::{CoreError, GetPaginated, services::Service}, friend::{entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId}, ports::{FriendRequestService, FriendService, FriendshipRepository}}, server::ports::ServerRepository};
+use crate::domain::{
+    common::{CoreError, GetPaginated, services::Service}, 
+    friend::{
+        entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId}, 
+        ports::{FriendRequestService, FriendService, FriendshipRepository}
+    }, 
+    health::port::HealthRepository,
+    server::ports::ServerRepository
+};
 
-impl<S, F> FriendService for Service<S, F>
+impl<S, F, H> FriendService for Service<S, F, H>
 where
     S: ServerRepository,
-    F: FriendshipRepository
+    F: FriendshipRepository,
+    H: HealthRepository,
 {
     async fn get_friends(
             &self,
@@ -21,10 +30,11 @@ where
     }
 }
 
-impl<S, F> FriendRequestService for Service<S, F>
+impl<S, F, H> FriendRequestService for Service<S, F, H>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    H: HealthRepository,
 {
     async fn get_friend_requests(
             &self,

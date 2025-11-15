@@ -19,7 +19,7 @@ impl HealthRepository for PostgresHealthRepository {
             sqlx::query!("SELECT 1 as health_check")
                 .fetch_one(&self.pool)
                 .await
-                .is_err(),
+                .is_ok(),
         )
     }
 }

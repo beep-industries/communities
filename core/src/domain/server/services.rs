@@ -1,14 +1,18 @@
 use crate::domain::{
-    common::{CoreError, services::Service}, friend::ports::FriendshipRepository, server::{
+    common::{CoreError, services::Service},
+    friend::ports::FriendshipRepository,
+    health::port::HealthRepository,
+    server::{
         entities::{Server, ServerId},
         ports::{ServerRepository, ServerService},
-    }
+    },
 };
 
-impl<S, F> ServerService for Service<S, F>
+impl<S, F, H> ServerService for Service<S, F, H>
 where
     S: ServerRepository,
-    F: FriendshipRepository
+    F: FriendshipRepository,
+    H: HealthRepository,
 {
     async fn get_server(&self, server_id: &ServerId) -> Result<Server, CoreError> {
         // @TODO Authorization: Check if the user has permission to access the server

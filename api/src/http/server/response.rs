@@ -25,6 +25,7 @@ where
     }
 
     /// Create a response with a custom status code
+    #[allow(dead_code)]
     pub fn with_status(data: T, status_code: StatusCode) -> Self {
         Self { data, status_code }
     }

@@ -6,7 +6,9 @@ use sqlx::postgres::PgPoolOptions;
 
 mod http;
 
-use http::{health::health_routes, server::ConcreteAppState};
+use http::{health::health_routes};
+
+use crate::http::server::AppState;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -26,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service = create_service(pool);
 
     // Create application state
-    let app_state = ConcreteAppState::from_service(service);
+    let app_state = AppState::new(service);
 
     // Build router with health routes
     let app = Router::new().merge(health_routes()).with_state(app_state);

@@ -1,31 +1,15 @@
-use core::domain::common::services::Service;
-use core::domain::{
-    friend::ports::FriendshipRepository, health::port::HealthRepository,
-    server::ports::ServerRepository,
-};
-use std::sync::Arc;
+use core::CommunitiesService;
+
 
 /// Application state shared across request handlers
 #[derive(Clone)]
-pub struct AppState<S, F, H>
-where
-    S: ServerRepository,
-    F: FriendshipRepository,
-    H: HealthRepository,
-{
-    pub service: Arc<Service<S, F, H>>,
+pub struct AppState {
+    pub service: CommunitiesService,
 }
 
-impl<S, F, H> AppState<S, F, H>
-where
-    S: ServerRepository,
-    F: FriendshipRepository,
-    H: HealthRepository,
-{
+impl AppState {
     /// Create a new AppState with the given service
-    pub fn new(service: Service<S, F, H>) -> Self {
-        Self {
-            service: Arc::new(service),
-        }
+    pub fn new(service: CommunitiesService) -> Self {
+        Self { service }
     }
 }

@@ -1,14 +1,13 @@
 use std::env;
 
-use axum::Router;
+use axum::{Router, routing::get};
 use core::create_service;
 use sqlx::postgres::PgPoolOptions;
 
 mod http;
 
-use http::{health::health_routes};
-
-use crate::http::server::AppState;
+use http::health::health_check;
+use http::server::AppState;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,21 +26,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create service with all dependencies
     let service = create_service(pool);
 
-    // Create application state
+    // Create application state (shared between both servers)
     let app_state = AppState::new(service);
 
-    // Build router with health routes
-    let app = Router::new().merge(health_routes()).with_state(app_state);
+    // Health server - runs on separate port for DDOS protection
+    let health_app = Router::new()
+        .route("/health", get(health_check))
+        .with_state(app_state.clone());
 
-    // Get port from environment or use default
-    let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
-    let addr = format!("0.0.0.0:{}", port);
+    // Main API server - for business logic endpoints
+    let api_app = Router::new()
+        // Future API routes will be added here
+        .with_state(app_state);
 
-    println!("🚀 Server starting on {}", addr);
+    // Get ports from environment
+    let health_port = env::var("HEALTH_PORT").unwrap_or_else(|_| "9090".to_string());
+    let api_port = env::var("PORT").unwrap_or_else(|_| "3001".to_string());
 
-    // Start the server
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    axum::serve(listener, app).await?;
+    let health_addr = format!("0.0.0.0:{}", health_port);
+    let api_addr = format!("0.0.0.0:{}", api_port);
+
+    println!("🏥 Health server starting on {}", health_addr);
+    println!("🚀 API server starting on {}", api_addr);
+
+    // Create TCP listeners for both servers
+    let health_listener = tokio::net::TcpListener::bind(&health_addr).await?;
+    let api_listener = tokio::net::TcpListener::bind(&api_addr).await?;
+
+    // Run both servers concurrently
+    tokio::try_join!(
+        axum::serve(health_listener, health_app),
+        axum::serve(api_listener, api_app)
+    )?;
 
     Ok(())
 }

@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use core::domain::health::port::HealthService;
 
-use crate::http::server::{ApiError, ConcreteAppState, Response};
+use crate::http::server::{ApiError, AppState, Response};
 
 /// Response structure for the readiness health check
 #[derive(Debug, Clone, Serialize)]
@@ -26,7 +26,7 @@ pub struct LivenessResponse {
 /// Handler for /health/ready endpoint
 /// Checks database connectivity and service readiness
 pub async fn health_ready(
-    State(state): State<ConcreteAppState>,
+    State(state): State<AppState>,
 ) -> Result<Response<ReadinessResponse>, ApiError> {
     let health_check = state.service.check_health().await?;
 
@@ -47,7 +47,7 @@ pub async fn health_ready(
 /// Handler for /health/live endpoint
 /// Simple liveness check without database dependency
 pub async fn health_live(
-    State(_state): State<ConcreteAppState>,
+    State(_state): State<AppState>,
 ) -> Result<Response<LivenessResponse>, ApiError> {
     let response = LivenessResponse {
         status: "ok".to_string(),

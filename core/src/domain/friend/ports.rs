@@ -1,5 +1,9 @@
 use crate::domain::{
-    common::{CoreError, GetPaginated}, friend::entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId}
+    common::{CoreError, GetPaginated},
+    friend::entities::{
+        AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput,
+        DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId,
+    },
 };
 
 pub trait FriendshipRepository: Send + Sync {

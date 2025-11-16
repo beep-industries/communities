@@ -37,12 +37,16 @@ sqlx migrate run --source core/migrations
 Launch the API server:
 
 ```bash
-PORT=3001 DATABASE_URL="postgres://postgres:password@localhost:5432/communities" cargo run --bin api
+HEALTH_PORT=9090 PORT=3001 DATABASE_URL="postgres://postgres:password@localhost:5432/communities" cargo run --bin api
 ```
 
-The server will be available at `http://localhost:3001` with health check endpoints:
-- `GET /health/live` - Liveness check
-- `GET /health/ready` - Readiness check with database connectivity
+The application runs two servers on separate ports:
+- **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
+  - `GET /health` - Health check with database connectivity
+- **API server** on `http://localhost:3001` - Main application endpoints
+  - Future business logic endpoints will be added here
+
+This dual-server architecture provides DDOS protection by isolating health checks from API traffic.
 
 ## Persistence
 

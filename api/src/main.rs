@@ -1,13 +1,12 @@
-use axum::Router;
-use core::{
-    PostgresFriendshipRepository, PostgresHealthRepository, PostgresServerRepository, Service,
-};
-use sqlx::postgres::PgPoolOptions;
 use std::env;
+
+use axum::Router;
+use core::create_service;
+use sqlx::postgres::PgPoolOptions;
 
 mod http;
 
-use http::{health::health_routes, server::AppState};
+use http::{health::health_routes, server::ConcreteAppState};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,16 +22,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("✓ Connected to database");
 
-    // Create repository instances with dependency injection
-    let server_repository = PostgresServerRepository::new(pool.clone());
-    let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
-    let health_repository = PostgresHealthRepository::new(pool.clone());
-
-    // Create service with dependency injection
-    let service = Service::new(server_repository, friendship_repository, health_repository);
+    // Create service with all dependencies
+    let service = create_service(pool);
 
     // Create application state
-    let app_state = AppState::new(service);
+    let app_state = ConcreteAppState::from_service(service);
 
     // Build router with health routes
     let app = Router::new().merge(health_routes()).with_state(app_state);

@@ -210,8 +210,10 @@ dependencies = [
  "chrono",
  "mockall",
  "serde",
+ "serde_json",
  "sqlx",
  "thiserror",
+ "tokio",
  "uuid",
 ]
 

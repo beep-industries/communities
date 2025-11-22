@@ -1,13 +1,16 @@
 use std::env;
 
+use axum::middleware::from_fn;
 use axum::{Router, routing::get};
 use core::create_service;
 use sqlx::postgres::PgPoolOptions;
 
 mod http;
 
-use http::health::health_check;
-use http::server::AppState;
+use crate::http::friend::routes::friend_routes;
+use crate::http::health::health_check;
+use crate::http::server::middleware::auth_middleware;
+use crate::http::server::AppState;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -35,9 +38,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(app_state.clone());
 
     // Main API server - for business logic endpoints
-    let api_app = Router::new()
+    let api_app = Router::<AppState>::new()
+        .merge(friend_routes())
         // Future API routes will be added here
-        .with_state(app_state);
+        .layer(from_fn(auth_middleware))
+        .with_state(app_state.clone());
 
     // Get ports from environment
     let health_port = env::var("HEALTH_PORT").unwrap_or_else(|_| "9090".to_string());

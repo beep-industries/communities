@@ -1,12 +1,9 @@
 use crate::domain::{
     common::{CoreError, GetPaginated, services::Service},
     friend::{
-        entities::{
-            AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput,
-            DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId,
-        },
-        ports::{FriendRequestService, FriendService, FriendshipRepository},
-    },
+        entities::{DeleteFriendInput, Friend, FriendRequest, UserId}, 
+        ports::{FriendRequestService, FriendService, FriendshipRepository}
+    }, 
     health::port::HealthRepository,
     server::ports::ServerRepository,
 };
@@ -50,29 +47,33 @@ where
 
     async fn create_friend_request(
         &self,
-        input: CreateFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> Result<FriendRequest, CoreError> {
-        self.friendship_repository.create_request(input).await
+        self.friendship_repository.create_request(user_id_requested, user_id_invited).await
     }
 
     async fn accept_friend_request(
         &self,
-        input: AcceptFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> Result<Friend, CoreError> {
-        self.friendship_repository.accept_request(input).await
+        self.friendship_repository.accept_request(user_id_requested, user_id_invited).await
     }
 
     async fn decline_friend_request(
         &self,
-        input: DeclineFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> Result<FriendRequest, CoreError> {
-        self.friendship_repository.decline_request(input).await
+        self.friendship_repository.decline_request(user_id_requested, user_id_invited).await
     }
 
     async fn delete_friend_request(
         &self,
-        input: DeleteFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> Result<(), CoreError> {
-        self.friendship_repository.remove_request(input).await
+        self.friendship_repository.remove_request(user_id_requested, user_id_invited).await
     }
 }

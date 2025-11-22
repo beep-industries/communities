@@ -14,3 +14,7 @@ core = { path = "../core" }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.18", features = ["serde", "v4"] }
+
+# JWT
+jsonwebtoken = "9.2"
+axum-extra = { version = "0.12.2", features = ["cookie"] }

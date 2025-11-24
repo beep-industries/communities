@@ -224,7 +224,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| CoreError::FailedToCreateFriendship {
+        .map_err(|_| CoreError::FailedToRemoveFriendship {
             user1: input.user_id_invited,
             user2: input.user_id_requested,
         })

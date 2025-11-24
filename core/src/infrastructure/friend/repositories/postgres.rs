@@ -136,8 +136,8 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .fetch_one(&self.pool)
         .await
         .map_err(|_| CoreError::FailedToCreateFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })
     }
 
@@ -159,15 +159,15 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .execute(&mut *tx)
         .await
         .map_err(|_| CoreError::FailedToRemoveFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })?;
 
         if delete_result.rows_affected() == 0 {
             // if no rows were affected, the friend request did not exist and the operation fails
             return Err(CoreError::FailedToRemoveFriendship {
-                user1: input.user_id_invited,
-                user2: input.user_id_requested,
+                user1: user_id_invited.clone(),
+                user2: user_id_requested.clone(),
             });
         }
 
@@ -184,15 +184,15 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .fetch_one(&mut *tx)
         .await
         .map_err(|_| CoreError::FailedToCreateFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })?;
 
         tx.commit()
             .await
             .map_err(|_| CoreError::FailedToCreateFriendship {
-                user1: input.user_id_invited,
-                user2: input.user_id_requested,
+                user1: user_id_invited.clone(),
+                user2: user_id_requested.clone(),
             })?;
 
         Ok(friend)
@@ -218,8 +218,8 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .fetch_one(&self.pool)
         .await
         .map_err(|_| CoreError::FailedToRemoveFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })
     }
 
@@ -239,14 +239,14 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .execute(&self.pool)
         .await
         .map_err(|_| CoreError::FailedToRemoveFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })?;
 
         if result.rows_affected() == 0 {
             return Err(CoreError::FailedToRemoveFriendship {
-                user1: input.user_id_invited,
-                user2: input.user_id_requested,
+                user1: user_id_invited.clone(),
+                user2: user_id_requested.clone(),
             });
         }
         Ok(())

@@ -46,7 +46,7 @@ pub async fn auth_middleware(
     // decode and validate JWT token
     let token_data = decode::<Claims>(
         &token,
-        &DecodingKey::from_secret("coucou".to_string().as_bytes()),
+        &DecodingKey::from_secret("Key-Must-Be-at-least-32-bytes-in-length".to_string().as_bytes()),
         &Validation::default(),
     )
     .map_err(|_| ApiError::AuthenticationError("Invalid JWT token".to_string()))?;

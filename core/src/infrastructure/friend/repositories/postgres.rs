@@ -1,14 +1,7 @@
 use sqlx::{PgPool, query_as};
 
 use crate::domain::{
-    common::{CoreError, GetPaginated},
-    friend::{
-        entities::{
-            AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput,
-            DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId,
-        },
-        ports::FriendshipRepository,
-    },
+    common::{CoreError, GetPaginated}, friend::{entities::{DeleteFriendInput, Friend, FriendRequest, UserId}, ports::FriendshipRepository}
 };
 
 #[derive(Clone)]
@@ -125,9 +118,10 @@ impl FriendshipRepository for PostgresFriendshipRepository {
     }
 
     async fn create_request(
-        &self,
-        input: CreateFriendRequestInput,
-    ) -> Result<FriendRequest, CoreError> {
+            &self,
+            user_id_requested: &UserId,
+            user_id_invited: &UserId,
+        ) -> Result<FriendRequest, CoreError> {
         query_as!(
             FriendRequest,
             r#"
@@ -135,47 +129,45 @@ impl FriendshipRepository for PostgresFriendshipRepository {
             VALUES ($1, $2, $3)
             RETURNING user_id_requested, user_id_invited, status, created_at
             "#,
-            input.user_id_requested.0,
-            input.user_id_invited.0,
+            user_id_requested.0,
+            user_id_invited.0,
             0 // by default 0 means pending
         )
         .fetch_one(&self.pool)
         .await
         .map_err(|_| CoreError::FailedToCreateFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })
     }
 
-    async fn accept_request(&self, input: AcceptFriendRequestInput) -> Result<Friend, CoreError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| CoreError::UnknownError {
-                message: e.to_string(),
-            })?;
+    async fn accept_request(
+            &self,
+            user_id_requested: &UserId,
+            user_id_invited: &UserId,
+        ) -> Result<Friend, CoreError> {
+        let mut tx = self.pool.begin().await.map_err(|_| CoreError::FriendshipDataError)?;
 
         let delete_result = sqlx::query!(
             r#"
             DELETE FROM friend_requests
             WHERE user_id_requested = $1 AND user_id_invited = $2 AND status = 0
             "#,
-            input.user_id_requested.0,
-            input.user_id_invited.0
+            user_id_requested.0,
+            user_id_invited.0
         )
         .execute(&mut *tx)
         .await
         .map_err(|_| CoreError::FailedToRemoveFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })?;
 
         if delete_result.rows_affected() == 0 {
             // if no rows were affected, the friend request did not exist and the operation fails
             return Err(CoreError::FailedToRemoveFriendship {
-                user1: input.user_id_invited,
-                user2: input.user_id_requested,
+                user1: user_id_invited.clone(),
+                user2: user_id_requested.clone(),
             });
         }
 
@@ -186,30 +178,31 @@ impl FriendshipRepository for PostgresFriendshipRepository {
             VALUES ($1, $2)
             RETURNING user_id_1, user_id_2, created_at
             "#,
-            input.user_id_requested.clone().0,
-            input.user_id_invited.0
+            user_id_requested.0,
+            user_id_invited.0
         )
         .fetch_one(&mut *tx)
         .await
         .map_err(|_| CoreError::FailedToCreateFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })?;
 
         tx.commit()
             .await
             .map_err(|_| CoreError::FailedToCreateFriendship {
-                user1: input.user_id_invited,
-                user2: input.user_id_requested,
+                user1: user_id_invited.clone(),
+                user2: user_id_requested.clone(),
             })?;
 
         Ok(friend)
     }
 
     async fn decline_request(
-        &self,
-        input: DeclineFriendRequestInput,
-    ) -> Result<FriendRequest, CoreError> {
+            &self,
+            user_id_requested: &UserId,
+            user_id_invited: &UserId,
+        ) -> Result<FriendRequest, CoreError> {
         sqlx::query_as!(
             FriendRequest,
             r#"
@@ -218,38 +211,42 @@ impl FriendshipRepository for PostgresFriendshipRepository {
             WHERE user_id_requested = $1 AND user_id_invited = $2
             RETURNING user_id_requested, user_id_invited, status, created_at
             "#,
-            input.user_id_requested.0,
-            input.user_id_invited.0,
+            user_id_requested.0,
+            user_id_invited.0,
             1 // 1 means declined
         )
         .fetch_one(&self.pool)
         .await
         .map_err(|_| CoreError::FailedToRemoveFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })
     }
 
-    async fn remove_request(&self, input: DeleteFriendRequestInput) -> Result<(), CoreError> {
+    async fn remove_request(
+        &self,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
+    ) -> Result<(), CoreError> {
         let result = sqlx::query!(
             r#"
             DELETE FROM friend_requests
             WHERE user_id_requested = $1 AND user_id_invited = $2
             "#,
-            input.user_id_requested.0,
-            input.user_id_invited.0
+            user_id_requested.0,
+            user_id_invited.0
         )
         .execute(&self.pool)
         .await
         .map_err(|_| CoreError::FailedToRemoveFriendship {
-            user1: input.user_id_invited,
-            user2: input.user_id_requested,
+            user1: user_id_invited.clone(),
+            user2: user_id_requested.clone(),
         })?;
 
         if result.rows_affected() == 0 {
             return Err(CoreError::FailedToRemoveFriendship {
-                user1: input.user_id_invited,
-                user2: input.user_id_requested,
+                user1: user_id_invited.clone(),
+                user2: user_id_requested.clone(),
             });
         }
         Ok(())

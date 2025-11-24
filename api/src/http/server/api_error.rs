@@ -11,6 +11,7 @@ use serde_json::json;
 pub enum ApiError {
     ServiceUnavailable(String),
     InternalServerError(String),
+    AuthenticationError(String),
 }
 
 impl IntoResponse for ApiError {
@@ -18,6 +19,7 @@ impl IntoResponse for ApiError {
         let (status, message) = match self {
             ApiError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg),
             ApiError::InternalServerError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+            ApiError::AuthenticationError(msg) => (StatusCode::UNAUTHORIZED, msg),
         };
 
         let body = Json(json!({

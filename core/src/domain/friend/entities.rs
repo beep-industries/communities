@@ -74,24 +74,15 @@ pub struct FriendRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateFriendRequestInput {
-    pub user_id_requested: UserId,
     pub user_id_invited: UserId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AcceptFriendRequestInput {
     pub user_id_requested: UserId,
-    pub user_id_invited: UserId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeclineFriendRequestInput {
     pub user_id_requested: UserId,
-    pub user_id_invited: UserId,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteFriendRequestInput {
-    pub user_id_requested: UserId,
-    pub user_id_invited: UserId,
 }

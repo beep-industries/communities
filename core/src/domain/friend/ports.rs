@@ -1,8 +1,7 @@
 use crate::domain::{
     common::{CoreError, GetPaginated},
     friend::entities::{
-        AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput,
-        DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId,
+        DeleteFriendInput, Friend, FriendRequest, UserId,
     },
 };
 
@@ -28,22 +27,26 @@ pub trait FriendshipRepository: Send + Sync {
 
     fn create_request(
         &self,
-        input: CreateFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
 
     fn accept_request(
         &self,
-        input: AcceptFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
 
     fn decline_request(
         &self,
-        input: DeclineFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
 
     fn remove_request(
         &self,
-        input: DeleteFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
@@ -83,21 +86,25 @@ pub trait FriendRequestService: Send + Sync {
 
     fn create_friend_request(
         &self,
-        input: CreateFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
 
     fn accept_friend_request(
         &self,
-        input: AcceptFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
 
     fn decline_friend_request(
         &self,
-        input: DeclineFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
 
     fn delete_friend_request(
         &self,
-        input: DeleteFriendRequestInput,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
 }

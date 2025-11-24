@@ -24,6 +24,22 @@ where
         }
     }
 
+    /// Create a 201 CREATED response
+    pub fn created(data: T) -> Self {
+        Self {
+            data,
+            status_code: StatusCode::CREATED,
+        }
+    }
+
+    /// Create a 204 NO CONTENT response
+    pub fn deleted(data: T) -> Self {
+        Self {
+            data,
+            status_code: StatusCode::NO_CONTENT,
+        }
+    }
+
     /// Create a response with a custom status code
     #[allow(dead_code)]
     pub fn with_status(data: T, status_code: StatusCode) -> Self {

@@ -34,14 +34,10 @@ pub async fn auth_middleware(
     let auth_cookie = cookie_jar
         .get("access_token");
 
-    let token: String;
-
-    if auth_cookie.is_none() {
-        return Err(ApiError::AuthenticationError("Missing JWT token".to_string()));
-    } else {
-        // extract token from cookie
-        token = auth_cookie.unwrap().value().to_string();
-    }
+    let token = auth_cookie
+        .ok_or_else(|| ApiError::AuthenticationError("Missing JWT token".to_string()))?
+        .value()
+        .to_string();
 
     // decode and validate JWT token
     let token_data = decode::<Claims>(

@@ -13,17 +13,15 @@ pub enum CoreError {
     #[error("Failed to insert server with name {name}")]
     FailedToInsertServer { name: String },
 
-<<<<<<< HEAD
     #[error("Failed to manipulate with friendship data")]
     FriendshipDataError,
-    
+
     #[error("Health check failed")]
     Unhealthy,
-=======
+
     #[error("Failed to list friends for user with id {id}")]
     FailedToListFriends { id: UserId },
 
->>>>>>> 0a9f447 (feat: add friend SQL and improve repo error handling)
     /// == Friends Errors ==
     #[error("Friend with id {id} not found")]
     FriendNotFound { id: UserId },

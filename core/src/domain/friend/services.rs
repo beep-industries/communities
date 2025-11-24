@@ -1,11 +1,14 @@
 use crate::domain::{
-    common::{CoreError, GetPaginated, services::Service}, 
+    common::{CoreError, GetPaginated, services::Service},
     friend::{
-        entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId}, 
-        ports::{FriendRequestService, FriendService, FriendshipRepository}
-    }, 
+        entities::{
+            AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput,
+            DeleteFriendInput, DeleteFriendRequestInput, Friend, FriendRequest, UserId,
+        },
+        ports::{FriendRequestService, FriendService, FriendshipRepository},
+    },
     health::port::HealthRepository,
-    server::ports::ServerRepository
+    server::ports::ServerRepository,
 };
 
 impl<S, F, H> FriendService for Service<S, F, H>

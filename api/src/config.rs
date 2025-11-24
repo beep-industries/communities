@@ -1,4 +1,5 @@
 use clap::Parser;
+use sqlx::postgres::PgConnectOptions;
 
 #[derive(Clone, Parser, Debug)]
 #[command(name = "communities-api")]
@@ -7,14 +8,14 @@ pub struct Config {
     #[command(flatten)]
     pub database: DatabaseConfig,
 
-    #[command(flatten )]
+    #[command(flatten)]
     pub jwt: JwtConfig,
 
     #[command(flatten)]
     pub server: ServerConfig,
 }
 
-#[derive(Clone, Parser, Debug)]
+#[derive(Clone, Parser, Debug, Default)]
 pub struct DatabaseConfig {
     #[arg(
         long = "database-host",
@@ -49,6 +50,16 @@ pub struct DatabaseConfig {
     pub db_name: String,
 }
 
+impl Into<PgConnectOptions> for DatabaseConfig {
+    fn into(self) -> PgConnectOptions {
+        PgConnectOptions::new()
+            .host(&self.host)
+            .port(self.port)
+            .username(&self.user)
+            .password(&self.password)
+            .database(&self.db_name)
+    }
+}
 #[derive(Clone, Parser, Debug)]
 pub struct JwtConfig {
     #[arg(

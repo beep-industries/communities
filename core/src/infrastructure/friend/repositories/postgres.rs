@@ -152,7 +152,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
             .pool
             .begin()
             .await
-            .map_err(|e| CoreError::UnkownError {
+            .map_err(|e| CoreError::UnknownError {
                 message: e.to_string(),
             })?;
 

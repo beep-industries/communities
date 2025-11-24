@@ -41,7 +41,7 @@ pub enum CoreError {
     FailedToRemoveFriendship { user1: UserId, user2: UserId },
 
     #[error("An unknown error occurred: {message}")]
-    UnkownError { message: String },
+    UnknownError { message: String },
 }
 
 #[derive(Debug, Deserialize)]

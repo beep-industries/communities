@@ -118,10 +118,10 @@ impl FriendshipRepository for PostgresFriendshipRepository {
     }
 
     async fn create_request(
-            &self,
-            user_id_requested: &UserId,
-            user_id_invited: &UserId,
-        ) -> Result<FriendRequest, CoreError> {
+        &self,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
+    ) -> Result<FriendRequest, CoreError> {
         query_as!(
             FriendRequest,
             r#"
@@ -142,10 +142,10 @@ impl FriendshipRepository for PostgresFriendshipRepository {
     }
 
     async fn accept_request(
-            &self,
-            user_id_requested: &UserId,
-            user_id_invited: &UserId,
-        ) -> Result<Friend, CoreError> {
+        &self,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
+    ) -> Result<Friend, CoreError> {
         let mut tx = self.pool.begin().await.map_err(|_| CoreError::FriendshipDataError)?;
 
         let delete_result = sqlx::query!(
@@ -199,10 +199,10 @@ impl FriendshipRepository for PostgresFriendshipRepository {
     }
 
     async fn decline_request(
-            &self,
-            user_id_requested: &UserId,
-            user_id_invited: &UserId,
-        ) -> Result<FriendRequest, CoreError> {
+        &self,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
+    ) -> Result<FriendRequest, CoreError> {
         sqlx::query_as!(
             FriendRequest,
             r#"

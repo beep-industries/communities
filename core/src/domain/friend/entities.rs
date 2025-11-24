@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::common::CoreError;
+
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UserId(pub Uuid);
 
@@ -23,6 +25,12 @@ impl From<UserId> for Uuid {
     }
 }
 
+impl From<String> for UserId {
+    fn from(s: String) -> Self {
+        UserId(Uuid::parse_str(&s).map_err(|e| CoreError::UnknownError { message: e.to_string() }).unwrap())
+    }
+}
+
 // Is used to map database rows to domain entities
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FriendRow {
@@ -33,7 +41,7 @@ pub struct FriendRow {
 }
 
 // Is used in API responses
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Friend {
     pub user_id_1: UserId,
     pub user_id_2: UserId,
@@ -63,7 +71,7 @@ pub struct FriendRequestRow {
 }
 
 // Is used in API responses
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FriendRequest {
     pub user_id_requested: UserId,
     pub user_id_invited: UserId,

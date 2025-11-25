@@ -3,7 +3,7 @@ pub mod app_state;
 pub mod middleware;
 pub mod response;
 
-use core::create_service;
+use communities_core::create_service;
 
 pub use api_error::ApiError;
 pub use app_state::AppState;

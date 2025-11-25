@@ -6,51 +6,62 @@ use axum::{
 use communities_core::{
     domain::common::CoreError, infrastructure::friend::repositories::error::FriendshipError,
 };
+use serde::Serialize;
 use serde_json::json;
+use thiserror::Error;
+
+use communities_core::domain::common::CoreError;
 
 /// Unified error type for HTTP API responses
-#[derive(Debug)]
+#[derive(Debug, Error, Clone)]
 pub enum ApiError {
-    ServiceUnavailable(String),
-    InternalServerError(String),
-    AuthenticationError(String),
-    NotFound(String),
-    Forbidden(String),
-    StartupError(String),
+    #[error("Service is unavailable: {msg}")]
+    ServiceUnavailable { msg: String },
+    #[error("Internal server error: {msg}")]
+    InternalServerError { msg: String },
+    #[error("Startup error: {msg}")]
+    StartupError { msg: String },
+    #[error("Unauthorized access")]
     Unauthorized,
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+}
+
+impl ApiError {
+    pub fn to_status_code(&self) -> StatusCode {
+        match self {
+            ApiError::StartupError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::ServiceUnavailable { .. } => StatusCode::SERVICE_UNAVAILABLE,
+            ApiError::InternalServerError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
+        }
+    }
+}
+
+impl Into<ErrorBody> for ApiError {
+    fn into(self) -> ErrorBody {
+        ErrorBody {
+            message: self.to_string(),
+            status: self.to_status_code().as_u16(),
+        }
+    }
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let (status, message) = match self {
-            ApiError::StartupError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
-            ApiError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg),
-            ApiError::InternalServerError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
-            ApiError::AuthenticationError(msg) => (StatusCode::UNAUTHORIZED, msg),
-            ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
-            ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),
-            ApiError::Unauthorized => (
-                StatusCode::UNAUTHORIZED,
-                "Authentication failed".to_string(),
-            ),
-        };
-
-        let body = Json(json!({
-            "error": message,
-            "status": status.as_u16(),
-        }));
-
-        (status, body).into_response()
+        Json::<ErrorBody>(self.into()).into_response()
     }
 }
 
 impl From<CoreError> for ApiError {
     fn from(error: CoreError) -> Self {
         match error {
-            CoreError::Unhealthy => {
-                ApiError::ServiceUnavailable("Service is unhealthy".to_string())
-            }
-            _ => ApiError::InternalServerError(error.to_string()),
+            CoreError::Unhealthy => ApiError::ServiceUnavailable {
+                msg: "Service is unhealthy".to_string(),
+            },
+            _ => ApiError::InternalServerError {
+                msg: error.to_string(),
+            },
         }
     }
 }
@@ -76,4 +87,9 @@ impl From<FriendshipError> for ApiError {
             _ => ApiError::InternalServerError(error.to_string()),
         }
     }
+}
+#[derive(Debug, Serialize)]
+pub struct ErrorBody {
+    pub message: String,
+    pub status: u16,
 }

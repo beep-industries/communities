@@ -19,8 +19,8 @@ sqlx = { version = "0.8.6", features = [
     "uuid",
     "chrono",
 ] }
-thiserror = "2.0.17"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
+thiserror = { workspace = true }    
 
 [dev-dependencies]
 mockall = "0.13.1"

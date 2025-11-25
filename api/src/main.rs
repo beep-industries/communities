@@ -51,10 +51,14 @@ async fn main() -> Result<(), ApiError> {
     // Create TCP listeners for both servers
     let health_listener = tokio::net::TcpListener::bind(&health_addr)
         .await
-        .map_err(|e| ApiError::StartupError(format!("Failed to bind health server: {}", e)))?;
+        .map_err(|_| ApiError::StartupError {
+            msg: format!("Failed to bind health server: {}", health_addr),
+        })?;
     let api_listener = tokio::net::TcpListener::bind(&api_addr)
         .await
-        .map_err(|e| ApiError::StartupError(format!("Failed to bind API server: {}", e)))?;
+        .map_err(|_| ApiError::StartupError {
+            msg: format!("Failed to bind API server: {}", api_addr),
+        })?;
 
     // Run both servers concurrently
     tokio::try_join!(

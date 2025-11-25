@@ -1,4 +1,4 @@
-use core::domain::{
+use communities_core::domain::{
     common::GetPaginated,
     friend::{
         entities::{

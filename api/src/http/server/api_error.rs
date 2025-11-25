@@ -16,12 +16,14 @@ pub enum ApiError {
     AuthenticationError(String),
     NotFound(String),
     Forbidden(String),
+    StartupError(String),
     Unauthorized,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
+            ApiError::StartupError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
             ApiError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg),
             ApiError::InternalServerError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
             ApiError::AuthenticationError(msg) => (StatusCode::UNAUTHORIZED, msg),

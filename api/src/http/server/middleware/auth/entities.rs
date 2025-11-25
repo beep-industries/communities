@@ -8,6 +8,7 @@ use crate::http::server::ApiError;
 pub struct UserIdentity {
     pub user_id: Uuid,
 }
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -39,12 +40,10 @@ pub trait TokenValidator: Send + Sync {
 
 impl TokenValidator for AuthValidator {
     fn validate_token(&self, token: &str) -> Result<UserIdentity, ApiError> {
-        use jsonwebtoken::{DecodingKey, Validation, decode};
-
         let token_data = decode::<Claims>(
             token,
             &DecodingKey::from_secret(self.secret_key.as_bytes()),
-            &Validation::default(),
+            &Validation::new(Algorithm::HS256),
         )
         .map_err(|_| ApiError::Unauthorized)?;
 

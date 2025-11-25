@@ -37,7 +37,7 @@ sqlx migrate run --source core/migrations
 Launch the API server:
 
 ```bash
-HEALTH_PORT=9090 PORT=3001 DATABASE_URL="postgres://postgres:password@localhost:5432/communities" cargo run --bin api
+cargo run --bin api
 ```
 
 The application runs two servers on separate ports:

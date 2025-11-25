@@ -1,12 +1,12 @@
 use sqlx::{PgPool, query_as};
 
-use crate::domain::{
+use crate::{domain::{
     common::CoreError,
     server::{
         entities::{InsertServerInput, Server, ServerId},
         ports::ServerRepository,
     },
-};
+}, write_outbox_event};
 
 #[derive(Clone)]
 pub struct PostgresServerRepository {
@@ -38,6 +38,14 @@ impl ServerRepository for PostgresServerRepository {
     }
 
     async fn insert(&self, input: InsertServerInput) -> Result<Server, CoreError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| CoreError::FailedToInsertServer {
+                name: input.name.clone(),
+            })?;
+
         let server = query_as!(
             Server,
             r#"
@@ -51,9 +59,15 @@ impl ServerRepository for PostgresServerRepository {
             input.banner_url,
             input.description
         )
-        .fetch_one(&self.pool)
+        .fetch_one(&mut *tx)
         .await
-        .map_err(|_| CoreError::FailedToInsertServer { name: input.name })?;
+        .map_err(|_| CoreError::FailedToInsertServer { name: input.name.clone() })?;
+        
+        write_outbox_event(&mut *tx, &input).await?;
+        
+        tx.commit()
+            .await
+            .map_err(|_| CoreError::FailedToInsertServer { name: input.name })?;
 
         Ok(server)
     }

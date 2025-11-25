@@ -66,5 +66,5 @@ sqlx migrate add <migration-name> --source core/migrations
 Every repositories are mocked, it means we don't need a database instance to run the tests.
 
 ```bash
-cargo test
+cargo test domain::test
 ```

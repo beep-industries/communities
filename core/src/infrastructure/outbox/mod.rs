@@ -5,10 +5,8 @@
 //! - `write_event` helper for writing events within database transactions
 //! - `OutboxError` for error handling
 
-mod error;
 mod event;
 mod writer;
 
-pub use error::OutboxError;
 pub use event::OutboxEvent;
-pub use writer::write_event;
+pub use writer::write_outbox_event;

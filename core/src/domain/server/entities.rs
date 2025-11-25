@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::OutboxEvent;
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ServerId(pub Uuid);
 
@@ -52,4 +54,16 @@ pub struct InsertServerInput {
     pub picture_url: Option<String>,
     pub banner_url: Option<String>,
     pub description: Option<String>,
+}
+
+
+// TODO: Define the real values for 
+impl OutboxEvent for InsertServerInput {
+    fn exchange_name(&self) -> String {
+        "beep.community".to_string()
+    }
+
+    fn routing_key(&self) -> String {
+        "server.created".to_string()
+    }
 }

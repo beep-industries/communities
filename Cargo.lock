@@ -75,7 +75,12 @@ dependencies = [
  "axum-extra",
  "chrono",
  "clap",
+<<<<<<< HEAD
  "communities_core",
+=======
+ "core",
+ "dotenv",
+>>>>>>> c342120 (feat(config): auth middleware, config from dotenv)
  "env",
  "jsonwebtoken",
  "serde",
@@ -441,6 +446,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dotenvy"

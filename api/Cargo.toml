@@ -20,3 +20,4 @@ jsonwebtoken = "9.2"
 axum-extra = { version = "0.12.2", features = ["cookie"] }
 clap = { version = "4.5.53", features = ["derive", "env"] }
 env = "1.0.1"
+dotenv = "0.15.0"

@@ -16,6 +16,7 @@ pub enum ApiError {
     AuthenticationError(String),
     NotFound(String),
     Forbidden(String),
+    Unauthorized,
 }
 
 impl IntoResponse for ApiError {
@@ -26,6 +27,10 @@ impl IntoResponse for ApiError {
             ApiError::AuthenticationError(msg) => (StatusCode::UNAUTHORIZED, msg),
             ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
             ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),
+            ApiError::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "Authentication failed".to_string(),
+            ),
         };
 
         let body = Json(json!({

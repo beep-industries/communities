@@ -9,7 +9,7 @@ use serde::Serialize;
 ///
 /// ```rust
 /// use serde::Serialize;
-/// use core::infrastructure::outbox::OutboxEvent;
+/// use communities_core::infrastructure::outbox::OutboxEvent;
 ///
 /// #[derive(Serialize)]
 /// struct FriendCreatedEvent {

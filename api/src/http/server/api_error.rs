@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use core::domain::common::CoreError;
+use communities_core::domain::common::CoreError;
 use serde_json::json;
 
 /// Unified error type for HTTP API responses

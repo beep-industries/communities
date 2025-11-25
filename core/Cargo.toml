@@ -1,12 +1,12 @@
 [package]
-name = "core"
+name = "communities_core"
 description = "Core business logic library for Community Service"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [lib]
-name = "core"
+name = "communities_core"
 path = "src/lib.rs"
 
 [dependencies]

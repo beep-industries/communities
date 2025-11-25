@@ -1,4 +1,4 @@
-use core::domain::{common::GetPaginated, friend::{entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, Friend, FriendRequest, UserId}, ports::{FriendRequestService, FriendService}}};
+use communities_core::domain::{common::GetPaginated, friend::{entities::{AcceptFriendRequestInput, CreateFriendRequestInput, DeclineFriendRequestInput, DeleteFriendInput, Friend, FriendRequest, UserId}, ports::{FriendRequestService, FriendService}}};
 
 use axum::{Extension, Json, extract::{Path, Query, State}};
 use uuid::Uuid;

@@ -23,7 +23,7 @@ use uuid::Uuid;
 ///
 /// ```rust,no_run
 /// use sqlx::PgPool;
-/// use core::infrastructure::outbox::{write_event, OutboxEvent};
+/// use communities_core::infrastructure::outbox::{write_event, OutboxEvent};
 /// use serde::Serialize;
 ///
 /// #[derive(Serialize)]
@@ -43,7 +43,7 @@ use uuid::Uuid;
 ///     
 ///     // Write event to outbox
 ///     let event = MyEvent { data: "test".to_string() };
-///     let event_id = write_event(&mut tx, &event).await?;
+///     let event_id = write_event(&mut *tx, &event).await?;
 ///     
 ///     tx.commit().await?;
 ///     Ok(())

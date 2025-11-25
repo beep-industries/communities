@@ -2,7 +2,7 @@ use std::env;
 
 use axum::middleware::from_fn;
 use axum::{Router, routing::get};
-use core::create_service;
+use communities_core::create_service;
 use sqlx::postgres::PgPoolOptions;
 
 mod http;

@@ -1,4 +1,4 @@
-use core::CommunitiesService;
+use communities_core::CommunitiesService;
 
 
 /// Application state shared across request handlers

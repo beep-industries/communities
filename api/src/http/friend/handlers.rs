@@ -83,7 +83,10 @@ pub async fn create_friend_request(
     Json(input): Json<CreateFriendRequestInput>,
 ) -> Result<Response<FriendRequest>, ApiError> {
     let user_id = UserId::from(auth_state.user_id);
-    let friend_request = state.service.create_friend_request(&user_id, &input.user_id_invited).await?;
+    let friend_request = state
+        .service
+        .create_friend_request(&user_id, &input.user_id_invited)
+        .await?;
     Ok(Response::created(friend_request))
 }
 
@@ -93,7 +96,10 @@ pub async fn accept_friend_request(
     Json(input): Json<AcceptFriendRequestInput>,
 ) -> Result<Response<Friend>, ApiError> {
     let user_id = UserId::from(auth_state.user_id);
-    let friend = state.service.accept_friend_request(&input.user_id_requested, &user_id).await?;
+    let friend = state
+        .service
+        .accept_friend_request(&input.user_id_requested, &user_id)
+        .await?;
     Ok(Response::created(friend))
 }
 
@@ -103,7 +109,10 @@ pub async fn decline_friend_request(
     Json(input): Json<DeclineFriendRequestInput>,
 ) -> Result<Response<FriendRequest>, ApiError> {
     let user_id = UserId::from(auth_state.user_id);
-    let friend_request = state.service.decline_friend_request(&input.user_id_requested, &user_id).await?;
+    let friend_request = state
+        .service
+        .decline_friend_request(&input.user_id_requested, &user_id)
+        .await?;
     Ok(Response::created(friend_request))
 }
 
@@ -114,6 +123,9 @@ pub async fn delete_friend_request(
 ) -> Result<Response<()>, ApiError> {
     let user_id = UserId::from(auth_state.user_id);
     let user_id_invited = UserId::from(user_id_invited);
-    state.service.delete_friend_request(&user_id, &user_id_invited).await?;
+    state
+        .service
+        .delete_friend_request(&user_id, &user_id_invited)
+        .await?;
     Ok(Response::deleted(()))
 }

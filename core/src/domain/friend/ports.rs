@@ -2,12 +2,12 @@ use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
 
-use crate::domain::{
-    common::{CoreError, GetPaginated},
+use crate::{domain::{
+    common::GetPaginated,
     friend::entities::{
         DeleteFriendInput, Friend, FriendRequest, UserId,
     },
-};
+}, infrastructure::friend::repositories::error::FriendshipError};
 
 pub trait FriendshipRepository: Send + Sync {
     // === Friends ===
@@ -15,55 +15,55 @@ pub trait FriendshipRepository: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<Friend>, u64), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Friend>, u64), FriendshipError>> + Send;
 
     fn get_friend(
         &self,
         user_id_1: &UserId,
         user_id_2: &UserId,
-    ) -> impl Future<Output = Result<Option<Friend>, CoreError>> + Send;
+    ) -> impl Future<Output = Result<Option<Friend>, FriendshipError>> + Send;
 
     fn remove_friend(
         &self,
         input: DeleteFriendInput,
-    ) -> impl Future<Output = Result<(), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(), FriendshipError>> + Send;
 
     // === Friend Requests ===
     fn list_requests(
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), FriendshipError>> + Send;
 
     fn get_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<Option<FriendRequest>, CoreError>> + Send;
+    ) -> impl Future<Output = Result<Option<FriendRequest>, FriendshipError>> + Send;
 
     fn create_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
+    ) -> impl Future<Output = Result<FriendRequest, FriendshipError>> + Send;
 
     fn accept_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
+    ) -> impl Future<Output = Result<Friend, FriendshipError>> + Send;
 
     fn decline_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
+    ) -> impl Future<Output = Result<FriendRequest, FriendshipError>> + Send;
 
     fn remove_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<(), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(), FriendshipError>> + Send;
 }
 
 /// A service for managing server operations in the application.
@@ -85,12 +85,12 @@ pub trait FriendService: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<Friend>, u64), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Friend>, u64), FriendshipError>> + Send;
 
     fn delete_friend(
         &self,
         input: DeleteFriendInput,
-    ) -> impl Future<Output = Result<(), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(), FriendshipError>> + Send;
 }
 
 pub trait FriendRequestService: Send + Sync {
@@ -98,31 +98,31 @@ pub trait FriendRequestService: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), FriendshipError>> + Send;
 
     fn create_friend_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
+    ) -> impl Future<Output = Result<FriendRequest, FriendshipError>> + Send;
 
     fn accept_friend_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<Friend, CoreError>> + Send;
+    ) -> impl Future<Output = Result<Friend, FriendshipError>> + Send;
 
     fn decline_friend_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<FriendRequest, CoreError>> + Send;
+    ) -> impl Future<Output = Result<FriendRequest, FriendshipError>> + Send;
 
     fn delete_friend_request(
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> impl Future<Output = Result<(), CoreError>> + Send;
+    ) -> impl Future<Output = Result<(), FriendshipError>> + Send;
 }
 
 #[derive(Clone)]
@@ -145,10 +145,10 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<Friend>, u64), CoreError> {
+    ) -> Result<(Vec<Friend>, u64), FriendshipError> {
         let friends = self.friends
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
         
         let filtered_friends: Vec<Friend> = friends
             .iter()
@@ -171,10 +171,10 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         user_id_1: &UserId,
         user_id_2: &UserId,
-    ) -> Result<Option<Friend>, CoreError> {
+    ) -> Result<Option<Friend>, FriendshipError> {
         let friends = self.friends
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         let filtered_friends: Vec<Friend> = friends
             .iter()
@@ -188,10 +188,10 @@ impl FriendshipRepository for MockFriendshipRepository {
     async fn remove_friend(
         &self,
         input: DeleteFriendInput,
-    ) -> Result<(), CoreError> {
+    ) -> Result<(), FriendshipError> {
         let mut friends = self.friends
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         let count_before = friends.len();
         friends.retain(|friend| {
@@ -200,7 +200,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         });
 
         if friends.len() == count_before {
-            return Err(CoreError::FailedToRemoveFriendship {
+            return Err(FriendshipError::FriendshipNotFound {
                 user1: input.user_id_1,
                 user2: input.user_id_2,
             });
@@ -213,10 +213,10 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<FriendRequest>, u64), CoreError> {
+    ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
         let requests = self.friend_requests
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
@@ -239,10 +239,10 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<Option<FriendRequest>, CoreError> {
+    ) -> Result<Option<FriendRequest>, FriendshipError> {
         let requests = self.friend_requests
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
@@ -257,18 +257,17 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<FriendRequest, CoreError> {
+    ) -> Result<FriendRequest, FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         // Check if a pending friend request already exists
         if requests.iter().any(|request| {
             &request.user_id_requested == user_id_requested &&
-            &request.user_id_invited == user_id_invited &&
-            request.status == 0
+            &request.user_id_invited == user_id_invited
         }) {
-            return Err(CoreError::FailedToCreateFriendship {
+            return Err(FriendshipError::FriendRequestAlreadyExists {
                 user1: user_id_requested.clone(),
                 user2: user_id_invited.clone(),
             });
@@ -289,17 +288,26 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<Friend, CoreError> {
+    ) -> Result<Friend, FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         if let Some(pos) = requests.iter().position(|request| {
             &request.user_id_requested == user_id_requested &&
             &request.user_id_invited == user_id_invited &&
             request.status == 0
         }) {
+            let count_before = requests.len();
             requests.remove(pos);
+
+            if count_before == requests.len() {
+                return Err(FriendshipError::FriendRequestNotFound {
+                    user1: user_id_invited.clone(),
+                    user2: user_id_requested.clone(),
+                });
+            }
+
             let new_friend = Friend {
                 user_id_1: user_id_requested.clone(),
                 user_id_2: user_id_invited.clone(),
@@ -308,13 +316,13 @@ impl FriendshipRepository for MockFriendshipRepository {
 
             let mut friends = self.friends
                 .lock()
-                .map_err(|_| CoreError::MutexLockPoisoned)?;
+                .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
             if friends.iter().any(|friend| {
                 ( &friend.user_id_1 == user_id_requested && &friend.user_id_2 == user_id_invited ) ||
                 ( &friend.user_id_1 == user_id_invited && &friend.user_id_2 == user_id_requested )
             }) {
-                return Err(CoreError::FailedToCreateFriendship {
+                return Err(FriendshipError::FriendshipAlreadyExists {
                     user1: user_id_requested.clone(),
                     user2: user_id_invited.clone(),
                 });
@@ -323,7 +331,7 @@ impl FriendshipRepository for MockFriendshipRepository {
             friends.push(new_friend.clone());
             Ok(new_friend)
         } else {
-            Err(CoreError::FailedToRemoveFriendship {
+            Err(FriendshipError::FriendRequestNotFound {
                 user1: user_id_invited.clone(),
                 user2: user_id_requested.clone(),
             })
@@ -334,21 +342,20 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<FriendRequest, CoreError> {
+    ) -> Result<FriendRequest, FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         let request = requests.iter_mut().find(|request| {
             &request.user_id_requested == user_id_requested &&
-            &request.user_id_invited == user_id_invited &&
-            request.status == 0
+            &request.user_id_invited == user_id_invited
         });
         if let Some(request) = request {
             request.status = 1;
             Ok(request.clone())
         } else {
-            Err(CoreError::FailedToRemoveFriendship {
+            Err(FriendshipError::FriendRequestNotFound {
                 user1: user_id_invited.clone(),
                 user2: user_id_requested.clone(),
             })
@@ -359,10 +366,10 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<(), CoreError> {
+    ) -> Result<(), FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
 
         let count_before = requests.len();
         requests.retain(|request| {
@@ -371,7 +378,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         });
 
         if requests.len() == count_before {
-            return Err(CoreError::FailedToRemoveFriendship {
+            return Err(FriendshipError::FriendRequestNotFound {
                 user1: user_id_invited.clone(),
                 user2: user_id_requested.clone(),
             });

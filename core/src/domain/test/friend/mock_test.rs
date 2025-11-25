@@ -97,7 +97,7 @@ async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std:
         .await
         .expect_err("create_friend_request should have returned an error");
 
-    assert_eq!(error1.to_string(), format!("Failed to create friendship between {} and {}", user_id_requested, user_id_invited), "Expected duplicate friend request error");
+    assert_eq!(error1.to_string(), format!("Friend request already exists between {} and {}", user_id_requested, user_id_invited), "Expected duplicate friend request error");
 
     // Test the create_friend_request method
     // Case: We must not be able to create a friend request (A -> B) if a (B -> A) request already exists
@@ -105,7 +105,7 @@ async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std:
         .await
         .expect_err("create_friend_request should have returned an error");
 
-    assert_eq!(error2.to_string(), format!("Friend relationship already exists between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
+    assert_eq!(error2.to_string(), format!("Friendship already exists between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
 
     Ok(())
 }
@@ -164,7 +164,7 @@ async fn test_accept_friend_requests_fail() -> Result<(), Box<dyn std::error::Er
         .await
         .expect_err("accept_friend_request should have returned an error");
 
-    assert_eq!(error.to_string(), format!("Failed to remove friendship between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
+    assert_eq!(error.to_string(), format!("Friend request not found between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
 
     Ok(())
 }
@@ -217,7 +217,7 @@ async fn test_decline_friend_requests_fail() -> Result<(), Box<dyn std::error::E
         .await
         .expect_err("decline_friend_request should have returned an error");
 
-        assert_eq!(error.to_string(), format!("Failed to remove friendship between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
+        assert_eq!(error.to_string(), format!("Friend request not found between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
 
     Ok(())
 }
@@ -266,7 +266,7 @@ async fn test_delete_friend_requests_fail() -> Result<(), Box<dyn std::error::Er
         .await
         .expect_err("delete_friend_request should have returned an error");
 
-        assert_eq!(error.to_string(), format!("Failed to remove friendship between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
+        assert_eq!(error.to_string(), format!("Friend request not found between {} and {}", user_id_invited, user_id_requested), "Expected duplicate friend request error");
 
     Ok(())
 }
@@ -380,7 +380,7 @@ async fn test_delete_friend_fail() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .expect_err("delete_friend should have returned an error");
 
-        assert_eq!(error.to_string(), format!("Failed to remove friendship between {} and {}", user_id_requested, user_id_invited), "Expected duplicate friend request error");
+        assert_eq!(error.to_string(), format!("Friendship not found between {} and {}", user_id_requested, user_id_invited), "Expected duplicate friend request error");
 
     Ok(())
 }

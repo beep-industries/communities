@@ -1,12 +1,12 @@
-use crate::domain::{
-    common::{CoreError, GetPaginated, services::Service},
+use crate::{domain::{
+    common::{GetPaginated, services::Service},
     friend::{
         entities::{DeleteFriendInput, Friend, FriendRequest, UserId}, 
         ports::{FriendRequestService, FriendService, FriendshipRepository}
     }, 
     health::port::HealthRepository,
     server::ports::ServerRepository,
-};
+}, infrastructure::friend::repositories::error::FriendshipError};
 
 impl<S, F, H> FriendService for Service<S, F, H>
 where
@@ -18,13 +18,13 @@ where
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<Friend>, u64), CoreError> {
+    ) -> Result<(Vec<Friend>, u64), FriendshipError> {
         self.friendship_repository
             .list_friends(pagination, user_id)
             .await
     }
 
-    async fn delete_friend(&self, input: DeleteFriendInput) -> Result<(), CoreError> {
+    async fn delete_friend(&self, input: DeleteFriendInput) -> Result<(), FriendshipError> {
         self.friendship_repository.remove_friend(input).await
     }
 }
@@ -39,7 +39,7 @@ where
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<FriendRequest>, u64), CoreError> {
+    ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
         self.friendship_repository
             .list_requests(pagination, user_id)
             .await
@@ -49,14 +49,14 @@ where
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<FriendRequest, CoreError> {
+    ) -> Result<FriendRequest, FriendshipError> {
         let existing_request = self
             .friendship_repository
             .get_request(user_id_invited, user_id_requested)
             .await?;
 
         if existing_request.is_some() {
-            return Err(CoreError::FriendshipAlreadyExists {
+            return Err(FriendshipError::FriendshipAlreadyExists {
                 user1: user_id_requested.clone(),
                 user2: user_id_invited.clone(),
             });
@@ -69,7 +69,7 @@ where
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<Friend, CoreError> {
+    ) -> Result<Friend, FriendshipError> {
         self.friendship_repository.accept_request(user_id_requested, user_id_invited).await
     }
 
@@ -77,7 +77,7 @@ where
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<FriendRequest, CoreError> {
+    ) -> Result<FriendRequest, FriendshipError> {
         self.friendship_repository.decline_request(user_id_requested, user_id_invited).await
     }
 
@@ -85,7 +85,7 @@ where
         &self,
         user_id_requested: &UserId,
         user_id_invited: &UserId,
-    ) -> Result<(), CoreError> {
+    ) -> Result<(), FriendshipError> {
         self.friendship_repository.remove_request(user_id_requested, user_id_invited).await
     }
 }

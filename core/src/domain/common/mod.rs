@@ -34,3 +34,5 @@ impl Default for GetPaginated {
         Self { page: 1, limit: 20 }
     }
 }
+
+pub type TotalPaginatedElements = u64;

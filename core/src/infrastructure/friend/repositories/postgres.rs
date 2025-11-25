@@ -2,7 +2,7 @@ use sqlx::{PgPool, query_as};
 
 use crate::{
     domain::{
-        common::GetPaginated,
+        common::{GetPaginated, TotalPaginatedElements},
         friend::{
             entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
             ports::FriendshipRepository,
@@ -27,7 +27,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<Friend>, u64), FriendshipError> {
+    ) -> Result<(Vec<Friend>, TotalPaginatedElements), FriendshipError> {
         let offset = (pagination.page - 1) * pagination.limit;
 
         let total_count = sqlx::query_scalar::<_, i64>(
@@ -56,7 +56,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .await
         .map_err(|_| FriendshipError::DatabaseError)?;
 
-        Ok((friends, total_count as u64))
+        Ok((friends, total_count as TotalPaginatedElements))
     }
 
     async fn get_friend(
@@ -108,7 +108,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
         let offset = (pagination.page - 1) * pagination.limit;
 
         let total_count = sqlx::query_scalar::<_, i64>(
@@ -137,7 +137,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .await
         .map_err(|_| FriendshipError::DatabaseError)?;
 
-        Ok((friend_requests, total_count as u64))
+        Ok((friend_requests, total_count as TotalPaginatedElements))
     }
 
     async fn get_request(

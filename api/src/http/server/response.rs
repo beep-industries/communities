@@ -3,6 +3,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response as AxumResponse},
 };
+use communities_core::domain::common::TotalPaginatedElements;
 use serde::Serialize;
 
 /// Generic response wrapper for consistent API responses
@@ -59,6 +60,6 @@ where
 #[derive(Serialize)]
 pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
-    pub total: u64,
+    pub total: TotalPaginatedElements,
     pub page: u32,
 }

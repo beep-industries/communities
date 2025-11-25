@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        common::{GetPaginated, services::Service},
+        common::{GetPaginated, TotalPaginatedElements, services::Service},
         friend::{
             entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
             ports::{FriendRequestService, FriendService, FriendshipRepository},
@@ -21,7 +21,7 @@ where
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<Friend>, u64), FriendshipError> {
+    ) -> Result<(Vec<Friend>, TotalPaginatedElements), FriendshipError> {
         self.friendship_repository
             .list_friends(pagination, user_id)
             .await
@@ -42,7 +42,7 @@ where
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
         self.friendship_repository
             .list_requests(pagination, user_id)
             .await

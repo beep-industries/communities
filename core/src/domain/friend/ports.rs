@@ -4,7 +4,7 @@ use chrono::Utc;
 
 use crate::{
     domain::{
-        common::GetPaginated,
+        common::{GetPaginated, TotalPaginatedElements},
         friend::entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
     },
     infrastructure::friend::repositories::error::FriendshipError,
@@ -16,7 +16,7 @@ pub trait FriendshipRepository: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<Friend>, u64), FriendshipError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Friend>, TotalPaginatedElements), FriendshipError>> + Send;
 
     fn get_friend(
         &self,
@@ -34,7 +34,7 @@ pub trait FriendshipRepository: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), FriendshipError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError>> + Send;
 
     fn get_request(
         &self,
@@ -86,7 +86,7 @@ pub trait FriendService: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<Friend>, u64), FriendshipError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Friend>, TotalPaginatedElements), FriendshipError>> + Send;
 
     fn delete_friend(
         &self,
@@ -99,7 +99,7 @@ pub trait FriendRequestService: Send + Sync {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), FriendshipError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError>> + Send;
 
     fn create_friend_request(
         &self,
@@ -146,7 +146,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<Friend>, u64), FriendshipError> {
+    ) -> Result<(Vec<Friend>, TotalPaginatedElements), FriendshipError> {
         let friends = self.friends.lock().unwrap();
 
         let filtered_friends: Vec<Friend> = friends
@@ -154,7 +154,7 @@ impl FriendshipRepository for MockFriendshipRepository {
             .filter(|friend| &friend.user_id_1 == user_id || &friend.user_id_2 == user_id)
             .cloned()
             .collect();
-        let total = filtered_friends.len() as u64;
+        let total = filtered_friends.len() as TotalPaginatedElements;
         let start = pagination.page.saturating_sub(1) * pagination.limit;
 
         let paginated_friends = filtered_friends
@@ -205,7 +205,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
-    ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
         let requests = self.friend_requests.lock().unwrap();
 
         let filtered_requests: Vec<FriendRequest> = requests
@@ -213,7 +213,7 @@ impl FriendshipRepository for MockFriendshipRepository {
             .filter(|request| &request.user_id_requested == user_id)
             .cloned()
             .collect();
-        let total = filtered_requests.len() as u64;
+        let total = filtered_requests.len() as TotalPaginatedElements;
         let start = pagination.page.saturating_sub(1) * pagination.limit;
 
         let paginated_requests = filtered_requests

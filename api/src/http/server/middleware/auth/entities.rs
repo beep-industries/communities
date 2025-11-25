@@ -4,11 +4,11 @@ use uuid::Uuid;
 
 use crate::http::server::ApiError;
 
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 #[derive(Clone, Debug)]
 pub struct UserIdentity {
     pub user_id: Uuid,
 }
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

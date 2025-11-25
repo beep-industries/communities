@@ -21,8 +21,4 @@ pub enum FriendshipError {
 
     #[error("Friendship not found between {user1} and {user2}")]
     FriendshipNotFound { user1: UserId, user2: UserId },
-
-    // == Mocked dataset Errors ==
-    #[error("Mutex lock poisoned")]
-    MutexLockPoisoned,
 }

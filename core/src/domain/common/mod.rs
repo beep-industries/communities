@@ -21,10 +21,6 @@ pub enum CoreError {
 
     #[error("An unknown error occurred: {message}")]
     UnknownError { message: String },
-
-    // == Mocked dataset Errors ==
-    #[error("Mutex lock poisoned")]
-    MutexLockPoisoned,
 }
 
 #[derive(Debug, Deserialize)]

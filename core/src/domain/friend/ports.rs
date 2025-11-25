@@ -148,7 +148,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<(Vec<Friend>, u64), FriendshipError> {
         let friends = self.friends
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
         
         let filtered_friends: Vec<Friend> = friends
             .iter()
@@ -174,7 +174,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<Option<Friend>, FriendshipError> {
         let friends = self.friends
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         let filtered_friends: Vec<Friend> = friends
             .iter()
@@ -191,7 +191,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<(), FriendshipError> {
         let mut friends = self.friends
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         let count_before = friends.len();
         friends.retain(|friend| {
@@ -216,7 +216,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
         let requests = self.friend_requests
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
@@ -242,7 +242,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<Option<FriendRequest>, FriendshipError> {
         let requests = self.friend_requests
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
@@ -260,7 +260,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<FriendRequest, FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         // Check if a pending friend request already exists
         if requests.iter().any(|request| {
@@ -291,7 +291,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<Friend, FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         if let Some(pos) = requests.iter().position(|request| {
             &request.user_id_requested == user_id_requested &&
@@ -316,7 +316,7 @@ impl FriendshipRepository for MockFriendshipRepository {
 
             let mut friends = self.friends
                 .lock()
-                .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+                .unwrap();
 
             if friends.iter().any(|friend| {
                 ( &friend.user_id_1 == user_id_requested && &friend.user_id_2 == user_id_invited ) ||
@@ -345,7 +345,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<FriendRequest, FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         let request = requests.iter_mut().find(|request| {
             &request.user_id_requested == user_id_requested &&
@@ -369,7 +369,7 @@ impl FriendshipRepository for MockFriendshipRepository {
     ) -> Result<(), FriendshipError> {
         let mut requests = self.friend_requests
             .lock()
-            .map_err(|_| FriendshipError::MutexLockPoisoned)?;
+            .unwrap();
 
         let count_before = requests.len();
         requests.retain(|request| {

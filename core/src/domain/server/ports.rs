@@ -73,7 +73,7 @@ impl ServerRepository for MockServerRepository {
     ) -> Result<Option<Server>, CoreError> {
         let servers = self.servers
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .unwrap();
 
         let server = servers
             .iter()
@@ -89,7 +89,7 @@ impl ServerRepository for MockServerRepository {
         ) -> Result<Server, CoreError> {
         let mut servers = self.servers
             .lock()
-            .map_err(|_| CoreError::MutexLockPoisoned)?;
+            .unwrap();
 
         let new_server = Server {
             id: ServerId::from(uuid::Uuid::new_v4()),

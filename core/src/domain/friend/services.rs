@@ -50,6 +50,18 @@ where
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<FriendRequest, CoreError> {
+        let existing_request = self
+            .friendship_repository
+            .get_request(user_id_invited, user_id_requested)
+            .await?;
+
+        if existing_request.is_some() {
+            return Err(CoreError::FriendshipAlreadyExists {
+                user1: user_id_requested.clone(),
+                user2: user_id_invited.clone(),
+            });
+        }
+
         self.friendship_repository.create_request(user_id_requested, user_id_invited).await
     }
 

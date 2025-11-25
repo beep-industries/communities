@@ -32,7 +32,7 @@ impl From<Uuid> for OwnerId {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct OwnerId(pub Uuid);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Server {
     pub id: ServerId,
     pub name: String,

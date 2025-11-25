@@ -52,6 +52,28 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         Ok((friends, total_count as u64))
     }
 
+    async fn get_friend(
+            &self,
+            user_id_1: &UserId,
+            user_id_2: &UserId,
+        ) -> Result<Option<Friend>, CoreError> {
+        let friend = query_as!(
+            Friend,
+            r#"
+            SELECT user_id_1, user_id_2, created_at
+            FROM Friends
+            WHERE user_id_1 = $1 OR user_id_2 = $2
+            "#,
+            user_id_1.0,
+            user_id_2.0
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| CoreError::FriendNotFound { id: *user_id_1 })?;
+
+        Ok(friend)
+    }
+
     async fn remove_friend(&self, input: DeleteFriendInput) -> Result<(), CoreError> {
         let result = sqlx::query!(
             r#"
@@ -115,6 +137,28 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         })?;
 
         Ok((friend_requests, total_count as u64))
+    }
+
+    async fn get_request(
+            &self,
+            user_id_requested: &UserId,
+            user_id_invited: &UserId,
+        ) -> Result<Option<FriendRequest>, CoreError> {
+        let request = query_as!(
+            FriendRequest,
+            r#"
+            SELECT user_id_requested, user_id_invited, status, created_at
+            FROM friend_requests
+            WHERE user_id_requested = $1 AND user_id_invited = $2
+            "#,
+            user_id_requested.0,
+            user_id_invited.0
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| CoreError::FriendshipDataError)?;
+
+        Ok(request)
     }
 
     async fn create_request(

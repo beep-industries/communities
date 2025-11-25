@@ -17,6 +17,12 @@ pub trait FriendshipRepository: Send + Sync {
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<Friend>, u64), CoreError>> + Send;
 
+    fn get_friend(
+        &self,
+        user_id_1: &UserId,
+        user_id_2: &UserId,
+    ) -> impl Future<Output = Result<Option<Friend>, CoreError>> + Send;
+
     fn remove_friend(
         &self,
         input: DeleteFriendInput,
@@ -28,6 +34,12 @@ pub trait FriendshipRepository: Send + Sync {
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<FriendRequest>, u64), CoreError>> + Send;
+
+    fn get_request(
+        &self,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
+    ) -> impl Future<Output = Result<Option<FriendRequest>, CoreError>> + Send;
 
     fn create_request(
         &self,
@@ -113,6 +125,7 @@ pub trait FriendRequestService: Send + Sync {
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
+#[derive(Clone)]
 pub struct MockFriendshipRepository {
     friends: Arc<Mutex<Vec<Friend>>>,
     friend_requests: Arc<Mutex<Vec<FriendRequest>>>,
@@ -152,6 +165,24 @@ impl FriendshipRepository for MockFriendshipRepository {
             .collect();
 
         Ok((paginated_friends, total))
+    }
+
+    async fn get_friend(
+        &self,
+        user_id_1: &UserId,
+        user_id_2: &UserId,
+    ) -> Result<Option<Friend>, CoreError> {
+        let friends = self.friends
+            .lock()
+            .map_err(|_| CoreError::MutexLockPoisoned)?;
+
+        let filtered_friends: Vec<Friend> = friends
+            .iter()
+            .filter(|friend| &friend.user_id_1 == user_id_1 || &friend.user_id_2 == user_id_2)
+            .cloned()
+            .collect();
+
+        Ok(filtered_friends.into_iter().next())
     }
 
     async fn remove_friend(
@@ -202,6 +233,24 @@ impl FriendshipRepository for MockFriendshipRepository {
             .collect();
 
         Ok((paginated_requests, total))
+    }
+
+    async fn get_request(
+        &self,
+        user_id_requested: &UserId,
+        user_id_invited: &UserId,
+    ) -> Result<Option<FriendRequest>, CoreError> {
+        let requests = self.friend_requests
+            .lock()
+            .map_err(|_| CoreError::MutexLockPoisoned)?;
+
+        let filtered_requests: Vec<FriendRequest> = requests
+            .iter()
+            .filter(|request| &request.user_id_requested == user_id_requested && &request.user_id_invited == user_id_invited)
+            .cloned()
+            .collect();
+
+        Ok(filtered_requests.into_iter().next())
     }
 
     async fn create_request(

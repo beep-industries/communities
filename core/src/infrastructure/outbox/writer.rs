@@ -1,4 +1,4 @@
-use crate::infrastructure::outbox::{OutboxError, OutboxEvent};
+use crate::{domain::common::CoreError, infrastructure::outbox::OutboxEvent};
 use chrono::Utc;
 use serde_json;
 use sqlx::PgExecutor;
@@ -49,7 +49,7 @@ use uuid::Uuid;
 ///     Ok(())
 /// }
 /// ```
-pub async fn write_event<'e, E, T>(executor: E, event: &T) -> Result<Uuid, OutboxError>
+pub async fn write_outbox_event<'e, E, T>(executor: E, event: &T) -> Result<Uuid, CoreError>
 where
     E: PgExecutor<'e>,
     T: OutboxEvent,
@@ -60,7 +60,8 @@ where
     let created_at = Utc::now();
 
     // Serialize event to JSON
-    let payload = serde_json::to_value(event)?;
+    let payload = serde_json::to_value(event)
+        .map_err(|e| CoreError::SerializationError { msg: e.to_string() })?;
 
     // Insert into outbox_messages table
     let query = r#"
@@ -78,7 +79,8 @@ where
         .bind(None::<chrono::DateTime<Utc>>)
         .bind(created_at)
         .execute(executor)
-        .await?;
+        .await
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
     Ok(event_id)
 }

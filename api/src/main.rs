@@ -1,6 +1,9 @@
 use axum::Router;
+use axum::middleware::from_extractor_with_state;
 use axum::middleware::from_fn;
 use communities_core::create_service;
+use core::create_service;
+use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 
 mod http;
@@ -8,15 +11,18 @@ mod http;
 use crate::http::friend::routes::friend_routes;
 use crate::http::health::routes::health_routes;
 use crate::http::server::AppState;
-use crate::http::server::middleware::auth_middleware;
+use crate::http::server::middleware::auth::AuthMiddleware;
+use crate::http::server::middleware::auth::entities::AuthValidator;
 
 use api::config::Config;
 use clap::Parser;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load environment variables from .env file
+    dotenv().ok();
+
     let config: Config = Config::parse();
-    println!("{:#?}", config);
     // Get database URL from environment variable
     // Create database connection pool
     let pool = PgPoolOptions::new()
@@ -37,11 +43,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(health_routes())
         .with_state(app_state.clone());
 
+    let token_validator = AuthValidator::new(config.jwt.secret_key.clone());
     // Main API server - for business logic endpoints
     let api_app = Router::<AppState>::new()
         .merge(friend_routes())
         // Future API routes will be added here
-        .layer(from_fn(auth_middleware))
+        .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
+            token_validator,
+        ))
         .with_state(app_state.clone());
 
     // Get ports from environment

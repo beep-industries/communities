@@ -1,4 +1,4 @@
-use communities_core::domain::{
+use core::domain::{
     common::GetPaginated,
     friend::{
         entities::{
@@ -16,12 +16,13 @@ use axum::{
 use uuid::Uuid;
 
 use crate::http::server::{
-    ApiError, AppState, Response, middleware::AuthState, response::PaginatedResponse,
+    ApiError, AppState, Response, middleware::auth::entities::UserIdentity,
+    response::PaginatedResponse,
 };
 
 pub async fn get_friends(
     State(state): State<AppState>,
-    Extension(auth_state): Extension<AuthState>,
+    Extension(auth_state): Extension<UserIdentity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<Friend>>, ApiError> {
     let user_id = UserId::from(auth_state.user_id);
@@ -40,7 +41,7 @@ pub async fn get_friends(
 pub async fn delete_friend(
     Path(friend_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(auth_state): Extension<AuthState>,
+    Extension(auth_state): Extension<UserIdentity>,
 ) -> Result<Response<()>, ApiError> {
     let user_id = UserId::from(auth_state.user_id);
     let friend_id = UserId::from(friend_id);

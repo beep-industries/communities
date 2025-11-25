@@ -27,7 +27,13 @@ impl From<UserId> for Uuid {
 
 impl From<String> for UserId {
     fn from(s: String) -> Self {
-        UserId(Uuid::parse_str(&s).map_err(|e| CoreError::UnknownError { message: e.to_string() }).unwrap())
+        UserId(
+            Uuid::parse_str(&s)
+                .map_err(|e| CoreError::UnknownError {
+                    message: e.to_string(),
+                })
+                .unwrap(),
+        )
     }
 }
 

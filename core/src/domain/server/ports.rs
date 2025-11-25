@@ -67,29 +67,16 @@ impl MockServerRepository {
 }
 
 impl ServerRepository for MockServerRepository {
-    async fn find_by_id(
-        &self,
-        id: &ServerId,
-    ) -> Result<Option<Server>, CoreError> {
-        let servers = self.servers
-            .lock()
-            .unwrap();
+    async fn find_by_id(&self, id: &ServerId) -> Result<Option<Server>, CoreError> {
+        let servers = self.servers.lock().unwrap();
 
-        let server = servers
-            .iter()
-            .find(|s| &s.id == id)
-            .cloned();
+        let server = servers.iter().find(|s| &s.id == id).cloned();
 
         Ok(server)
     }
 
-    async fn insert(
-            &self,
-            input: InsertServerInput,
-        ) -> Result<Server, CoreError> {
-        let mut servers = self.servers
-            .lock()
-            .unwrap();
+    async fn insert(&self, input: InsertServerInput) -> Result<Server, CoreError> {
+        let mut servers = self.servers.lock().unwrap();
 
         let new_server = Server {
             id: ServerId::from(uuid::Uuid::new_v4()),

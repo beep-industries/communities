@@ -3,7 +3,9 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use communities_core::{domain::common::CoreError, infrastructure::friend::repositories::error::FriendshipError};
+use communities_core::{
+    domain::common::CoreError, infrastructure::friend::repositories::error::FriendshipError,
+};
 use serde_json::json;
 
 /// Unified error type for HTTP API responses
@@ -49,11 +51,21 @@ impl From<CoreError> for ApiError {
 impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
-            FriendshipError::FriendRequestNotFound { user1: _, user2: _ } => ApiError::NotFound(error.to_string()),
-            FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => ApiError::Forbidden(error.to_string()),
-            FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => ApiError::Forbidden(error.to_string()),
-            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => ApiError::Forbidden(error.to_string()),
-            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => ApiError::NotFound(error.to_string()),
+            FriendshipError::FriendRequestNotFound { user1: _, user2: _ } => {
+                ApiError::NotFound(error.to_string())
+            }
+            FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => {
+                ApiError::Forbidden(error.to_string())
+            }
+            FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
+                ApiError::Forbidden(error.to_string())
+            }
+            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => {
+                ApiError::Forbidden(error.to_string())
+            }
+            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => {
+                ApiError::NotFound(error.to_string())
+            }
             _ => ApiError::InternalServerError(error.to_string()),
         }
     }

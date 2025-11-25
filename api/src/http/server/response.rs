@@ -60,5 +60,5 @@ where
 pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub total: u64,
-    pub page: u32
+    pub page: u32,
 }

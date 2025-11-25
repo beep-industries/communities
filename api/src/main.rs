@@ -9,8 +9,8 @@ mod http;
 
 use crate::http::friend::routes::friend_routes;
 use crate::http::health::health_check;
-use crate::http::server::middleware::auth_middleware;
 use crate::http::server::AppState;
+use crate::http::server::middleware::auth_middleware;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

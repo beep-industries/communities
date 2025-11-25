@@ -2,12 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
 
-use crate::{domain::{
-    common::GetPaginated,
-    friend::entities::{
-        DeleteFriendInput, Friend, FriendRequest, UserId,
+use crate::{
+    domain::{
+        common::GetPaginated,
+        friend::entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
     },
-}, infrastructure::friend::repositories::error::FriendshipError};
+    infrastructure::friend::repositories::error::FriendshipError,
+};
 
 pub trait FriendshipRepository: Send + Sync {
     // === Friends ===
@@ -146,10 +147,8 @@ impl FriendshipRepository for MockFriendshipRepository {
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> Result<(Vec<Friend>, u64), FriendshipError> {
-        let friends = self.friends
-            .lock()
-            .unwrap();
-        
+        let friends = self.friends.lock().unwrap();
+
         let filtered_friends: Vec<Friend> = friends
             .iter()
             .filter(|friend| &friend.user_id_1 == user_id || &friend.user_id_2 == user_id)
@@ -172,9 +171,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         user_id_1: &UserId,
         user_id_2: &UserId,
     ) -> Result<Option<Friend>, FriendshipError> {
-        let friends = self.friends
-            .lock()
-            .unwrap();
+        let friends = self.friends.lock().unwrap();
 
         let filtered_friends: Vec<Friend> = friends
             .iter()
@@ -185,18 +182,13 @@ impl FriendshipRepository for MockFriendshipRepository {
         Ok(filtered_friends.into_iter().next())
     }
 
-    async fn remove_friend(
-        &self,
-        input: DeleteFriendInput,
-    ) -> Result<(), FriendshipError> {
-        let mut friends = self.friends
-            .lock()
-            .unwrap();
+    async fn remove_friend(&self, input: DeleteFriendInput) -> Result<(), FriendshipError> {
+        let mut friends = self.friends.lock().unwrap();
 
         let count_before = friends.len();
         friends.retain(|friend| {
-            !( (friend.user_id_1 == input.user_id_1 && friend.user_id_2 == input.user_id_2) ||
-               (friend.user_id_1 == input.user_id_2 && friend.user_id_2 == input.user_id_1) )
+            !((friend.user_id_1 == input.user_id_1 && friend.user_id_2 == input.user_id_2)
+                || (friend.user_id_1 == input.user_id_2 && friend.user_id_2 == input.user_id_1))
         });
 
         if friends.len() == count_before {
@@ -214,9 +206,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         pagination: &GetPaginated,
         user_id: &UserId,
     ) -> Result<(Vec<FriendRequest>, u64), FriendshipError> {
-        let requests = self.friend_requests
-            .lock()
-            .unwrap();
+        let requests = self.friend_requests.lock().unwrap();
 
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
@@ -240,13 +230,14 @@ impl FriendshipRepository for MockFriendshipRepository {
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<Option<FriendRequest>, FriendshipError> {
-        let requests = self.friend_requests
-            .lock()
-            .unwrap();
+        let requests = self.friend_requests.lock().unwrap();
 
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
-            .filter(|request| &request.user_id_requested == user_id_requested && &request.user_id_invited == user_id_invited)
+            .filter(|request| {
+                &request.user_id_requested == user_id_requested
+                    && &request.user_id_invited == user_id_invited
+            })
             .cloned()
             .collect();
 
@@ -258,14 +249,12 @@ impl FriendshipRepository for MockFriendshipRepository {
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<FriendRequest, FriendshipError> {
-        let mut requests = self.friend_requests
-            .lock()
-            .unwrap();
+        let mut requests = self.friend_requests.lock().unwrap();
 
         // Check if a pending friend request already exists
         if requests.iter().any(|request| {
-            &request.user_id_requested == user_id_requested &&
-            &request.user_id_invited == user_id_invited
+            &request.user_id_requested == user_id_requested
+                && &request.user_id_invited == user_id_invited
         }) {
             return Err(FriendshipError::FriendRequestAlreadyExists {
                 user1: user_id_requested.clone(),
@@ -289,14 +278,12 @@ impl FriendshipRepository for MockFriendshipRepository {
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<Friend, FriendshipError> {
-        let mut requests = self.friend_requests
-            .lock()
-            .unwrap();
+        let mut requests = self.friend_requests.lock().unwrap();
 
         if let Some(pos) = requests.iter().position(|request| {
-            &request.user_id_requested == user_id_requested &&
-            &request.user_id_invited == user_id_invited &&
-            request.status == 0
+            &request.user_id_requested == user_id_requested
+                && &request.user_id_invited == user_id_invited
+                && request.status == 0
         }) {
             let count_before = requests.len();
             requests.remove(pos);
@@ -314,13 +301,12 @@ impl FriendshipRepository for MockFriendshipRepository {
                 created_at: Utc::now(),
             };
 
-            let mut friends = self.friends
-                .lock()
-                .unwrap();
+            let mut friends = self.friends.lock().unwrap();
 
             if friends.iter().any(|friend| {
-                ( &friend.user_id_1 == user_id_requested && &friend.user_id_2 == user_id_invited ) ||
-                ( &friend.user_id_1 == user_id_invited && &friend.user_id_2 == user_id_requested )
+                (&friend.user_id_1 == user_id_requested && &friend.user_id_2 == user_id_invited)
+                    || (&friend.user_id_1 == user_id_invited
+                        && &friend.user_id_2 == user_id_requested)
             }) {
                 return Err(FriendshipError::FriendshipAlreadyExists {
                     user1: user_id_requested.clone(),
@@ -343,13 +329,11 @@ impl FriendshipRepository for MockFriendshipRepository {
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<FriendRequest, FriendshipError> {
-        let mut requests = self.friend_requests
-            .lock()
-            .unwrap();
+        let mut requests = self.friend_requests.lock().unwrap();
 
         let request = requests.iter_mut().find(|request| {
-            &request.user_id_requested == user_id_requested &&
-            &request.user_id_invited == user_id_invited
+            &request.user_id_requested == user_id_requested
+                && &request.user_id_invited == user_id_invited
         });
         if let Some(request) = request {
             request.status = 1;
@@ -367,14 +351,12 @@ impl FriendshipRepository for MockFriendshipRepository {
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<(), FriendshipError> {
-        let mut requests = self.friend_requests
-            .lock()
-            .unwrap();
+        let mut requests = self.friend_requests.lock().unwrap();
 
         let count_before = requests.len();
         requests.retain(|request| {
-            !( &request.user_id_requested == user_id_requested &&
-               &request.user_id_invited == user_id_invited )
+            !(&request.user_id_requested == user_id_requested
+                && &request.user_id_invited == user_id_invited)
         });
 
         if requests.len() == count_before {

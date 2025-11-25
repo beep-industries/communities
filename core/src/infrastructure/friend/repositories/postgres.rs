@@ -1,8 +1,15 @@
 use sqlx::{PgPool, query_as};
 
-use crate::{domain::{
-    common::GetPaginated, friend::{entities::{DeleteFriendInput, Friend, FriendRequest, UserId}, ports::FriendshipRepository}
-}, infrastructure::friend::repositories::error::FriendshipError};
+use crate::{
+    domain::{
+        common::GetPaginated,
+        friend::{
+            entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
+            ports::FriendshipRepository,
+        },
+    },
+    infrastructure::friend::repositories::error::FriendshipError,
+};
 
 #[derive(Clone)]
 pub struct PostgresFriendshipRepository {
@@ -173,7 +180,10 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| FriendshipError::FriendRequestAlreadyExists { user1: user_id_requested.clone(), user2: user_id_invited.clone() })
+        .map_err(|_| FriendshipError::FriendRequestAlreadyExists {
+            user1: user_id_requested.clone(),
+            user2: user_id_invited.clone(),
+        })
     }
 
     async fn accept_request(
@@ -181,7 +191,8 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<Friend, FriendshipError> {
-        let mut tx = self.pool
+        let mut tx = self
+            .pool
             .begin()
             .await
             .map_err(|_| FriendshipError::DatabaseError)?;

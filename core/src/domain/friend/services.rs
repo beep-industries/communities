@@ -1,12 +1,15 @@
-use crate::{domain::{
-    common::{GetPaginated, services::Service},
-    friend::{
-        entities::{DeleteFriendInput, Friend, FriendRequest, UserId}, 
-        ports::{FriendRequestService, FriendService, FriendshipRepository}
-    }, 
-    health::port::HealthRepository,
-    server::ports::ServerRepository,
-}, infrastructure::friend::repositories::error::FriendshipError};
+use crate::{
+    domain::{
+        common::{GetPaginated, services::Service},
+        friend::{
+            entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
+            ports::{FriendRequestService, FriendService, FriendshipRepository},
+        },
+        health::port::HealthRepository,
+        server::ports::ServerRepository,
+    },
+    infrastructure::friend::repositories::error::FriendshipError,
+};
 
 impl<S, F, H> FriendService for Service<S, F, H>
 where
@@ -62,7 +65,9 @@ where
             });
         }
 
-        self.friendship_repository.create_request(user_id_requested, user_id_invited).await
+        self.friendship_repository
+            .create_request(user_id_requested, user_id_invited)
+            .await
     }
 
     async fn accept_friend_request(
@@ -70,7 +75,9 @@ where
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<Friend, FriendshipError> {
-        self.friendship_repository.accept_request(user_id_requested, user_id_invited).await
+        self.friendship_repository
+            .accept_request(user_id_requested, user_id_invited)
+            .await
     }
 
     async fn decline_friend_request(
@@ -78,7 +85,9 @@ where
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<FriendRequest, FriendshipError> {
-        self.friendship_repository.decline_request(user_id_requested, user_id_invited).await
+        self.friendship_repository
+            .decline_request(user_id_requested, user_id_invited)
+            .await
     }
 
     async fn delete_friend_request(
@@ -86,6 +95,8 @@ where
         user_id_requested: &UserId,
         user_id_invited: &UserId,
     ) -> Result<(), FriendshipError> {
-        self.friendship_repository.remove_request(user_id_requested, user_id_invited).await
+        self.friendship_repository
+            .remove_request(user_id_requested, user_id_invited)
+            .await
     }
 }

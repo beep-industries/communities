@@ -48,6 +48,41 @@ The application runs two servers on separate ports:
 
 This dual-server architecture provides DDOS protection by isolating health checks from API traffic.
 
+## Configuration
+
+You can pass down some configuration using `--help`:
+
+```bash
+cargo run --bin api -- --help
+```
+
+You can now see all the possible way to configure the service:
+```bash
+Communities API Server
+
+Usage: api [OPTIONS] --database-password <database_password> --jwt-secret-key <jwt_secret_key>
+
+Options:
+      --database-host <HOST>
+          [env: DATABASE_HOST=] [default: localhost]
+      --database-port <PORT>
+          [env: DATABASE_PORT=] [default: 5432]
+      --database-user <USER>
+          [env: DATABASE_USER=] [default: postgres]
+      --database-password <database_password>
+          [env: DATABASE_PASSWORD=]
+      --database-name <database_name>
+          [env: DATABASE_NAME=] [default: communities]
+      --jwt-secret-key <jwt_secret_key>
+          [env: JWT_SECRET_KEY=a-string-secret-at-least-256-bits-long]
+      --server-api-port <api_port>
+          [env: API_PORT=3001] [default: 8080]
+      --server-health-port <HEALTH_PORT>
+          [env: HEALTH_PORT=9090] [default: 8081]
+  -h, --help
+          Print help
+```
+
 ## Persistence
 
 To persist data we use PostgreSQL. To handle uuid inside the database we use the `pg-crypto` extension.

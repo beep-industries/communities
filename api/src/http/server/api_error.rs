@@ -7,33 +7,34 @@ use communities_core::{
     domain::common::CoreError, infrastructure::friend::repositories::error::FriendshipError,
 };
 use serde::Serialize;
-use serde_json::json;
 use thiserror::Error;
-
-use communities_core::domain::common::CoreError;
 
 /// Unified error type for HTTP API responses
 #[derive(Debug, Error, Clone)]
 pub enum ApiError {
     #[error("Service is unavailable: {msg}")]
     ServiceUnavailable { msg: String },
-    #[error("Internal server error: {msg}")]
-    InternalServerError { msg: String },
+    #[error("Internal server error")]
+    InternalServerError,
     #[error("Startup error: {msg}")]
     StartupError { msg: String },
     #[error("Unauthorized access")]
     Unauthorized,
-    #[error("Forbidden: {0}")]
-    Forbidden(String),
+    #[error("Forbidden")]
+    Forbidden,
+    #[error("Not found: {msg}")]
+    NotFound { msg: String },
 }
 
 impl ApiError {
-    pub fn to_status_code(&self) -> StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             ApiError::StartupError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::ServiceUnavailable { .. } => StatusCode::SERVICE_UNAVAILABLE,
             ApiError::InternalServerError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
+            ApiError::Forbidden => StatusCode::FORBIDDEN,
+            ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
         }
     }
 }
@@ -42,7 +43,7 @@ impl Into<ErrorBody> for ApiError {
     fn into(self) -> ErrorBody {
         ErrorBody {
             message: self.to_string(),
-            status: self.to_status_code().as_u16(),
+            status: self.status_code().as_u16(),
         }
     }
 }
@@ -59,9 +60,7 @@ impl From<CoreError> for ApiError {
             CoreError::Unhealthy => ApiError::ServiceUnavailable {
                 msg: "Service is unhealthy".to_string(),
             },
-            _ => ApiError::InternalServerError {
-                msg: error.to_string(),
-            },
+            _ => ApiError::InternalServerError,
         }
     }
 }
@@ -69,22 +68,19 @@ impl From<CoreError> for ApiError {
 impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
-            FriendshipError::FriendRequestNotFound { user1: _, user2: _ } => {
-                ApiError::NotFound(error.to_string())
-            }
             FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => {
-                ApiError::Forbidden(error.to_string())
+                ApiError::Forbidden
             }
             FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
-                ApiError::Forbidden(error.to_string())
+                ApiError::Forbidden
             }
             FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => {
-                ApiError::Forbidden(error.to_string())
+                ApiError::Forbidden
             }
             FriendshipError::FriendshipNotFound { user1: _, user2: _ } => {
-                ApiError::NotFound(error.to_string())
+                ApiError::NotFound { msg: error.to_string() }
             }
-            _ => ApiError::InternalServerError(error.to_string()),
+            _ => ApiError::InternalServerError,
         }
     }
 }

@@ -1,11 +1,6 @@
 use axum::Router;
 use axum::middleware::from_extractor_with_state;
-use axum::middleware::from_fn;
-use communities_core::create_service;
-use core::create_service;
 use dotenv::dotenv;
-use dotenv::dotenv;
-use sqlx::postgres::PgPoolOptions;
 
 mod http;
 

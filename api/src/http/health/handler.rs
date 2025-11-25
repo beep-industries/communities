@@ -2,7 +2,7 @@ use axum::extract::State;
 use chrono::Utc;
 use serde::Serialize;
 
-use core::domain::health::port::HealthService;
+use communities_core::domain::health::port::HealthService;
 
 use crate::http::server::{ApiError, AppState, Response};
 

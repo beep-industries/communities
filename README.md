@@ -60,3 +60,11 @@ The sql migration files are located in the [`core/migrations`](core/migrations) 
 ```
 sqlx migrate add <migration-name> --source core/migrations
 ```
+
+## How to run tests
+
+Every repositories are mocked, it means we don't need a database instance to run the tests.
+
+```bash
+cargo test domain::test
+```

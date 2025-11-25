@@ -2,15 +2,15 @@ use std::env;
 
 use axum::middleware::from_fn;
 use axum::{Router, routing::get};
-use core::create_service;
+use communities_core::create_service;
 use sqlx::postgres::PgPoolOptions;
 
 mod http;
 
 use crate::http::friend::routes::friend_routes;
 use crate::http::health::health_check;
-use crate::http::server::middleware::auth_middleware;
 use crate::http::server::AppState;
+use crate::http::server::middleware::auth_middleware;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

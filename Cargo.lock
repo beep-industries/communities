@@ -30,7 +30,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "chrono",
- "core",
+ "communities_core",
  "jsonwebtoken",
  "serde",
  "serde_json",
@@ -213,6 +213,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "communities_core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "mockall",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -236,20 +250,6 @@ dependencies = [
  "percent-encoding",
  "time",
  "version_check",
-]
-
-[[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "mockall",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror",
- "tokio",
- "uuid",
 ]
 
 [[package]]

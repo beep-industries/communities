@@ -3,7 +3,9 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use core::domain::common::CoreError;
+use communities_core::{
+    domain::common::CoreError, infrastructure::friend::repositories::error::FriendshipError,
+};
 use serde_json::json;
 
 /// Unified error type for HTTP API responses
@@ -12,6 +14,8 @@ pub enum ApiError {
     ServiceUnavailable(String),
     InternalServerError(String),
     AuthenticationError(String),
+    NotFound(String),
+    Forbidden(String),
 }
 
 impl IntoResponse for ApiError {
@@ -20,6 +24,8 @@ impl IntoResponse for ApiError {
             ApiError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg),
             ApiError::InternalServerError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
             ApiError::AuthenticationError(msg) => (StatusCode::UNAUTHORIZED, msg),
+            ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
+            ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg),
         };
 
         let body = Json(json!({
@@ -36,6 +42,29 @@ impl From<CoreError> for ApiError {
         match error {
             CoreError::Unhealthy => {
                 ApiError::ServiceUnavailable("Service is unhealthy".to_string())
+            }
+            _ => ApiError::InternalServerError(error.to_string()),
+        }
+    }
+}
+
+impl From<FriendshipError> for ApiError {
+    fn from(error: FriendshipError) -> Self {
+        match error {
+            FriendshipError::FriendRequestNotFound { user1: _, user2: _ } => {
+                ApiError::NotFound(error.to_string())
+            }
+            FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => {
+                ApiError::Forbidden(error.to_string())
+            }
+            FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
+                ApiError::Forbidden(error.to_string())
+            }
+            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => {
+                ApiError::Forbidden(error.to_string())
+            }
+            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => {
+                ApiError::NotFound(error.to_string())
             }
             _ => ApiError::InternalServerError(error.to_string()),
         }

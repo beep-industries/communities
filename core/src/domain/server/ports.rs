@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::domain::{
     common::CoreError,
     server::entities::{InsertServerInput, Server, ServerId},
@@ -50,4 +52,45 @@ pub trait ServerService: Send + Sync {
         &self,
         server_id: &ServerId,
     ) -> impl Future<Output = Result<Server, CoreError>> + Send;
+}
+
+pub struct MockServerRepository {
+    servers: Arc<Mutex<Vec<Server>>>,
+}
+
+impl MockServerRepository {
+    pub fn new() -> Self {
+        Self {
+            servers: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+}
+
+impl ServerRepository for MockServerRepository {
+    async fn find_by_id(&self, id: &ServerId) -> Result<Option<Server>, CoreError> {
+        let servers = self.servers.lock().unwrap();
+
+        let server = servers.iter().find(|s| &s.id == id).cloned();
+
+        Ok(server)
+    }
+
+    async fn insert(&self, input: InsertServerInput) -> Result<Server, CoreError> {
+        let mut servers = self.servers.lock().unwrap();
+
+        let new_server = Server {
+            id: ServerId::from(uuid::Uuid::new_v4()),
+            name: input.name,
+            banner_url: input.banner_url,
+            picture_url: input.picture_url,
+            description: input.description,
+            owner_id: input.owner_id,
+            created_at: chrono::Utc::now(),
+            updated_at: None,
+        };
+
+        servers.push(new_server.clone());
+
+        Ok(new_server)
+    }
 }

@@ -74,12 +74,10 @@ impl From<FriendshipError> for ApiError {
             FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
                 ApiError::Forbidden
             }
-            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => {
-                ApiError::Forbidden
-            }
-            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => {
-                ApiError::NotFound { msg: error.to_string() }
-            }
+            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => ApiError::Forbidden,
+            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => ApiError::NotFound {
+                msg: error.to_string(),
+            },
             _ => ApiError::InternalServerError,
         }
     }

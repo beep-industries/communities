@@ -39,7 +39,7 @@ Launch the API server:
 ```bash
 cargo run --bin api
 ```
-
+/''
 The application runs two servers on separate ports:
 - **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
   - `GET /health` - Health check with database connectivity

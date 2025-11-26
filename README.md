@@ -67,10 +67,11 @@ Every repositories are mocked, it means we don't need a database instance to run
 ```bash
 cargo test domain::test
 ```
+
 ## API Endpoints Specification
 
 The API endpoints documentation is available in the [communities.openapi.yaml](communities.openapi.yaml) file (OpenAPI 3.1).
 
-### Export API specification
+### Using API specification
 
-From your API application, you can generate and export an OpenAPI 3.1 specification file to [communities.openapi.yaml](communities.openapi.yaml) for sharing, publishing, or versioning.
+From your API application, you can generate and export an OpenAPI 3.1 specification file to [communities.openapi.yaml](communities.openapi.yaml) for sharing, publishing, and versioning.

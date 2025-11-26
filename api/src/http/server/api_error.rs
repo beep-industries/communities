@@ -24,6 +24,8 @@ pub enum ApiError {
     Forbidden,
     #[error("Not found: {msg}")]
     NotFound { msg: String },
+    #[error("Conflict")]
+    Conflict { error_code: String },
 }
 
 impl ApiError {
@@ -35,15 +37,25 @@ impl ApiError {
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
             ApiError::Forbidden => StatusCode::FORBIDDEN,
             ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
+            ApiError::Conflict { .. } => StatusCode::CONFLICT,
         }
     }
 }
 
 impl Into<ErrorBody> for ApiError {
     fn into(self) -> ErrorBody {
-        ErrorBody {
-            message: self.to_string(),
-            status: self.status_code().as_u16(),
+        let status = self.status_code().as_u16();
+        match self {
+            ApiError::Conflict { error_code } => ErrorBody {
+                message: "Conflict".to_string(),
+                error_code: Some(error_code),
+                status: status,
+            },
+            _ => ErrorBody {
+                message: self.to_string(),
+                error_code: None,
+                status: status,
+            }
         }
     }
 }
@@ -69,12 +81,14 @@ impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
             FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => {
-                ApiError::Forbidden
+                ApiError::Conflict { error_code: "E_FRIEND_REQUEST_ALREADY_EXISTS".to_string() }
             }
             FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
                 ApiError::Forbidden
             }
-            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => ApiError::Forbidden,
+            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => {
+                ApiError::Conflict { error_code: "E_FRIENDSHIP_ALREADY_EXISTS".to_string() }
+            },
             FriendshipError::FriendshipNotFound { user1: _, user2: _ } => ApiError::NotFound {
                 msg: error.to_string(),
             },
@@ -85,5 +99,6 @@ impl From<FriendshipError> for ApiError {
 #[derive(Debug, Serialize)]
 pub struct ErrorBody {
     pub message: String,
+    pub error_code: Option<String>,
     pub status: u16,
 }

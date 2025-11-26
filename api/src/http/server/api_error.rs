@@ -50,7 +50,7 @@ impl Into<ErrorBody> for ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        Json::<ErrorBody>(self.into()).into_response()
+        (self.status_code(), Json::<ErrorBody>(self.into())).into_response()
     }
 }
 

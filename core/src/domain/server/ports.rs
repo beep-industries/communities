@@ -14,6 +14,7 @@ pub trait ServerRepository: Send + Sync {
         &self,
         id: &ServerId,
     ) -> impl Future<Output = Result<Option<Server>, CoreError>> + Send;
+    fn delete(&self, id: &ServerId) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
 /// A service for managing server operations in the application.
@@ -92,5 +93,18 @@ impl ServerRepository for MockServerRepository {
         servers.push(new_server.clone());
 
         Ok(new_server)
+    }
+
+    async fn delete(&self, id: &ServerId) -> Result<(), CoreError> {
+        let mut servers = self.servers.lock().unwrap();
+
+        let index = servers
+            .iter()
+            .position(|s| &s.id == id)
+            .ok_or_else(|| CoreError::ServerNotFound { id: id.clone() })?;
+
+        servers.remove(index);
+
+        Ok(())
     }
 }

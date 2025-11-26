@@ -1,12 +1,15 @@
 use sqlx::{PgPool, query_as};
 
-use crate::{domain::{
-    common::CoreError,
-    server::{
-        entities::{InsertServerInput, Server, ServerId},
-        ports::ServerRepository,
+use crate::{
+    domain::{
+        common::CoreError,
+        server::{
+            entities::{DeleteServerEvent, InsertServerInput, Server, ServerId},
+            ports::ServerRepository,
+        },
     },
-}, write_outbox_event};
+    write_outbox_event,
+};
 
 #[derive(Clone)]
 pub struct PostgresServerRepository {
@@ -62,13 +65,40 @@ impl ServerRepository for PostgresServerRepository {
         .fetch_one(&mut *tx)
         .await
         .map_err(|_| CoreError::FailedToInsertServer { name: input.name.clone() })?;
-        
+
         write_outbox_event(&mut *tx, &input).await?;
-        
+
         tx.commit()
             .await
             .map_err(|_| CoreError::FailedToInsertServer { name: input.name })?;
 
         Ok(server)
+    }
+
+    async fn delete(&self, id: &ServerId) -> Result<(), CoreError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
+
+        let result = sqlx::query(r#"DELETE FROM servers WHERE id = $1"#)
+            .bind(id.0)
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
+
+        if result.rows_affected() == 0 {
+            return Err(CoreError::ServerNotFound { id: id.clone() });
+        }
+
+        let event = DeleteServerEvent { id: id.clone() };
+        write_outbox_event(&mut *tx, &event).await?;
+
+        tx.commit()
+            .await
+            .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
+
+        Ok(())
     }
 }

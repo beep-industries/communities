@@ -56,8 +56,12 @@ pub struct InsertServerInput {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeleteServerEvent {
+    pub id: ServerId,
+}
 
-// TODO: Define the real values for 
+// TODO: Define the real values for
 impl OutboxEvent for InsertServerInput {
     fn exchange_name(&self) -> String {
         "beep.community".to_string()
@@ -65,5 +69,15 @@ impl OutboxEvent for InsertServerInput {
 
     fn routing_key(&self) -> String {
         "server.created".to_string()
+    }
+}
+
+impl OutboxEvent for DeleteServerEvent {
+    fn exchange_name(&self) -> String {
+        "beep.community".to_string()
+    }
+
+    fn routing_key(&self) -> String {
+        "server.deleted".to_string()
     }
 }

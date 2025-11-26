@@ -45,14 +45,15 @@ impl ApiError {
 impl Into<ErrorBody> for ApiError {
     fn into(self) -> ErrorBody {
         let status = self.status_code().as_u16();
+        let message = self.to_string();
         match self {
             ApiError::Conflict { error_code } => ErrorBody {
-                message: "Conflict".to_string(),
+                message: message,
                 error_code: Some(error_code),
                 status: status,
             },
             _ => ErrorBody {
-                message: self.to_string(),
+                message: message,
                 error_code: None,
                 status: status,
             }

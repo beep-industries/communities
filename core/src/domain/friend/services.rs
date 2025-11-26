@@ -59,10 +59,7 @@ where
             .await?;
 
         if existing_request.is_some() {
-            return Err(FriendshipError::FriendshipAlreadyExists {
-                user1: user_id_requested.clone(),
-                user2: user_id_invited.clone(),
-            });
+            return Err(FriendshipError::FriendshipAlreadyExists);
         }
 
         self.friendship_repository

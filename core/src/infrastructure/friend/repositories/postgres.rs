@@ -95,10 +95,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .map_err(|_| FriendshipError::DatabaseError)?;
 
         if result.rows_affected() == 0 {
-            return Err(FriendshipError::FriendshipNotFound {
-                user1: input.user_id_1,
-                user2: input.user_id_2,
-            });
+            return Err(FriendshipError::FriendshipNotFound);
         }
 
         Ok(())
@@ -180,10 +177,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| FriendshipError::FriendRequestAlreadyExists {
-            user1: user_id_requested.clone(),
-            user2: user_id_invited.clone(),
-        })
+        .map_err(|_| FriendshipError::FriendRequestAlreadyExists)
     }
 
     async fn accept_request(
@@ -211,10 +205,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
 
         if delete_result.rows_affected() == 0 {
             // if no rows were affected, the friend request did not exist and the operation fails
-            return Err(FriendshipError::FriendRequestNotFound {
-                user1: user_id_invited.clone(),
-                user2: user_id_requested.clone(),
-            });
+            return Err(FriendshipError::FriendRequestNotFound);
         }
 
         let friend = query_as!(
@@ -229,10 +220,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         )
         .fetch_one(&mut *tx)
         .await
-        .map_err(|_| FriendshipError::FriendshipAlreadyExists {
-            user1: user_id_invited.clone(),
-            user2: user_id_requested.clone(),
-        })?;
+        .map_err(|_| FriendshipError::FriendshipAlreadyExists)?;
 
         tx.commit()
             .await
@@ -260,10 +248,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| FriendshipError::FriendRequestNotFound {
-            user1: user_id_invited.clone(),
-            user2: user_id_requested.clone(),
-        })
+        .map_err(|_| FriendshipError::FriendRequestNotFound)
     }
 
     async fn remove_request(
@@ -284,10 +269,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         .map_err(|_| FriendshipError::DatabaseError)?;
 
         if result.rows_affected() == 0 {
-            return Err(FriendshipError::FriendRequestNotFound {
-                user1: user_id_invited.clone(),
-                user2: user_id_requested.clone(),
-            });
+            return Err(FriendshipError::FriendRequestNotFound);
         }
 
         Ok(())

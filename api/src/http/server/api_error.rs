@@ -22,8 +22,8 @@ pub enum ApiError {
     Unauthorized,
     #[error("Forbidden")]
     Forbidden,
-    #[error("Not found: {msg}")]
-    NotFound { msg: String },
+    #[error("Not found")]
+    NotFound,
     #[error("Conflict")]
     Conflict { error_code: String },
 }
@@ -80,18 +80,16 @@ impl From<CoreError> for ApiError {
 impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
-            FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => {
+            FriendshipError::FriendRequestAlreadyExists => {
                 ApiError::Conflict { error_code: "E_FRIEND_REQUEST_ALREADY_EXISTS".to_string() }
             }
             FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
                 ApiError::Forbidden
             }
-            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => {
+            FriendshipError::FriendshipAlreadyExists => {
                 ApiError::Conflict { error_code: "E_FRIENDSHIP_ALREADY_EXISTS".to_string() }
             },
-            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => ApiError::NotFound {
-                msg: error.to_string(),
-            },
+            FriendshipError::FriendshipNotFound => ApiError::NotFound,
             _ => ApiError::InternalServerError,
         }
     }

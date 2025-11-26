@@ -1,6 +1,6 @@
 use axum::middleware::from_extractor_with_state;
 
-use crate::http::friend::routes::friend_routes;
+use crate::friend_routes;
 use crate::http::server::middleware::auth::AuthMiddleware;
 use crate::{
     Config, create_app_state,

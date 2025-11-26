@@ -2,8 +2,6 @@ use api::app::App;
 use api::http::server::ApiError;
 use dotenv::dotenv;
 
-mod http;
-
 use api::config::Config;
 use clap::Parser;
 

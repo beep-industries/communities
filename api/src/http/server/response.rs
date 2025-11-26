@@ -33,11 +33,11 @@ where
         }
     }
 
-    /// Create a 204 NO CONTENT response
+    /// Create a 202 ACCEPTED response
     pub fn deleted(data: T) -> Self {
         Self {
             data,
-            status_code: StatusCode::NO_CONTENT,
+            status_code: StatusCode::ACCEPTED,
         }
     }
 

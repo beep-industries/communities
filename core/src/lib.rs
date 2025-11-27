@@ -10,4 +10,4 @@ pub use infrastructure::health::repositories::postgres::PostgresHealthRepository
 pub use infrastructure::server::repositories::postgres::PostgresServerRepository;
 
 // Re-export outbox pattern primitives
-pub use infrastructure::outbox::{OutboxEvent, write_outbox_event};
+pub use infrastructure::outbox::write_outbox_event;

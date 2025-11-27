@@ -8,17 +8,27 @@ use crate::{
             ports::ServerRepository,
         },
     },
-    write_outbox_event,
+    infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
 #[derive(Clone)]
 pub struct PostgresServerRepository {
     pub(crate) pool: PgPool,
+    delete_server_router: MessageRoutingInfo,
+    create_server_router: MessageRoutingInfo,
 }
 
 impl PostgresServerRepository {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub fn new(
+        pool: PgPool,
+        delete_server_router: MessageRoutingInfo,
+        create_server_router: MessageRoutingInfo,
+    ) -> Self {
+        Self {
+            pool,
+            delete_server_router,
+            create_server_router,
+        }
     }
 }
 
@@ -49,6 +59,7 @@ impl ServerRepository for PostgresServerRepository {
                 name: input.name.clone(),
             })?;
 
+        // Insert the server into the database
         let server = query_as!(
             Server,
             r#"
@@ -66,7 +77,10 @@ impl ServerRepository for PostgresServerRepository {
         .await
         .map_err(|_| CoreError::FailedToInsertServer { name: input.name.clone() })?;
 
-        write_outbox_event(&mut *tx, &input).await?;
+        // Write the create event to the outbox table for eventual processing
+        let create_server_event =
+            OutboxEventRecord::new(self.create_server_router.clone(), input.clone());
+        create_server_event.write(&mut *tx).await?;
 
         tx.commit()
             .await
@@ -82,6 +96,7 @@ impl ServerRepository for PostgresServerRepository {
             .await
             .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
 
+        // Delete the server inside the database
         let result = sqlx::query(r#"DELETE FROM servers WHERE id = $1"#)
             .bind(id.0)
             .execute(&mut *tx)
@@ -92,8 +107,11 @@ impl ServerRepository for PostgresServerRepository {
             return Err(CoreError::ServerNotFound { id: id.clone() });
         }
 
+        // Write the delete event to the outbox table
+        // for eventual processing
         let event = DeleteServerEvent { id: id.clone() };
-        write_outbox_event(&mut *tx, &event).await?;
+        let delete_server_event = OutboxEventRecord::new(self.delete_server_router.clone(), event);
+        delete_server_event.write(&mut *tx).await?;
 
         tx.commit()
             .await

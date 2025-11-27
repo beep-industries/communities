@@ -3,7 +3,7 @@ pub mod domain;
 pub mod infrastructure;
 
 // Re-export commonly used types for convenience
-pub use application::{CommunitiesService, create_service};
+pub use application::{CommunitiesService, create_repositories};
 pub use domain::common::services::Service;
 pub use infrastructure::friend::repositories::postgres::PostgresFriendshipRepository;
 pub use infrastructure::health::repositories::postgres::PostgresHealthRepository;

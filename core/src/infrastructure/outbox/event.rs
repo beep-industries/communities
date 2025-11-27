@@ -25,9 +25,14 @@ impl<TPayload: Serialize + Clone, TRouter: MessageRouter> OutboxEventRecord<TPay
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 pub struct MessageRoutingInfo(ExchangeName, RoutingKey);
 
+impl MessageRoutingInfo {
+    pub fn new(exchange_name: ExchangeName, routing_key: RoutingKey) -> Self {
+        Self(exchange_name, routing_key)
+    }
+}
 pub trait MessageRouter {
     fn exchange_name(&self) -> String;
     fn routing_key(&self) -> String;

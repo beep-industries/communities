@@ -13,7 +13,7 @@ use crate::Config;
 
 pub async fn create_app_state(config: Config) -> Result<AppState, ApiError> {
     // Create service with all dependencies
-    let service = create_service(config.database.into()).await?;
+    let service = create_service(config.database.into(), config.routing).await?;
 
     // Create application state (shared between both servers)
     let app_state = AppState::new(service);

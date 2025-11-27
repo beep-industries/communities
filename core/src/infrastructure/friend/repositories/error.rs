@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-use crate::domain::friend::entities::UserId;
-
 #[derive(Error, Debug, Clone)]
 pub enum FriendshipError {
     #[error("A database error occurred")]
@@ -13,8 +11,8 @@ pub enum FriendshipError {
     #[error("Friend request already exists")]
     FriendRequestAlreadyExists,
 
-    #[error("No friend request found between {user1} and {user2}")]
-    FailedToRemoveFriendRequest { user1: UserId, user2: UserId },
+    #[error("No friend request found")]
+    FailedToRemoveFriendRequest,
 
     #[error("Friendship already exists")]
     FriendshipAlreadyExists,

@@ -6,7 +6,7 @@ use sqlx::{
 use crate::{
     domain::common::{CoreError, services::Service},
     infrastructure::{
-        friend::repositories::postgres::PostgresFriendshipRepository,
+        MessageRoutingInfo, friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
         server::repositories::postgres::PostgresServerRepository,
     },
@@ -26,13 +26,18 @@ pub struct CommunitiesRepositories {
 
 pub async fn create_repositories(
     pg_connection_options: PgConnectOptions,
+    message_routing_infos: MessageRoutingInfos,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect_with(pg_connection_options)
         .await
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
-    let server_repository = PostgresServerRepository::new(pool.clone());
+    let server_repository = PostgresServerRepository::new(
+        pool.clone(),
+        message_routing_infos.create_server,
+        message_routing_infos.delete_server,
+    );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
     Ok(CommunitiesRepositories {
@@ -63,4 +68,10 @@ impl CommunitiesService {
     pub async fn shutdown_pool(&self) {
         self.server_repository.pool.close().await;
     }
+}
+
+#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
+pub struct MessageRoutingInfos {
+    pub create_server: MessageRoutingInfo,
+    pub delete_server: MessageRoutingInfo,
 }

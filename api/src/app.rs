@@ -1,9 +1,11 @@
 use axum::middleware::from_extractor_with_state;
+use communities_core::create_repositories;
+use sqlx::postgres::PgConnectOptions;
 
 use crate::friend_routes;
 use crate::http::server::middleware::auth::AuthMiddleware;
 use crate::{
-    Config, create_app_state,
+    Config,
     http::{
         health::routes::health_routes,
         server::{ApiError, AppState, middleware::auth::entities::AuthValidator},
@@ -20,7 +22,18 @@ pub struct App {
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
-        let state = create_app_state(config.clone()).await?;
+        let state: AppState = create_repositories(
+            PgConnectOptions::new()
+                .host(&config.database.host)
+                .port(config.database.port)
+                .username(&config.database.user)
+                .password(&config.database.password)
+                .database(&config.database.db_name),
+        )
+        .await
+        .inspect_err(|e| println!("{:?}", e))?
+        .into();
+
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
         let app_router = axum::Router::<AppState>::new()
             .merge(friend_routes())
@@ -67,5 +80,21 @@ impl App {
         )
         .expect("Failed to start servers");
         Ok(())
+    }
+}
+
+pub trait AppBuilder {
+    fn build(config: Config) -> impl Future<Output = Result<App, ApiError>>;
+    fn with_state(self, state: AppState) -> impl Future<Output = Result<App, ApiError>>;
+}
+
+impl AppBuilder for App {
+    async fn build(config: Config) -> Result<App, ApiError> {
+        App::new(config).await
+    }
+
+    async fn with_state(mut self, state: AppState) -> Result<App, ApiError> {
+        self.state = state;
+        Ok(self)
     }
 }

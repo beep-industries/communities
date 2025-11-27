@@ -1,7 +1,7 @@
 use clap::Parser;
 use sqlx::postgres::PgConnectOptions;
 
-#[derive(Clone, Parser, Debug)]
+#[derive(Clone, Parser, Debug, Default)]
 #[command(name = "communities-api")]
 #[command(about = "Communities API Server", long_about = None)]
 pub struct Config {
@@ -60,7 +60,7 @@ impl Into<PgConnectOptions> for DatabaseConfig {
             .database(&self.db_name)
     }
 }
-#[derive(Clone, Parser, Debug)]
+#[derive(Clone, Parser, Debug, Default)]
 pub struct JwtConfig {
     #[arg(
         long = "jwt-secret-key",
@@ -70,7 +70,7 @@ pub struct JwtConfig {
     pub secret_key: String,
 }
 
-#[derive(Clone, Parser, Debug)]
+#[derive(Clone, Parser, Debug, Default)]
 pub struct ServerConfig {
     #[arg(
         long = "server-api-port",

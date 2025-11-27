@@ -29,6 +29,7 @@ impl App {
                 .username(&config.database.user)
                 .password(&config.database.password)
                 .database(&config.database.db_name),
+            config.clone().routing,
         )
         .await
         .inspect_err(|e| println!("{:?}", e))?

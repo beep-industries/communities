@@ -1,5 +1,7 @@
 use clap::Parser;
+use communities_core::application::MessageRoutingInfos;
 use sqlx::postgres::PgConnectOptions;
+use std::path::PathBuf;
 
 #[derive(Clone, Parser, Debug, Default)]
 #[command(name = "communities-api")]
@@ -13,6 +15,25 @@ pub struct Config {
 
     #[command(flatten)]
     pub server: ServerConfig,
+
+    #[arg(
+        long = "routing-config",
+        env = "ROUTING_CONFIG_PATH",
+        default_value = "config/routing.yaml"
+    )]
+    pub routing_config_path: PathBuf,
+
+    #[arg(skip)]
+    pub routing: MessageRoutingInfos,
+}
+
+impl Config {
+    /// Load routing configuration from YAML file
+    pub fn load_routing(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let yaml_content = std::fs::read_to_string(&self.routing_config_path)?;
+        self.routing = serde_yaml::from_str(&yaml_content)?;
+        Ok(())
+    }
 }
 
 #[derive(Clone, Parser, Debug, Default)]

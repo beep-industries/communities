@@ -56,7 +56,7 @@ impl Into<ErrorBody> for ApiError {
                 message: message,
                 error_code: None,
                 status: status,
-            }
+            },
         }
     }
 }
@@ -81,14 +81,14 @@ impl From<CoreError> for ApiError {
 impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
-            FriendshipError::FriendRequestAlreadyExists => {
-                ApiError::Conflict { error_code: error.error_code().to_string() }
-            }
+            FriendshipError::FriendRequestAlreadyExists => ApiError::Conflict {
+                error_code: error.error_code().to_string(),
+            },
             FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
                 ApiError::Forbidden
             }
-            FriendshipError::FriendshipAlreadyExists => {
-                ApiError::Conflict { error_code: error.error_code().to_string() }
+            FriendshipError::FriendshipAlreadyExists => ApiError::Conflict {
+                error_code: error.error_code().to_string(),
             },
             FriendshipError::FriendshipNotFound => ApiError::NotFound,
             _ => ApiError::InternalServerError,

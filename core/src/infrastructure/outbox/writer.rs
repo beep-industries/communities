@@ -1,5 +1,9 @@
-use crate::{domain::common::CoreError, infrastructure::outbox::OutboxEvent};
+use crate::{
+    domain::common::CoreError,
+    infrastructure::outbox::event::{MessageRouter, OutboxEventRecord},
+};
 use chrono::Utc;
+use serde::Serialize;
 use serde_json;
 use sqlx::PgExecutor;
 use uuid::Uuid;
@@ -49,14 +53,17 @@ use uuid::Uuid;
 ///     Ok(())
 /// }
 /// ```
-pub async fn write_outbox_event<'e, E, T>(executor: E, event: &T) -> Result<Uuid, CoreError>
+pub async fn write_outbox_event<'e, E, TPayload, TRouter>(
+    executor: E,
+    event: &OutboxEventRecord<TPayload, TRouter>,
+) -> Result<Uuid, CoreError>
 where
     E: PgExecutor<'e>,
-    T: OutboxEvent,
+    TPayload: Serialize,
+    TRouter: MessageRouter,
 {
-    let event_id = event.event_id();
-    let exchange_name = event.exchange_name();
-    let routing_key = event.routing_key();
+    let exchange_name = event.router.exchange_name();
+    let routing_key = event.router.routing_key();
     let created_at = Utc::now();
 
     // Serialize event to JSON
@@ -71,7 +78,6 @@ where
     "#;
 
     sqlx::query(query)
-        .bind(event_id)
         .bind(exchange_name)
         .bind(routing_key)
         .bind(payload)
@@ -82,5 +88,5 @@ where
         .await
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
-    Ok(event_id)
+    Ok(event.id)
 }

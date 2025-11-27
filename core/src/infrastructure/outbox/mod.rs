@@ -8,5 +8,5 @@
 mod event;
 mod writer;
 
-pub use event::OutboxEvent;
+pub use event::{MessageRouter, MessageRoutingInfo, OutboxEventRecord};
 pub use writer::write_outbox_event;

@@ -2,8 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::OutboxEvent;
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ServerId(pub Uuid);
 
@@ -47,7 +45,7 @@ pub struct Server {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InsertServerInput {
     pub name: String,
     pub owner_id: OwnerId,
@@ -56,28 +54,7 @@ pub struct InsertServerInput {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeleteServerEvent {
     pub id: ServerId,
-}
-
-// TODO: Define the real values for
-impl OutboxEvent for InsertServerInput {
-    fn exchange_name(&self) -> String {
-        "beep.community".to_string()
-    }
-
-    fn routing_key(&self) -> String {
-        "server.created".to_string()
-    }
-}
-
-impl OutboxEvent for DeleteServerEvent {
-    fn exchange_name(&self) -> String {
-        "beep.community".to_string()
-    }
-
-    fn routing_key(&self) -> String {
-        "server.deleted".to_string()
-    }
 }

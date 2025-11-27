@@ -4,3 +4,4 @@ pub mod outbox;
 pub mod server;
 
 pub use outbox::write_outbox_event;
+pub use outbox::MessageRoutingInfo;

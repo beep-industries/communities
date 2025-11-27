@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use serde_json::Error as SerdeError;
 use thiserror::Error;
 
 use crate::domain::server::entities::ServerId;

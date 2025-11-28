@@ -208,3 +208,74 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
 
     Ok(())
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::server::entities::{InsertServerInput, OwnerId};
+    use crate::infrastructure::outbox::MessageRouter;
+    use sqlx::Row;
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let delete_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
+
+    let repository =
+        PostgresServerRepository::new(pool.clone(), delete_router.clone(), create_router);
+
+    // Arrange: insert a server first
+    let owner_id = OwnerId(Uuid::new_v4());
+    let input = InsertServerInput {
+        name: "to delete".to_string(),
+        owner_id: owner_id.clone(),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+    };
+    let created = repository.insert(input).await?;
+
+    // Act: delete it
+    repository.delete(&created.id).await?;
+
+    // Assert: it's gone
+    let fetched = repository.find_by_id(&created.id).await?;
+    assert!(fetched.is_none());
+
+    // Assert: an outbox message for delete was written
+    let row = sqlx::query(
+        r#"
+        SELECT exchange_name, routing_key, payload
+        FROM outbox_messages
+        WHERE routing_key = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(delete_router.routing_key())
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+    let exchange_name: String = row
+        .try_get("exchange_name")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    let routing_key: String = row
+        .try_get("routing_key")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    assert_eq!(exchange_name, delete_router.exchange_name());
+    assert_eq!(routing_key, delete_router.routing_key());
+
+    let payload: serde_json::Value = row
+        .try_get("payload")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+    // Payload should be { "id": "<uuid>" }
+    let id_str = created.id.0.to_string();
+    assert_eq!(
+        payload.get("id").and_then(|v| v.as_str()),
+        Some(id_str.as_str())
+    );
+
+    Ok(())
+}

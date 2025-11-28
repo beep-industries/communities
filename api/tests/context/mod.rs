@@ -42,8 +42,6 @@ impl AsyncTestContext for TestContext {
             .await
             .expect("Failed to create repositories");
 
-
-
         let app = App::build(config)
             .await
             .inspect_err(|e| eprintln!("Error building app: {}", e))
@@ -62,6 +60,6 @@ impl AsyncTestContext for TestContext {
     }
 
     async fn teardown(self) {
-        // Teardown code after each test
+        self.app.shutdown().await;
     }
 }

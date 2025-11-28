@@ -10,7 +10,7 @@ use crate::domain::{
 
 #[derive(Clone)]
 pub struct PostgresServerRepository {
-    pool: PgPool,
+    pub(crate) pool: PgPool,
 }
 
 impl PostgresServerRepository {

@@ -27,28 +27,23 @@ use uuid::Uuid;
 ///
 /// ```rust,no_run
 /// use sqlx::PgPool;
-/// use communities_core::infrastructure::outbox::{write_event, OutboxEvent};
+/// use communities_core::infrastructure::outbox::{write_outbox_event, OutboxEventRecord, MessageRoutingInfo};
 /// use serde::Serialize;
 ///
-/// #[derive(Serialize)]
-/// struct MyEvent {
-///     data: String,
-/// }
+/// #[derive(Serialize, Clone)]
+/// struct MyEvent { data: String }
 ///
-/// impl OutboxEvent for MyEvent {
-///     fn exchange_name(&self) -> String { "my.exchange".to_string() }
-///     fn routing_key(&self) -> String { "my.key".to_string() }
-/// }
-///
-/// async fn example(pool: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let pool = PgPool::connect("postgres://postgres:password@localhost:5432/communities").await?;
 ///     let mut tx = pool.begin().await?;
-///     
-///     // Your business logic here...
-///     
-///     // Write event to outbox
-///     let event = MyEvent { data: "test".to_string() };
-///     let event_id = write_event(&mut *tx, &event).await?;
-///     
+///
+///     // Define routing and event payload
+///     let router = MessageRoutingInfo::new("my.exchange".to_string(), "my.key".to_string());
+///     let event = OutboxEventRecord::new(router, MyEvent { data: "test".to_string() });
+///
+///     // Write event to outbox within the transaction
+///     let _event_id = write_outbox_event(&mut *tx, &event).await?;
 ///     tx.commit().await?;
 ///     Ok(())
 /// }
@@ -78,6 +73,7 @@ where
     "#;
 
     sqlx::query(query)
+        .bind(event.id)
         .bind(exchange_name)
         .bind(routing_key)
         .bind(payload)

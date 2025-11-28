@@ -120,3 +120,91 @@ impl ServerRepository for PostgresServerRepository {
         Ok(())
     }
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::server::entities::{InsertServerInput, OwnerId};
+    use crate::infrastructure::outbox::MessageRouter;
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router.clone(),
+    );
+
+    let owner_id = OwnerId(Uuid::new_v4());
+    let input = InsertServerInput {
+        name: "my test server".to_string(),
+        owner_id: owner_id.clone(),
+        picture_url: Some("https://example.com/pic.png".to_string()),
+        banner_url: Some("https://example.com/banner.png".to_string()),
+        description: Some("a description".to_string()),
+    };
+
+    // Act: insert server
+    let created = repository.insert(input.clone()).await?;
+
+    // Assert: returned fields
+    assert_eq!(created.name, input.name);
+    assert_eq!(created.owner_id, owner_id);
+    assert_eq!(created.picture_url, input.picture_url);
+    assert_eq!(created.banner_url, input.banner_url);
+    assert_eq!(created.description, input.description);
+    // id should be set and created_at present
+    assert!(created.updated_at.is_none());
+
+    // Assert: it can be fetched back
+    let fetched = repository.find_by_id(&created.id).await?;
+    assert!(fetched.is_some());
+    let fetched = fetched.unwrap();
+    assert_eq!(fetched.id, created.id);
+    assert_eq!(fetched.name, created.name);
+
+    // Assert: an outbox message was written with expected routing and payload
+    // Note: payload is the serialized InsertServerInput
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT exchange_name, routing_key, payload
+        FROM outbox_messages
+        WHERE exchange_name = $1 AND routing_key = $2
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(create_router.exchange_name())
+    .bind(create_router.routing_key())
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+    let exchange_name: String = row
+        .try_get("exchange_name")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    let routing_key: String = row
+        .try_get("routing_key")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    assert_eq!(exchange_name, create_router.exchange_name());
+    assert_eq!(routing_key, create_router.routing_key());
+
+    // Validate the payload JSON contains the server name and owner_id
+    let payload: serde_json::Value = row
+        .try_get("payload")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    assert_eq!(
+        payload.get("name").and_then(|v| v.as_str()),
+        Some(created.name.as_str())
+    );
+    // OwnerId is a newtype around Uuid and serializes to the inner value
+    let owner_str = owner_id.0.to_string();
+    assert_eq!(
+        payload.get("owner_id").and_then(|v| v.as_str()),
+        Some(owner_str.as_str())
+    );
+
+    Ok(())
+}

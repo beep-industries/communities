@@ -39,7 +39,6 @@ Launch the API server:
 ```bash
 cargo run --bin api
 ```
-/''
 The application runs two servers on separate ports:
 - **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
   - `GET /health` - Health check with database connectivity
@@ -90,16 +89,57 @@ In dev mode it should be enabled automatically due to the init script you can fi
 
 The sql migration files are located in the [`core/migrations`](core/migrations) folder.
 
+## Apply Database Migrations
+
+Before running the API in development (or when setting up a fresh DB), apply the migrations:
+
+```zsh
+# Start Postgres (if not already running)
+docker compose up -d postgres
+
+# Apply all pending migrations
+sqlx migrate run --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
+
+# (Optional) Show migration status
+sqlx migrate info --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
+```
+
 ## How to create a SQLx migration
 
 ```
 sqlx migrate add <migration-name> --source core/migrations
 ```
 
-## How to run tests
+## Running tests
 
-Every repositories are mocked, it means we don't need a database instance to run the tests.
+There are two kinds of tests in this repo:
 
-```bash
-cargo test domain::test
+- Infrastructure tests that hit a real Postgres database (via `sqlx::test`).
+- Domain tests that use mocked repositories (no database required).
+
+Recommended workflow for all tests (infrastructure + domain):
+
+```zsh
+# 1) Start Postgres from docker-compose
+docker compose up -d postgres
+
+# 2) Point SQLx to your database server (the tests will create/drop their own DBs)
+export DATABASE_URL="postgres://postgres:password@localhost:5432/communities"
+
+# 3) Run tests for the core crate (includes infrastructure + domain tests)
+cargo test -p communities_core -- --nocapture
+
+# Or run the entire workspace
+cargo test --workspace -- --nocapture
 ```
+
+Run only domain tests (no DB needed):
+
+```zsh
+cargo test domain::test -- -q
+```
+
+Notes:
+- `#[sqlx::test(migrations = "./migrations")]` automatically applies migrations to an isolated test database.
+- Only a reachable Postgres server and `DATABASE_URL` env var are required; you do not need to run migrations manually for tests.
+ - If you run the API or any non-`sqlx::test` integration tests that expect existing tables, apply migrations first (see "Apply Database Migrations" below).

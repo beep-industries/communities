@@ -22,8 +22,10 @@ pub enum ApiError {
     Unauthorized,
     #[error("Forbidden")]
     Forbidden,
-    #[error("Not found: {msg}")]
-    NotFound { msg: String },
+    #[error("Not found")]
+    NotFound,
+    #[error("Conflict")]
+    Conflict { error_code: String },
 }
 
 impl ApiError {
@@ -35,15 +37,26 @@ impl ApiError {
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
             ApiError::Forbidden => StatusCode::FORBIDDEN,
             ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
+            ApiError::Conflict { .. } => StatusCode::CONFLICT,
         }
     }
 }
 
 impl Into<ErrorBody> for ApiError {
     fn into(self) -> ErrorBody {
-        ErrorBody {
-            message: self.to_string(),
-            status: self.status_code().as_u16(),
+        let status = self.status_code().as_u16();
+        let message = self.to_string();
+        match self {
+            ApiError::Conflict { error_code } => ErrorBody {
+                message: message,
+                error_code: Some(error_code),
+                status: status,
+            },
+            _ => ErrorBody {
+                message: message,
+                error_code: None,
+                status: status,
+            },
         }
     }
 }
@@ -68,16 +81,17 @@ impl From<CoreError> for ApiError {
 impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
-            FriendshipError::FriendRequestAlreadyExists { user1: _, user2: _ } => {
-                ApiError::Forbidden
-            }
-            FriendshipError::FailedToRemoveFriendRequest { user1: _, user2: _ } => {
-                ApiError::Forbidden
-            }
-            FriendshipError::FriendshipAlreadyExists { user1: _, user2: _ } => ApiError::Forbidden,
-            FriendshipError::FriendshipNotFound { user1: _, user2: _ } => ApiError::NotFound {
-                msg: error.to_string(),
+            FriendshipError::FriendRequestNotFound => ApiError::NotFound,
+            FriendshipError::FriendRequestAlreadyExists => ApiError::Conflict {
+                error_code: error.error_code().to_string(),
             },
+            FriendshipError::FailedToRemoveFriendRequest => {
+                ApiError::Forbidden
+            }
+            FriendshipError::FriendshipAlreadyExists => ApiError::Conflict {
+                error_code: error.error_code().to_string(),
+            },
+            FriendshipError::FriendshipNotFound => ApiError::NotFound,
             _ => ApiError::InternalServerError,
         }
     }
@@ -85,5 +99,6 @@ impl From<FriendshipError> for ApiError {
 #[derive(Debug, Serialize)]
 pub struct ErrorBody {
     pub message: String,
+    pub error_code: Option<String>,
     pub status: u16,
 }

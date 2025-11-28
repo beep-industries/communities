@@ -31,7 +31,7 @@ cp .env.example .env
 Run migrations:
 
 ```bash
-sqlx migrate run --source core/migrations  --database-url postgres://postgres:password@localhost:5432/communities 
+sqlx migrate run --source core/migrations
 ```
 
 Launch the API server:

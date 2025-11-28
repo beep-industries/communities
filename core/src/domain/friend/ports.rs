@@ -192,10 +192,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         });
 
         if friends.len() == count_before {
-            return Err(FriendshipError::FriendshipNotFound {
-                user1: input.user_id_1,
-                user2: input.user_id_2,
-            });
+            return Err(FriendshipError::FriendshipNotFound);
         }
 
         Ok(())
@@ -256,10 +253,7 @@ impl FriendshipRepository for MockFriendshipRepository {
             &request.user_id_requested == user_id_requested
                 && &request.user_id_invited == user_id_invited
         }) {
-            return Err(FriendshipError::FriendRequestAlreadyExists {
-                user1: user_id_requested.clone(),
-                user2: user_id_invited.clone(),
-            });
+            return Err(FriendshipError::FriendRequestAlreadyExists);
         }
 
         let new_request = FriendRequest {
@@ -289,10 +283,7 @@ impl FriendshipRepository for MockFriendshipRepository {
             requests.remove(pos);
 
             if count_before == requests.len() {
-                return Err(FriendshipError::FriendRequestNotFound {
-                    user1: user_id_invited.clone(),
-                    user2: user_id_requested.clone(),
-                });
+                return Err(FriendshipError::FriendRequestNotFound);
             }
 
             let new_friend = Friend {
@@ -308,19 +299,13 @@ impl FriendshipRepository for MockFriendshipRepository {
                     || (&friend.user_id_1 == user_id_invited
                         && &friend.user_id_2 == user_id_requested)
             }) {
-                return Err(FriendshipError::FriendshipAlreadyExists {
-                    user1: user_id_requested.clone(),
-                    user2: user_id_invited.clone(),
-                });
+                return Err(FriendshipError::FriendshipAlreadyExists);
             }
 
             friends.push(new_friend.clone());
             Ok(new_friend)
         } else {
-            Err(FriendshipError::FriendRequestNotFound {
-                user1: user_id_invited.clone(),
-                user2: user_id_requested.clone(),
-            })
+            Err(FriendshipError::FriendRequestNotFound)
         }
     }
 
@@ -339,10 +324,7 @@ impl FriendshipRepository for MockFriendshipRepository {
             request.status = 1;
             Ok(request.clone())
         } else {
-            Err(FriendshipError::FriendRequestNotFound {
-                user1: user_id_invited.clone(),
-                user2: user_id_requested.clone(),
-            })
+            Err(FriendshipError::FriendRequestNotFound)
         }
     }
 
@@ -360,10 +342,7 @@ impl FriendshipRepository for MockFriendshipRepository {
         });
 
         if requests.len() == count_before {
-            return Err(FriendshipError::FriendRequestNotFound {
-                user1: user_id_invited.clone(),
-                user2: user_id_requested.clone(),
-            });
+            return Err(FriendshipError::FriendRequestNotFound);
         }
 
         Ok(())

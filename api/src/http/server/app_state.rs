@@ -11,6 +11,11 @@ impl AppState {
     pub fn new(service: CommunitiesService) -> Self {
         Self { service }
     }
+
+    /// Shutdown the underlying database pool
+    pub async fn shutdown(&self) {
+        self.service.shutdown_pool().await
+    }
 }
 
 impl From<CommunitiesRepositories> for AppState {

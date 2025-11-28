@@ -81,6 +81,10 @@ impl App {
         .expect("Failed to start servers");
         Ok(())
     }
+
+    pub async fn shutdown(&self) {
+        self.state.shutdown().await;
+    }
 }
 
 pub trait AppBuilder {

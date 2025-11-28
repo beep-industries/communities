@@ -1,4 +1,7 @@
-use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use sqlx::{
+    PgPool,
+    postgres::{PgConnectOptions, PgPoolOptions},
+};
 
 use crate::{
     domain::common::{CoreError, services::Service},
@@ -15,6 +18,7 @@ pub type CommunitiesService =
 
 #[derive(Clone)]
 pub struct CommunitiesRepositories {
+    pool: PgPool,
     pub server_repository: PostgresServerRepository,
     pub friendship_repository: PostgresFriendshipRepository,
     pub health_repository: PostgresHealthRepository,
@@ -32,6 +36,7 @@ pub async fn create_repositories(
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
     Ok(CommunitiesRepositories {
+        pool,
         server_repository,
         friendship_repository,
         health_repository,
@@ -45,5 +50,17 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
             self.friendship_repository,
             self.health_repository,
         )
+    }
+}
+
+impl CommunitiesRepositories {
+    pub async fn shutdown_pool(&self) {
+        let _ = &self.pool.close().await;
+    }
+}
+
+impl CommunitiesService {
+    pub async fn shutdown_pool(&self) {
+        self.server_repository.pool.close().await;
     }
 }

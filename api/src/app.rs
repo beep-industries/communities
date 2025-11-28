@@ -19,12 +19,7 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new(mut config: Config) -> Result<Self, ApiError> {
-        // Load routing configuration from YAML file
-        config.load_routing().map_err(|e| ApiError::StartupError {
-            msg: format!("Failed to load routing config: {}", e),
-        })?;
-
+    pub async fn new(config: Config) -> Result<Self, ApiError> {
         let state = create_app_state(config.clone()).await?;
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
         let app_router = axum::Router::<AppState>::new()

@@ -1,0 +1,297 @@
+openapi: 3.1.0
+info:
+  title: Default module
+  description: ''
+  version: 1.0.0
+tags:
+  - name: communities
+  - name: communities/friends
+  - name: communities/friends/requests
+  - name: communities/health
+paths:
+  /friends/requests:
+    get:
+      summary: Get all
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends/requests
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: ''
+          required: false
+          example: 20
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+    post:
+      summary: Create
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends/requests
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            example:
+              user_id_invited: 123e4567-e89b-12d3-a456-426614174004
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /friends/requests/accept:
+    post:
+      summary: Accept
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends/requests
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            example:
+              user_id_requested: 123e4567-e89b-12d3-a456-426614174004
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /friends/requests/decline:
+    post:
+      summary: Decline
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends/requests
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            example:
+              user_id_requested: 123e4567-e89b-12d3-a456-426614174002
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /friends/requests/{user_id_invited}:
+    delete:
+      summary: Delete
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends/requests
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+        - name: user_id_invited
+          in: path
+          description: ''
+          required: true
+          example: 123e4567-e89b-12d3-a456-426614174004
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /friends:
+    get:
+      summary: Get all
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: ''
+          required: false
+          example: 20
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /friends/{friend_id}:
+    delete:
+      summary: Delete
+      deprecated: false
+      description: ''
+      tags:
+        - communities/friends
+      parameters:
+        - name: access_token
+          in: cookie
+          description: ''
+          required: false
+          example: >-
+            eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCJleHAiOjE3OTg3NDAyMzUsImlhdCI6MTc2NDAwNzQ1NX0.Y2teHagK7XFCQOPVLU4WXeAVGZkq_L5xu5ATZpXcCIw
+          schema:
+            type: string
+        - name: friend_id
+          in: path
+          description: ''
+          required: true
+          example: 123e4567-e89b-12d3-a456-426614174001
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /health:
+    get:
+      summary: readiness
+      deprecated: false
+      description: ''
+      tags:
+        - communities/health
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_healthy:
+                    type: boolean
+                  status:
+                    type: string
+                  database_status:
+                    type: string
+                  timestamp:
+                    type: string
+                required:
+                  - is_healthy
+                  - status
+                  - database_status
+                  - timestamp
+          headers: {}
+      security: []
+webhooks: {}
+components:
+  schemas: {}
+  securitySchemes: {}
+servers:
+  - url: http://localhost:3001
+    description: Develop Env
+security: []

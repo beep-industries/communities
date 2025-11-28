@@ -1,0 +1,10 @@
+# Message Routing Configuration
+# This file defines the exchange names and routing keys for outbox events
+
+create_server:
+  - "beep.community"      # Exchange name
+  - "server.created"      # Routing key
+
+delete_server:
+  - "beep.community"      # Exchange name
+  - "server.deleted"      # Routing key

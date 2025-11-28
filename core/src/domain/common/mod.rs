@@ -24,6 +24,13 @@ pub enum CoreError {
 
     #[error("An unknown error occurred: {message}")]
     UnknownError { message: String },
+
+    #[error("Database error: {msg}")]
+    DatabaseError { msg: String },
+
+    /// Serialization error occurred when converting event to JSON
+    #[error("Serialization error: {msg}")]
+    SerializationError { msg: String },
 }
 
 #[derive(Debug, Deserialize)]

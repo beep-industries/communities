@@ -1,5 +1,9 @@
-use crate::infrastructure::outbox::{OutboxError, OutboxEvent};
+use crate::{
+    domain::common::CoreError,
+    infrastructure::outbox::event::{MessageRouter, OutboxEventRecord},
+};
 use chrono::Utc;
+use serde::Serialize;
 use serde_json;
 use sqlx::PgExecutor;
 use uuid::Uuid;
@@ -23,44 +27,43 @@ use uuid::Uuid;
 ///
 /// ```rust,no_run
 /// use sqlx::PgPool;
-/// use communities_core::infrastructure::outbox::{write_event, OutboxEvent};
+/// use communities_core::infrastructure::outbox::{write_outbox_event, OutboxEventRecord, MessageRoutingInfo};
 /// use serde::Serialize;
 ///
-/// #[derive(Serialize)]
-/// struct MyEvent {
-///     data: String,
-/// }
+/// #[derive(Serialize, Clone)]
+/// struct MyEvent { data: String }
 ///
-/// impl OutboxEvent for MyEvent {
-///     fn exchange_name(&self) -> String { "my.exchange".to_string() }
-///     fn routing_key(&self) -> String { "my.key".to_string() }
-/// }
-///
-/// async fn example(pool: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let pool = PgPool::connect("postgres://postgres:password@localhost:5432/communities").await?;
 ///     let mut tx = pool.begin().await?;
-///     
-///     // Your business logic here...
-///     
-///     // Write event to outbox
-///     let event = MyEvent { data: "test".to_string() };
-///     let event_id = write_event(&mut *tx, &event).await?;
-///     
+///
+///     // Define routing and event payload
+///     let router = MessageRoutingInfo::new("my.exchange".to_string(), "my.key".to_string());
+///     let event = OutboxEventRecord::new(router, MyEvent { data: "test".to_string() });
+///
+///     // Write event to outbox within the transaction
+///     let _event_id = write_outbox_event(&mut *tx, &event).await?;
 ///     tx.commit().await?;
 ///     Ok(())
 /// }
 /// ```
-pub async fn write_event<'e, E, T>(executor: E, event: &T) -> Result<Uuid, OutboxError>
+pub async fn write_outbox_event<'e, E, TPayload, TRouter>(
+    executor: E,
+    event: &OutboxEventRecord<TPayload, TRouter>,
+) -> Result<Uuid, CoreError>
 where
     E: PgExecutor<'e>,
-    T: OutboxEvent,
+    TPayload: Serialize,
+    TRouter: MessageRouter,
 {
-    let event_id = event.event_id();
-    let exchange_name = event.exchange_name();
-    let routing_key = event.routing_key();
+    let exchange_name = event.router.exchange_name();
+    let routing_key = event.router.routing_key();
     let created_at = Utc::now();
 
     // Serialize event to JSON
-    let payload = serde_json::to_value(event)?;
+    let payload = serde_json::to_value(event)
+        .map_err(|e| CoreError::SerializationError { msg: e.to_string() })?;
 
     // Insert into outbox_messages table
     let query = r#"
@@ -70,7 +73,7 @@ where
     "#;
 
     sqlx::query(query)
-        .bind(event_id)
+        .bind(event.id)
         .bind(exchange_name)
         .bind(routing_key)
         .bind(payload)
@@ -78,7 +81,8 @@ where
         .bind(None::<chrono::DateTime<Utc>>)
         .bind(created_at)
         .execute(executor)
-        .await?;
+        .await
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
-    Ok(event_id)
+    Ok(event.id)
 }

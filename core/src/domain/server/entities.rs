@@ -45,11 +45,16 @@ pub struct Server {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InsertServerInput {
     pub name: String,
     pub owner_id: OwnerId,
     pub picture_url: Option<String>,
     pub banner_url: Option<String>,
     pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DeleteServerEvent {
+    pub id: ServerId,
 }

@@ -180,10 +180,7 @@ async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std:
 
     assert_eq!(
         error1.to_string(),
-        format!(
-            "Friend request already exists between {} and {}",
-            user_id_requested, user_id_invited
-        ),
+        "Friend request already exists",
         "Expected duplicate friend request error"
     );
 
@@ -196,10 +193,7 @@ async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std:
 
     assert_eq!(
         error2.to_string(),
-        format!(
-            "Friendship already exists between {} and {}",
-            user_id_invited, user_id_requested
-        ),
+        "Friendship already exists",
         "Expected duplicate friend request error"
     );
 
@@ -298,10 +292,7 @@ async fn test_accept_friend_requests_fail() -> Result<(), Box<dyn std::error::Er
 
     assert_eq!(
         error.to_string(),
-        format!(
-            "Friend request not found between {} and {}",
-            user_id_invited, user_id_requested
-        ),
+        "Friend request not found",
         "Expected duplicate friend request error"
     );
 
@@ -392,10 +383,7 @@ async fn test_decline_friend_requests_fail() -> Result<(), Box<dyn std::error::E
 
     assert_eq!(
         error.to_string(),
-        format!(
-            "Friend request not found between {} and {}",
-            user_id_invited, user_id_requested
-        ),
+        "Friend request not found",
         "Expected duplicate friend request error"
     );
 
@@ -471,10 +459,7 @@ async fn test_delete_friend_requests_fail() -> Result<(), Box<dyn std::error::Er
 
     assert_eq!(
         error.to_string(),
-        format!(
-            "Friend request not found between {} and {}",
-            user_id_invited, user_id_requested
-        ),
+        "Friend request not found",
         "Expected duplicate friend request error"
     );
 
@@ -657,10 +642,7 @@ async fn test_delete_friend_fail() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(
         error.to_string(),
-        format!(
-            "Friendship not found between {} and {}",
-            user_id_requested, user_id_invited
-        ),
+        "Friendship not found",
         "Expected duplicate friend request error"
     );
 

@@ -19,7 +19,7 @@ jobs:
 
   test_rust:
     name: Tests Rust
-    uses: beep-industries/communities/.github/workflows/test.yml@main
+    uses: beep-industries/communities/.github/workflows/test.yml@26-implement-ci-pipeline-using-organisational-templates 
 
   build_push_main:
     name: Build & Push Docker (main)

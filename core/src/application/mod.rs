@@ -70,8 +70,16 @@ impl CommunitiesService {
     }
 }
 
+/// Configuration for message routing information across different event types.
+///
+/// This struct holds the routing configuration for various outbox events
+/// that need to be published to a message broker. Each field represents
+/// the routing information (exchange name and routing key) for a specific
+/// type of domain event.
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 pub struct MessageRoutingInfos {
+    /// Routing information for server creation events
     pub create_server: MessageRoutingInfo,
+    /// Routing information for server deletion events
     pub delete_server: MessageRoutingInfo,
 }

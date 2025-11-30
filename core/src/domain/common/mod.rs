@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use thiserror::Error;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::domain::server::entities::ServerId;
 
@@ -33,7 +34,7 @@ pub enum CoreError {
     SerializationError { msg: String },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct GetPaginated {
     pub page: u32,
     pub limit: u32,

@@ -23,6 +23,8 @@ clap = { version = "4.5.53", features = ["derive", "env"] }
 env = "1.0.1"
 dotenv = "0.15.0"
 thiserror = { workspace = true }
+utoipa-axum = "0.2.0"
+utoipa = "5.4.0"
 
 [dev-dependencies]
 axum-test = "18.3.0"

@@ -7,6 +7,7 @@ use api::{
 use axum_extra::extract::cookie::Cookie;
 use axum_test::TestServer;
 use chrono::Utc;
+use communities_core::application::MessageRoutingInfos;
 use communities_core::{application::CommunitiesRepositories, create_repositories};
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use test_context::AsyncTestContext;
@@ -74,11 +75,14 @@ impl AsyncTestContext for TestContext {
             database,
             jwt,
             server,
+            routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
+            routing: MessageRoutingInfos::default(),
         };
 
-        let repositories = create_repositories(config.clone().database.into())
-            .await
-            .expect("Failed to create repositories");
+        let repositories =
+            create_repositories(config.clone().database.into(), config.clone().routing)
+                .await
+                .expect("Failed to create repositories");
 
         let app = App::build(config)
             .await

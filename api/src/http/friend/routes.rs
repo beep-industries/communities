@@ -1,19 +1,17 @@
-use axum::{
-    Router,
-    routing::{delete, get, post},
-};
+use axum::routing::{delete, get, post};
+use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::http::{
     friend::handlers::{
-        accept_friend_request, create_friend_request, decline_friend_request, delete_friend,
-        delete_friend_request, get_friend_requests, get_friends,
+        __path_get_friends, accept_friend_request, create_friend_request, decline_friend_request,
+        delete_friend, delete_friend_request, get_friend_requests, get_friends,
     },
     server::AppState,
 };
 
-pub fn friend_routes() -> Router<AppState> {
-    Router::new()
-        .route("/friends", get(get_friends))
+pub fn friend_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(get_friends))
         .route("/friends/{friend_id}", delete(delete_friend))
         .route("/friends/requests", get(get_friend_requests))
         .route("/friends/requests", post(create_friend_request))

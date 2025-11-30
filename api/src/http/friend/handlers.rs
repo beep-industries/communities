@@ -20,6 +20,19 @@ use crate::http::server::{
     response::PaginatedResponse,
 };
 
+#[utoipa::path(
+    get,
+    path = "/friends",
+    tag = "friends",
+    params(
+        GetPaginated
+    ),
+    responses(
+        (status = 200, description = "List of friends retrieved successfully", body = PaginatedResponse<Friend>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn get_friends(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -38,6 +51,20 @@ pub async fn get_friends(
     Ok(Response::ok(response))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/friends/{friend_id}",
+    tag = "friends",
+    params(
+        ("friend_id" = String, Path, description = "ID of the friend to delete")
+    ),
+    responses(
+        (status = 200, description = "Friend deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Friend not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn delete_friend(
     Path(friend_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -57,6 +84,19 @@ pub async fn delete_friend(
     Ok(Response::deleted(()))
 }
 
+#[utoipa::path(
+    get,
+    path = "/friend-requests",
+    tag = "friend-requests",
+    params(
+        GetPaginated
+    ),
+    responses(
+        (status = 200, description = "List of friend requests retrieved successfully", body = PaginatedResponse<FriendRequest>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn get_friend_requests(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -78,6 +118,19 @@ pub async fn get_friend_requests(
     Ok(Response::ok(response))
 }
 
+#[utoipa::path(
+    post,
+    path = "/friend-requests",
+    tag = "friend-requests",
+    request_body = CreateFriendRequestInput,
+    responses(
+        (status = 201, description = "Friend request created successfully", body = FriendRequest),
+        (status = 400, description = "Bad request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 409, description = "Friend request already exists"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn create_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -91,6 +144,19 @@ pub async fn create_friend_request(
     Ok(Response::created(friend_request))
 }
 
+#[utoipa::path(
+    post,
+    path = "/friend-requests/accept",
+    tag = "friend-requests",
+    request_body = AcceptFriendRequestInput,
+    responses(
+        (status = 201, description = "Friend request accepted successfully", body = Friend),
+        (status = 400, description = "Bad request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Friend request not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn accept_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -104,6 +170,19 @@ pub async fn accept_friend_request(
     Ok(Response::created(friend))
 }
 
+#[utoipa::path(
+    post,
+    path = "/friend-requests/decline",
+    tag = "friend-requests",
+    request_body = DeclineFriendRequestInput,
+    responses(
+        (status = 201, description = "Friend request declined successfully", body = FriendRequest),
+        (status = 400, description = "Bad request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Friend request not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn decline_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -117,6 +196,20 @@ pub async fn decline_friend_request(
     Ok(Response::created(friend_request))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/friend-requests/{user_id_invited}",
+    tag = "friend-requests",
+    params(
+        ("user_id_invited" = String, Path, description = "ID of the invited user whose friend request to delete")
+    ),
+    responses(
+        (status = 200, description = "Friend request deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Friend request not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn delete_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,

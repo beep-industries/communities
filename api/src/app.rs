@@ -1,6 +1,7 @@
 use axum::middleware::from_extractor_with_state;
 use communities_core::create_repositories;
 use sqlx::postgres::PgConnectOptions;
+use utoipa_axum::router::OpenApiRouter;
 
 use crate::friend_routes;
 use crate::http::server::middleware::auth::AuthMiddleware;

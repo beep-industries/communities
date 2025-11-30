@@ -19,7 +19,7 @@ jobs:
 
   test_rust:
     name: Tests Rust
-    uses: beep-industries/communities/.github/workflows/test.yml
+    uses: beep-industries/communities/.github/workflows/test.yml@main
 
   build_push_main:
     name: Build & Push Docker (main)

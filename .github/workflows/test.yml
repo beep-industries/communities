@@ -1,0 +1,84 @@
+name: Test
+
+on:
+  workflow_call:
+
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTC_WRAPPER: sccache
+  SCCACHE_DIR: /tmp/sccache
+
+jobs:
+  unit-tests:
+    name: Rust Unit Tests
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run unit tests (no DB)
+        run: cargo test --verbose
+
+
+  integration-tests:
+    name: Rust Integration Tests (Postgres)
+    runs-on: self-hosted
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ${{ github.repository }}_test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.4
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 1
+          done
+
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Run migrations
+        run: sqlx migrate run
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/${{ github.repository }}_test
+
+      - name: Run integration tests
+        run: cargo test -- --ignored
+        env:
+          DATABASE_URL: postgres://--ignoredpostgres:postgres@localhost:5432/${{ github.repository }}_test

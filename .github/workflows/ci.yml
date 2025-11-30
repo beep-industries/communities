@@ -17,6 +17,10 @@ jobs:
     name: Validate Rust
     uses: beep-industries/actions/.github/workflows/validate-rust.yml@main
 
+  test_rust:
+    name: Tests Rust
+    uses: beep-industries/communities/.github/workflows/test.yml@main
+
   build_push_main:
     name: Build & Push Docker (main)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

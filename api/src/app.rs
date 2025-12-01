@@ -51,7 +51,7 @@ impl App {
             msg: format!("Failed to generate OpenAPI spec: {}", e),
         })?;
 
-        let app_router = app_router.clone().merge(Scalar::with_url("/scalar", api));
+        let app_router = app_router.merge(Scalar::with_url("/scalar", api));
         // Write OpenAPI spec to file in development environment
         if matches!(config.environment, crate::config::Environment::Development) {
             std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {

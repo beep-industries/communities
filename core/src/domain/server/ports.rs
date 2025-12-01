@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::domain::{
-    common::CoreError,
+    common::{CoreError, GetPaginated, TotalPaginatedElements},
     server::entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
 };
 
@@ -14,6 +14,10 @@ pub trait ServerRepository: Send + Sync {
         &self,
         id: &ServerId,
     ) -> impl Future<Output = Result<Option<Server>, CoreError>> + Send;
+    fn list(
+        &self,
+        pagination: &GetPaginated,
+    ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
     fn update(
         &self,
         input: UpdateServerInput,
@@ -78,6 +82,26 @@ impl ServerRepository for MockServerRepository {
         let server = servers.iter().find(|s| &s.id == id).cloned();
 
         Ok(server)
+    }
+
+    async fn list(
+        &self,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        let servers = self.servers.lock().unwrap();
+        let total = servers.len() as u64;
+        
+        let offset = ((pagination.page - 1) * pagination.limit) as usize;
+        let limit = pagination.limit as usize;
+        
+        let paginated_servers: Vec<Server> = servers
+            .iter()
+            .skip(offset)
+            .take(limit)
+            .cloned()
+            .collect();
+        
+        Ok((paginated_servers, total))
     }
 
     async fn insert(&self, input: InsertServerInput) -> Result<Server, CoreError> {

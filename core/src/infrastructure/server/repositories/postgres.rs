@@ -2,7 +2,7 @@ use sqlx::{PgPool, query_as};
 
 use crate::{
     domain::{
-        common::CoreError,
+        common::{CoreError, GetPaginated, TotalPaginatedElements},
         server::{
             entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
             ports::ServerRepository,
@@ -49,6 +49,39 @@ impl ServerRepository for PostgresServerRepository {
         .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
 
         Ok(server)
+    }
+
+    async fn list(
+        &self,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+        let limit = std::cmp::min(pagination.limit, 50) as i64;
+
+        // Get total count
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM servers")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+        // Get paginated servers
+        let servers = query_as!(
+            Server,
+            r#"
+            SELECT id, name, banner_url, picture_url, description, owner_id,
+                   visibility as "visibility: _", created_at, updated_at
+            FROM servers
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+            "#,
+            limit,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+        Ok((servers, total as u64))
     }
 
     async fn insert(&self, input: InsertServerInput) -> Result<Server, CoreError> {
@@ -543,6 +576,64 @@ async fn test_update_server_with_no_fields_returns_unchanged(
     assert_eq!(result.id, created.id);
     assert_eq!(result.name, created.name);
     assert_eq!(result.picture_url, created.picture_url);
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+
+    let repository =
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+
+    // Arrange: insert multiple servers
+    let owner_id = OwnerId(Uuid::new_v4());
+    for i in 1..=5 {
+        let input = InsertServerInput {
+            name: format!("Server {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: Some(format!("Description {}", i)),
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Act: list first page with 2 items
+    let pagination = GetPaginated { page: 1, limit: 2 };
+    let (servers, total) = repository.list(&pagination).await?;
+
+    // Assert: correct pagination
+    assert_eq!(total, 5);
+    assert_eq!(servers.len(), 2);
+    assert_eq!(servers[0].name, "Server 5"); // Most recent first
+    assert_eq!(servers[1].name, "Server 4");
+
+    // Act: list second page
+    let pagination = GetPaginated { page: 2, limit: 2 };
+    let (servers, total) = repository.list(&pagination).await?;
+
+    // Assert: correct pagination
+    assert_eq!(total, 5);
+    assert_eq!(servers.len(), 2);
+    assert_eq!(servers[0].name, "Server 3");
+    assert_eq!(servers[1].name, "Server 2");
+
+    // Act: list third page
+    let pagination = GetPaginated { page: 3, limit: 2 };
+    let (servers, total) = repository.list(&pagination).await?;
+
+    // Assert: correct pagination
+    assert_eq!(total, 5);
+    assert_eq!(servers.len(), 1);
+    assert_eq!(servers[0].name, "Server 1");
 
     Ok(())
 }

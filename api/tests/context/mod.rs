@@ -1,3 +1,6 @@
+use std::f32::consts::E;
+
+use api::config::Environment;
 use api::http::server::middleware::auth::entities::Claims;
 use api::{
     App, Config,
@@ -77,6 +80,7 @@ impl AsyncTestContext for TestContext {
             server,
             routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
             routing: MessageRoutingInfos::default(),
+            environment: Environment::Development,
         };
 
         let repositories =

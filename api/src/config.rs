@@ -1,4 +1,5 @@
 use clap::Parser;
+use clap::ValueEnum;
 use communities_core::application::MessageRoutingInfos;
 use sqlx::postgres::PgConnectOptions;
 use std::path::PathBuf;
@@ -25,6 +26,13 @@ pub struct Config {
 
     #[arg(skip)]
     pub routing: MessageRoutingInfos,
+
+    #[arg(
+        long = "environment",
+        env = "ENVIRONMENT",
+        default_value = "development"
+    )]
+    pub environment: Environment,
 }
 
 impl Config {
@@ -35,7 +43,6 @@ impl Config {
         Ok(())
     }
 }
-
 #[derive(Clone, Parser, Debug, Default)]
 pub struct DatabaseConfig {
     #[arg(
@@ -107,4 +114,11 @@ pub struct ServerConfig {
         default_value = "8081"
     )]
     pub health_port: u16,
+}
+
+#[derive(Clone, Debug, ValueEnum, Default)]
+pub enum Environment {
+    #[default]
+    Development,
+    Production,
 }

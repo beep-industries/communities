@@ -35,15 +35,26 @@ impl App {
         .await
         .inspect_err(|e| println!("{:?}", e))?
         .into();
-
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
-        let app_router = axum::Router::<AppState>::new()
+        let (app_router, api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             // Add application routes here
             .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
                 auth_validator.clone(),
             ))
-            .with_state(state.clone());
+            .with_state(state.clone())
+            .split_for_parts();
+        let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
+            msg: format!("Failed to generate OpenAPI spec: {}", e),
+        })?;
+
+        // Write OpenAPI spec to file in development environment
+        if matches!(config.environment, crate::config::Environment::Development) {
+            std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {
+                msg: format!("Failed to write OpenAPI spec to file: {}", e),
+            })?;
+        }
+
         let health_router = axum::Router::new()
             .merge(health_routes())
             .with_state(state.clone());

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain::{
     common::CoreError,
-    server::entities::{InsertServerInput, Server, ServerId},
+    server::entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
 };
 
 pub trait ServerRepository: Send + Sync {
@@ -14,6 +14,10 @@ pub trait ServerRepository: Send + Sync {
         &self,
         id: &ServerId,
     ) -> impl Future<Output = Result<Option<Server>, CoreError>> + Send;
+    fn update(
+        &self,
+        input: UpdateServerInput,
+    ) -> impl Future<Output = Result<Server, CoreError>> + Send;
     fn delete(&self, id: &ServerId) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
@@ -93,6 +97,31 @@ impl ServerRepository for MockServerRepository {
         servers.push(new_server.clone());
 
         Ok(new_server)
+    }
+
+    async fn update(&self, input: UpdateServerInput) -> Result<Server, CoreError> {
+        let mut servers = self.servers.lock().unwrap();
+
+        let server = servers
+            .iter_mut()
+            .find(|s| &s.id == &input.id)
+            .ok_or_else(|| CoreError::ServerNotFound { id: input.id.clone() })?;
+
+        if let Some(name) = input.name {
+            server.name = name;
+        }
+        if let Some(picture_url) = input.picture_url {
+            server.picture_url = Some(picture_url);
+        }
+        if let Some(banner_url) = input.banner_url {
+            server.banner_url = Some(banner_url);
+        }
+        if let Some(description) = input.description {
+            server.description = Some(description);
+        }
+        server.updated_at = Some(chrono::Utc::now());
+
+        Ok(server.clone())
     }
 
     async fn delete(&self, id: &ServerId) -> Result<(), CoreError> {

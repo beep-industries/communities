@@ -35,8 +35,8 @@ pub async fn create_repositories(
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
     let server_repository = PostgresServerRepository::new(
         pool.clone(),
-        message_routing_infos.create_server,
         message_routing_infos.delete_server,
+        message_routing_infos.create_server,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());

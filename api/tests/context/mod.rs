@@ -78,7 +78,7 @@ impl AsyncTestContext for TestContext {
             server,
             routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
             routing: MessageRoutingInfos::default(),
-            environment: Environment::Development,
+            environment: Environment::Test,
         };
 
         let repositories =

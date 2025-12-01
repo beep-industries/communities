@@ -1,6 +1,7 @@
 use axum::middleware::from_extractor_with_state;
 use communities_core::create_repositories;
 use sqlx::postgres::PgConnectOptions;
+use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 
@@ -14,6 +15,14 @@ use crate::{
     },
 };
 
+#[derive(OpenApi)]
+#[openapi(info(
+    title = "Beep communities openapi",
+    contact(name = "communities-core@beep.ovh"),
+    description = "API documentation for the Communities service",
+    version = "0.0.1"
+))]
+struct ApiDoc;
 pub struct App {
     config: Config,
     pub state: AppState,
@@ -39,19 +48,25 @@ impl App {
         })?
         .into();
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
-        let (app_router, api) = OpenApiRouter::<AppState>::new()
+        let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             // Add application routes here
             .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
                 auth_validator.clone(),
             ))
-            .with_state(state.clone())
             .split_for_parts();
+
+        // Override API documentation info
+        let custom_info = ApiDoc::openapi();
+        api.info = custom_info.info;
+
         let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
             msg: format!("Failed to generate OpenAPI spec: {}", e),
         })?;
 
-        let app_router = app_router.merge(Scalar::with_url("/scalar", api));
+        let app_router = app_router
+            .with_state(state.clone())
+            .merge(Scalar::with_url("/scalar", api));
         // Write OpenAPI spec to file in development environment
         if matches!(config.environment, crate::config::Environment::Development) {
             std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {

@@ -85,9 +85,7 @@ impl From<FriendshipError> for ApiError {
             FriendshipError::FriendRequestAlreadyExists => ApiError::Conflict {
                 error_code: error.error_code().to_string(),
             },
-            FriendshipError::FailedToRemoveFriendRequest => {
-                ApiError::Forbidden
-            }
+            FriendshipError::FailedToRemoveFriendRequest => ApiError::Forbidden,
             FriendshipError::FriendshipAlreadyExists => ApiError::Conflict {
                 error_code: error.error_code().to_string(),
             },

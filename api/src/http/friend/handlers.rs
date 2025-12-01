@@ -62,7 +62,6 @@ pub async fn get_friends(
         (status = 200, description = "Friend deleted successfully"),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Friend not found"),
-        (status = 500, description = "Internal server error")
     )
 )]
 pub async fn delete_friend(
@@ -94,7 +93,6 @@ pub async fn delete_friend(
     responses(
         (status = 200, description = "List of friend requests retrieved successfully", body = PaginatedResponse<FriendRequest>),
         (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error")
     )
 )]
 pub async fn get_friend_requests(
@@ -128,7 +126,6 @@ pub async fn get_friend_requests(
         (status = 400, description = "Bad request"),
         (status = 401, description = "Unauthorized"),
         (status = 409, description = "Friend request already exists"),
-        (status = 500, description = "Internal server error")
     )
 )]
 pub async fn create_friend_request(
@@ -154,7 +151,6 @@ pub async fn create_friend_request(
         (status = 400, description = "Bad request"),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Friend request not found"),
-        (status = 500, description = "Internal server error")
     )
 )]
 pub async fn accept_friend_request(
@@ -180,7 +176,6 @@ pub async fn accept_friend_request(
         (status = 400, description = "Bad request"),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Friend request not found"),
-        (status = 500, description = "Internal server error")
     )
 )]
 pub async fn decline_friend_request(
@@ -207,7 +202,6 @@ pub async fn decline_friend_request(
         (status = 200, description = "Friend request deleted successfully"),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Friend request not found"),
-        (status = 500, description = "Internal server error")
     )
 )]
 pub async fn delete_friend_request(

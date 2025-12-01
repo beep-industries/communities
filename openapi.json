@@ -1,17 +1,16 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "utoipa-axum",
-    "description": "Utoipa's axum bindings for seamless integration for the two",
+    "title": "Beep communities openapi",
+    "description": "API documentation for the Communities service",
     "contact": {
-      "name": "Juha Kukkonen",
-      "email": "juha7kukkonen@gmail.com"
+      "name": "communities-core@beep.ovh"
     },
     "license": {
-      "name": "MIT OR Apache-2.0",
-      "identifier": "MIT OR Apache-2.0"
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
     },
-    "version": "0.2.0"
+    "version": "0.0.1"
   },
   "paths": {
     "/friend-requests": {

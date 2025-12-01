@@ -55,6 +55,24 @@ pub struct InsertServerInput {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UpdateServerInput {
+    pub id: ServerId,
+    pub name: Option<String>,
+    pub picture_url: Option<String>,
+    pub banner_url: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UpdateServerEvent {
+    pub id: ServerId,
+    pub name: Option<String>,
+    pub picture_url: Option<String>,
+    pub banner_url: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeleteServerEvent {
     pub id: ServerId,
 }

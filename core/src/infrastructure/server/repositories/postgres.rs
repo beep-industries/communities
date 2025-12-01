@@ -4,7 +4,7 @@ use crate::{
     domain::{
         common::CoreError,
         server::{
-            entities::{DeleteServerEvent, InsertServerInput, Server, ServerId},
+            entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
             ports::ServerRepository,
         },
     },
@@ -85,6 +85,66 @@ impl ServerRepository for PostgresServerRepository {
         tx.commit()
             .await
             .map_err(|_| CoreError::FailedToInsertServer { name: input.name })?;
+
+        Ok(server)
+    }
+
+    async fn update(&self, input: UpdateServerInput) -> Result<Server, CoreError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| CoreError::ServerNotFound {
+                id: input.id.clone(),
+            })?;
+
+        // First, fetch the current server to get existing values
+        let current = query_as!(
+            Server,
+            r#"
+            SELECT id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
+            FROM servers
+            WHERE id = $1
+            "#,
+            input.id.0
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|_| CoreError::ServerNotFound {
+            id: input.id.clone(),
+        })?
+        .ok_or_else(|| CoreError::ServerNotFound {
+            id: input.id.clone(),
+        })?;
+
+        // Apply updates, falling back to current values if not provided
+        let new_name = input.name.as_ref().unwrap_or(&current.name);
+        let new_picture_url = input.picture_url.as_ref().or(current.picture_url.as_ref());
+        let new_banner_url = input.banner_url.as_ref().or(current.banner_url.as_ref());
+        let new_description = input.description.as_ref().or(current.description.as_ref());
+
+        // Update the server in the database
+        let server = query_as!(
+            Server,
+            r#"
+            UPDATE servers
+            SET name = $1, picture_url = $2, banner_url = $3, description = $4
+            WHERE id = $5
+            RETURNING id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
+            "#,
+            new_name,
+            new_picture_url,
+            new_banner_url,
+            new_description,
+            input.id.0
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| CoreError::ServerNotFound { id: input.id.clone() })?;
+
+        tx.commit().await.map_err(|_| CoreError::ServerNotFound {
+            id: input.id.clone(),
+        })?;
 
         Ok(server)
     }
@@ -210,6 +270,54 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
 }
 
 #[sqlx::test(migrations = "./migrations")]
+async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<(), CoreError> {
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let delete_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
+
+    let repository = PostgresServerRepository::new(pool.clone(), delete_router, create_router);
+
+    // Try to find a server with a random UUID that doesn't exist
+    let nonexistent_id = ServerId(Uuid::new_v4());
+    let result = repository.find_by_id(&nonexistent_id).await?;
+
+    // Assert: should return None
+    assert!(result.is_none());
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreError> {
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let delete_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
+
+    let repository = PostgresServerRepository::new(pool.clone(), delete_router, create_router);
+
+    // Try to delete a server with a random UUID that doesn't exist
+    let nonexistent_id = ServerId(Uuid::new_v4());
+    let result = repository.delete(&nonexistent_id).await;
+
+    // Assert: should return ServerNotFound error
+    assert!(result.is_err());
+    match result {
+        Err(CoreError::ServerNotFound { id }) => {
+            assert_eq!(id, nonexistent_id);
+        }
+        _ => panic!("Expected ServerNotFound error"),
+    }
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
 async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
     use crate::domain::server::entities::{InsertServerInput, OwnerId};
     use crate::infrastructure::outbox::MessageRouter;
@@ -276,6 +384,141 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
         payload.get("id").and_then(|v| v.as_str()),
         Some(id_str.as_str())
     );
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_update_server_updates_fields_and_outbox(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::server::entities::{InsertServerInput, OwnerId, UpdateServerInput};
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+
+    let repository =
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+
+    // Arrange: insert a server first
+    let owner_id = OwnerId(Uuid::new_v4());
+    let input = InsertServerInput {
+        name: "original name".to_string(),
+        owner_id: owner_id.clone(),
+        picture_url: Some("https://example.com/old.png".to_string()),
+        banner_url: Some("https://example.com/old-banner.png".to_string()),
+        description: Some("old description".to_string()),
+    };
+    let created = repository.insert(input).await?;
+
+    // Act: update the server
+    let update_input = UpdateServerInput {
+        id: created.id.clone(),
+        name: Some("updated name".to_string()),
+        picture_url: Some("https://example.com/new.png".to_string()),
+        banner_url: None,
+        description: Some("new description".to_string()),
+    };
+    let updated = repository.update(update_input.clone()).await?;
+
+    // Assert: returned server has updated fields
+    assert_eq!(updated.id, created.id);
+    assert_eq!(updated.name, "updated name");
+    assert_eq!(
+        updated.picture_url,
+        Some("https://example.com/new.png".to_string())
+    );
+    assert_eq!(
+        updated.banner_url,
+        Some("https://example.com/old-banner.png".to_string())
+    ); // unchanged
+    assert_eq!(updated.description, Some("new description".to_string()));
+    assert!(updated.updated_at.is_some());
+
+    // Assert: it can be fetched back with updates
+    let fetched = repository.find_by_id(&created.id).await?;
+    assert!(fetched.is_some());
+    let fetched = fetched.unwrap();
+    assert_eq!(fetched.name, "updated name");
+    assert_eq!(
+        fetched.picture_url,
+        Some("https://example.com/new.png".to_string())
+    );
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::server::entities::UpdateServerInput;
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+
+    let repository =
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+
+    // Try to update a server with a random UUID that doesn't exist
+    let nonexistent_id = ServerId(Uuid::new_v4());
+    let update_input = UpdateServerInput {
+        id: nonexistent_id.clone(),
+        name: Some("new name".to_string()),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+    };
+    let result = repository.update(update_input).await;
+
+    // Assert: should return ServerNotFound error
+    assert!(result.is_err());
+    match result {
+        Err(CoreError::ServerNotFound { id }) => {
+            assert_eq!(id, nonexistent_id);
+        }
+        _ => panic!("Expected ServerNotFound error"),
+    }
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_update_server_with_no_fields_returns_unchanged(
+    pool: PgPool,
+) -> Result<(), CoreError> {
+    use crate::domain::server::entities::{InsertServerInput, OwnerId, UpdateServerInput};
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+
+    let repository =
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+
+    // Arrange: insert a server first
+    let owner_id = OwnerId(Uuid::new_v4());
+    let input = InsertServerInput {
+        name: "test server".to_string(),
+        owner_id: owner_id.clone(),
+        picture_url: Some("https://example.com/pic.png".to_string()),
+        banner_url: None,
+        description: None,
+    };
+    let created = repository.insert(input).await?;
+
+    // Act: update with no fields
+    let update_input = UpdateServerInput {
+        id: created.id.clone(),
+        name: None,
+        picture_url: None,
+        banner_url: None,
+        description: None,
+    };
+    let result = repository.update(update_input).await?;
+
+    // Assert: returned server is unchanged
+    assert_eq!(result.id, created.id);
+    assert_eq!(result.name, created.name);
+    assert_eq!(result.picture_url, created.picture_url);
 
     Ok(())
 }

@@ -1,5 +1,3 @@
-use std::f32::consts::E;
-
 use api::config::Environment;
 use api::http::server::middleware::auth::entities::Claims;
 use api::{
@@ -90,7 +88,6 @@ impl AsyncTestContext for TestContext {
 
         let app = App::build(config)
             .await
-            .inspect_err(|e| eprintln!("Error building app: {}", e))
             .expect("Failed to build app")
             .with_state(repositories.clone().into())
             .await

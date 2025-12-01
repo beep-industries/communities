@@ -55,9 +55,6 @@
           },
           "401": {
             "description": "Unauthorized"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         }
       },
@@ -95,9 +92,6 @@
           },
           "409": {
             "description": "Friend request already exists"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         }
       }
@@ -137,9 +131,6 @@
           },
           "404": {
             "description": "Friend request not found"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         }
       }
@@ -179,9 +170,6 @@
           },
           "404": {
             "description": "Friend request not found"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         }
       }
@@ -212,9 +200,6 @@
           },
           "404": {
             "description": "Friend request not found"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         }
       }
@@ -293,9 +278,6 @@
           },
           "404": {
             "description": "Friend not found"
-          },
-          "500": {
-            "description": "Internal server error"
           }
         }
       }

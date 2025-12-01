@@ -10,34 +10,13 @@ env:
   SCCACHE_DIR: /tmp/sccache
 
 jobs:
-  unit-tests:
-    name: Rust Unit Tests
-    runs-on: self-hosted
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.4
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run unit tests (no DB)
-        run: cargo test --verbose
-
-
-  integration-tests:
+  tests:
     name: Rust Integration Tests (Postgres)
     runs-on: self-hosted
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -69,6 +48,16 @@ jobs:
             echo "Waiting for postgres..."
             sleep 1
           done
+      - name: Print DATABASE_URL
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL"
+
+      - name: Test DB connection
+        run: |
+          echo "DATABASE_URL= postgres://postgres:postgres@localhost:5432/${{ github.repository }}_test"
+          psql postgres://postgres:postgres@localhost:5432/${{ github.repository }}_test -c "SELECT 1;"
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/${{ github.repository }}_test
 
       - name: Install SQLx CLI
         run: cargo install sqlx-cli --no-default-features --features postgres
@@ -78,7 +67,9 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/${{ github.repository }}_test
 
+
       - name: Run integration tests
-        run: cargo test -- --ignored
+        run: cargo test --verbose
         env:
-          DATABASE_URL: postgres://--ignoredpostgres:postgres@localhost:5432/${{ github.repository }}_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/${{ github.repository }}_test
+

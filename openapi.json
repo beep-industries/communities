@@ -22,7 +22,7 @@
         "parameters": [
           {
             "name": "page",
-            "in": "path",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "integer",
@@ -32,7 +32,7 @@
           },
           {
             "name": "limit",
-            "in": "path",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "integer",
@@ -212,7 +212,7 @@
         "parameters": [
           {
             "name": "page",
-            "in": "path",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "integer",
@@ -222,7 +222,7 @@
           },
           {
             "name": "limit",
-            "in": "path",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "integer",

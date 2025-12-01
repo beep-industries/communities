@@ -35,6 +35,7 @@ pub enum CoreError {
 }
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct GetPaginated {
     pub page: u32,
     pub limit: u32,

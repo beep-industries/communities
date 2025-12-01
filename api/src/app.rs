@@ -2,6 +2,7 @@ use axum::middleware::from_extractor_with_state;
 use communities_core::create_repositories;
 use sqlx::postgres::PgConnectOptions;
 use utoipa_axum::router::OpenApiRouter;
+use utoipa_scalar::{Scalar, Servable};
 
 use crate::friend_routes;
 use crate::http::server::middleware::auth::AuthMiddleware;
@@ -33,7 +34,9 @@ impl App {
             config.clone().routing,
         )
         .await
-        .inspect_err(|e| println!("{:?}", e))?
+        .map_err(|e| ApiError::StartupError {
+            msg: format!("Failed to create repositories: {}", e),
+        })?
         .into();
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
         let (app_router, api) = OpenApiRouter::<AppState>::new()
@@ -48,6 +51,7 @@ impl App {
             msg: format!("Failed to generate OpenAPI spec: {}", e),
         })?;
 
+        let app_router = app_router.clone().merge(Scalar::with_url("/scalar", api));
         // Write OpenAPI spec to file in development environment
         if matches!(config.environment, crate::config::Environment::Development) {
             std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {

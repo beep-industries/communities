@@ -90,6 +90,7 @@ impl ServerRepository for MockServerRepository {
             picture_url: input.picture_url,
             description: input.description,
             owner_id: input.owner_id,
+            visibility: input.visibility,
             created_at: chrono::Utc::now(),
             updated_at: None,
         };
@@ -118,6 +119,9 @@ impl ServerRepository for MockServerRepository {
         }
         if let Some(description) = input.description {
             server.description = Some(description);
+        }
+        if let Some(visibility) = input.visibility {
+            server.visibility = visibility;
         }
         server.updated_at = Some(chrono::Utc::now());
 

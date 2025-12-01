@@ -37,7 +37,8 @@ impl ServerRepository for PostgresServerRepository {
         let server = query_as!(
             Server,
             r#"
-            SELECT id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
+            SELECT id, name, banner_url, picture_url, description, owner_id, 
+                   visibility as "visibility: _", created_at, updated_at
             FROM servers
             WHERE id = $1
             "#,
@@ -63,19 +64,23 @@ impl ServerRepository for PostgresServerRepository {
         let server = query_as!(
             Server,
             r#"
-            INSERT INTO servers (name, owner_id, picture_url, banner_url, description)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
+            INSERT INTO servers (name, owner_id, picture_url, banner_url, description, visibility)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, name, banner_url, picture_url, description, owner_id, 
+                      visibility as "visibility: _", created_at, updated_at
             "#,
             input.name,
             input.owner_id.0,
             input.picture_url,
             input.banner_url,
-            input.description
+            input.description,
+            input.visibility as _
         )
         .fetch_one(&mut *tx)
         .await
-        .map_err(|_| CoreError::FailedToInsertServer { name: input.name.clone() })?;
+        .map_err(|_| CoreError::FailedToInsertServer {
+            name: input.name.clone(),
+        })?;
 
         // Write the create event to the outbox table for eventual processing
         let create_server_event =
@@ -102,7 +107,8 @@ impl ServerRepository for PostgresServerRepository {
         let current = query_as!(
             Server,
             r#"
-            SELECT id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
+            SELECT id, name, banner_url, picture_url, description, owner_id, 
+                   visibility as "visibility: _", created_at, updated_at
             FROM servers
             WHERE id = $1
             "#,
@@ -122,25 +128,30 @@ impl ServerRepository for PostgresServerRepository {
         let new_picture_url = input.picture_url.as_ref().or(current.picture_url.as_ref());
         let new_banner_url = input.banner_url.as_ref().or(current.banner_url.as_ref());
         let new_description = input.description.as_ref().or(current.description.as_ref());
+        let new_visibility = input.visibility.as_ref().unwrap_or(&current.visibility);
 
         // Update the server in the database
         let server = query_as!(
             Server,
             r#"
             UPDATE servers
-            SET name = $1, picture_url = $2, banner_url = $3, description = $4
-            WHERE id = $5
-            RETURNING id, name, banner_url, picture_url, description, owner_id, created_at, updated_at
+            SET name = $1, picture_url = $2, banner_url = $3, description = $4, visibility = $5
+            WHERE id = $6
+            RETURNING id, name, banner_url, picture_url, description, owner_id, 
+                      visibility as "visibility: _", created_at, updated_at
             "#,
             new_name,
             new_picture_url,
             new_banner_url,
             new_description,
+            new_visibility as _,
             input.id.0
         )
         .fetch_one(&mut *tx)
         .await
-        .map_err(|_| CoreError::ServerNotFound { id: input.id.clone() })?;
+        .map_err(|_| CoreError::ServerNotFound {
+            id: input.id.clone(),
+        })?;
 
         tx.commit().await.map_err(|_| CoreError::ServerNotFound {
             id: input.id.clone(),
@@ -183,7 +194,7 @@ impl ServerRepository for PostgresServerRepository {
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{InsertServerInput, OwnerId};
+    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
     use crate::infrastructure::outbox::MessageRouter;
     use uuid::Uuid;
 
@@ -203,6 +214,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
         picture_url: Some("https://example.com/pic.png".to_string()),
         banner_url: Some("https://example.com/banner.png".to_string()),
         description: Some("a description".to_string()),
+        visibility: ServerVisibility::Public,
     };
 
     // Act: insert server
@@ -214,6 +226,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
     assert_eq!(created.picture_url, input.picture_url);
     assert_eq!(created.banner_url, input.banner_url);
     assert_eq!(created.description, input.description);
+    assert_eq!(created.visibility, input.visibility);
     // id should be set and created_at present
     assert!(created.updated_at.is_none());
 
@@ -319,7 +332,7 @@ async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreE
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{InsertServerInput, OwnerId};
+    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
     use crate::infrastructure::outbox::MessageRouter;
     use sqlx::Row;
     use uuid::Uuid;
@@ -340,6 +353,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
         picture_url: None,
         banner_url: None,
         description: None,
+        visibility: ServerVisibility::Private,
     };
     let created = repository.insert(input).await?;
 
@@ -390,7 +404,9 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_update_server_updates_fields_and_outbox(pool: PgPool) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{InsertServerInput, OwnerId, UpdateServerInput};
+    use crate::domain::server::entities::{
+        InsertServerInput, OwnerId, ServerVisibility, UpdateServerInput,
+    };
     use uuid::Uuid;
 
     let create_router =
@@ -407,6 +423,7 @@ async fn test_update_server_updates_fields_and_outbox(pool: PgPool) -> Result<()
         picture_url: Some("https://example.com/old.png".to_string()),
         banner_url: Some("https://example.com/old-banner.png".to_string()),
         description: Some("old description".to_string()),
+        visibility: ServerVisibility::Public,
     };
     let created = repository.insert(input).await?;
 
@@ -417,6 +434,7 @@ async fn test_update_server_updates_fields_and_outbox(pool: PgPool) -> Result<()
         picture_url: Some("https://example.com/new.png".to_string()),
         banner_url: None,
         description: Some("new description".to_string()),
+        visibility: Some(ServerVisibility::Private),
     };
     let updated = repository.update(update_input.clone()).await?;
 
@@ -432,6 +450,7 @@ async fn test_update_server_updates_fields_and_outbox(pool: PgPool) -> Result<()
         Some("https://example.com/old-banner.png".to_string())
     ); // unchanged
     assert_eq!(updated.description, Some("new description".to_string()));
+    assert_eq!(updated.visibility, ServerVisibility::Private);
     assert!(updated.updated_at.is_some());
 
     // Assert: it can be fetched back with updates
@@ -466,6 +485,7 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
         picture_url: None,
         banner_url: None,
         description: None,
+        visibility: None,
     };
     let result = repository.update(update_input).await;
 
@@ -485,7 +505,9 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
 async fn test_update_server_with_no_fields_returns_unchanged(
     pool: PgPool,
 ) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{InsertServerInput, OwnerId, UpdateServerInput};
+    use crate::domain::server::entities::{
+        InsertServerInput, OwnerId, ServerVisibility, UpdateServerInput,
+    };
     use uuid::Uuid;
 
     let create_router =
@@ -502,6 +524,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         picture_url: Some("https://example.com/pic.png".to_string()),
         banner_url: None,
         description: None,
+        visibility: ServerVisibility::Public,
     };
     let created = repository.insert(input).await?;
 
@@ -512,6 +535,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         picture_url: None,
         banner_url: None,
         description: None,
+        visibility: None,
     };
     let result = repository.update(update_input).await?;
 

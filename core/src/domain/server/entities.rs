@@ -1,3 +1,5 @@
+use std::default;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -32,6 +34,14 @@ impl From<Uuid> for OwnerId {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct OwnerId(pub Uuid);
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, sqlx::Type, Default)]
+#[sqlx(type_name = "server_visibility", rename_all = "lowercase")]
+pub enum ServerVisibility {
+    #[default]
+    Public,
+    Private,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Server {
     pub id: ServerId,
@@ -40,6 +50,7 @@ pub struct Server {
     pub picture_url: Option<String>,
     pub description: Option<String>,
     pub owner_id: OwnerId,
+    pub visibility: ServerVisibility,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
@@ -52,6 +63,7 @@ pub struct InsertServerInput {
     pub picture_url: Option<String>,
     pub banner_url: Option<String>,
     pub description: Option<String>,
+    pub visibility: ServerVisibility,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -61,6 +73,7 @@ pub struct UpdateServerInput {
     pub picture_url: Option<String>,
     pub banner_url: Option<String>,
     pub description: Option<String>,
+    pub visibility: Option<ServerVisibility>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -70,6 +83,7 @@ pub struct UpdateServerEvent {
     pub picture_url: Option<String>,
     pub banner_url: Option<String>,
     pub description: Option<String>,
+    pub visibility: Option<ServerVisibility>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

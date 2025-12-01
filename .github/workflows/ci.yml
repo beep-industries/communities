@@ -15,11 +15,11 @@ on:
 jobs:
   validate_rust:
     name: Validate Rust
-    uses: beep-industries/actions/.github/workflows/validate-rust.yml@main
+    uses: beep-industries/actions/.github/workflows/validate-rust.yml@17-add-reusable-test-ci-workflow-template-for-rust-services
 
   test_rust:
     name: Tests Rust
-    uses: beep-industries/communities/.github/workflows/test.yml@26-implement-ci-pipeline-using-organisational-templates 
+    uses: beep-industries/actions/.github/workflows/test.yml@17-add-reusable-test-ci-workflow-template-for-rust-services
 
   build_push_main:
     name: Build & Push Docker (main)

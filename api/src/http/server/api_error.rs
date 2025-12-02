@@ -24,6 +24,8 @@ pub enum ApiError {
     Forbidden,
     #[error("Not found")]
     NotFound,
+    #[error("Bad request: {msg}")]
+    BadRequest { msg: String },
     #[error("Conflict")]
     Conflict { error_code: String },
 }
@@ -37,6 +39,7 @@ impl ApiError {
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
             ApiError::Forbidden => StatusCode::FORBIDDEN,
             ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
+            ApiError::BadRequest { .. } => StatusCode::BAD_REQUEST,
             ApiError::Conflict { .. } => StatusCode::CONFLICT,
         }
     }
@@ -72,6 +75,10 @@ impl From<CoreError> for ApiError {
         match error {
             CoreError::Unhealthy => ApiError::ServiceUnavailable {
                 msg: "Service is unhealthy".to_string(),
+            },
+            CoreError::ServerNotFound { .. } => ApiError::NotFound,
+            CoreError::InvalidServerName => ApiError::BadRequest {
+                msg: "Server name cannot be empty".to_string(),
             },
             _ => ApiError::InternalServerError,
         }

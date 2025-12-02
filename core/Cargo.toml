@@ -20,8 +20,8 @@ sqlx = { version = "0.8.6", features = [
     "chrono",
 ] }
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
-thiserror = { workspace = true }    
-utoipa = "5.4.0"
+thiserror = { workspace = true }
+utoipa = { version = "5.4.0", features = ["uuid", "chrono"] }
 
 [dev-dependencies]
 mockall = "0.13.1"

@@ -58,19 +58,21 @@ impl ServerRepository for PostgresServerRepository {
         let offset = (pagination.page - 1) * pagination.limit;
         let limit = std::cmp::min(pagination.limit, 50) as i64;
 
-        // Get total count
-        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM servers")
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+        // Get total count of public servers only
+        let total: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM servers WHERE visibility = 'public'")
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
-        // Get paginated servers
+        // Get paginated public servers only
         let servers = query_as!(
             Server,
             r#"
             SELECT id, name, banner_url, picture_url, description, owner_id,
                    visibility as "visibility: _", created_at, updated_at
             FROM servers
+            WHERE visibility = 'public'
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
             "#,
@@ -637,7 +639,7 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
 }
 
 #[sqlx::test(migrations = "./migrations")]
-async fn test_list_servers_returns_all_visibility_types(pool: PgPool) -> Result<(), CoreError> {
+async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreError> {
     use crate::domain::common::GetPaginated;
     use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
     use uuid::Uuid;
@@ -681,27 +683,25 @@ async fn test_list_servers_returns_all_visibility_types(pool: PgPool) -> Result<
     let pagination = GetPaginated { page: 1, limit: 10 };
     let (servers, total) = repository.list(&pagination).await?;
 
-    // Assert: returns all servers regardless of visibility
-    assert_eq!(total, 5, "Should return total count of all servers");
-    assert_eq!(servers.len(), 5, "Should return all servers in the page");
+    // Assert: returns only public servers (per security requirements)
+    assert_eq!(total, 3, "Should return total count of public servers only");
+    assert_eq!(
+        servers.len(),
+        3,
+        "Should return only public servers in the page"
+    );
 
-    // Verify we have both public and private servers
-    let public_count = servers
+    // Verify all returned servers are public
+    let all_public = servers
         .iter()
-        .filter(|s| s.visibility == ServerVisibility::Public)
-        .count();
-    let private_count = servers
-        .iter()
-        .filter(|s| s.visibility == ServerVisibility::Private)
-        .count();
+        .all(|s| s.visibility == ServerVisibility::Public);
 
-    assert_eq!(public_count, 3, "Should have 3 public servers");
-    assert_eq!(private_count, 2, "Should have 2 private servers");
+    assert!(all_public, "All returned servers should be public");
 
     // Verify ordering (most recent first)
-    assert_eq!(servers[0].name, "Private Server 2");
-    assert_eq!(servers[1].name, "Private Server 1");
-    assert_eq!(servers[2].name, "Public Server 3");
+    assert_eq!(servers[0].name, "Public Server 3");
+    assert_eq!(servers[1].name, "Public Server 2");
+    assert_eq!(servers[2].name, "Public Server 1");
 
     Ok(())
 }

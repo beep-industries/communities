@@ -2,7 +2,7 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
     http::server::AppState,
-    servers::handlers::{
+    http::servers::handlers::{
         __path_create_server, __path_delete_server, __path_get_server, __path_list_servers,
         __path_update_server, create_server, delete_server, get_server, list_servers,
         update_server,

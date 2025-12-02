@@ -337,7 +337,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InsertServerInput"
+                "$ref": "#/components/schemas/CreateServerRequest"
               }
             }
           },
@@ -397,6 +397,9 @@
           "401": {
             "description": "Unauthorized"
           },
+          "403": {
+            "description": "Forbidden - Server is private"
+          },
           "404": {
             "description": "Server not found"
           },
@@ -425,7 +428,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateServerInput"
+                "$ref": "#/components/schemas/UpdateServerRequest"
               }
             }
           },
@@ -447,6 +450,9 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not the server owner"
           },
           "404": {
             "description": "Server not found"
@@ -479,6 +485,9 @@
           "401": {
             "description": "Unauthorized"
           },
+          "403": {
+            "description": "Forbidden - Not the server owner"
+          },
           "404": {
             "description": "Server not found"
           },
@@ -510,6 +519,39 @@
         "properties": {
           "user_id_invited": {
             "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "CreateServerRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "visibility"
+        ],
+        "properties": {
+          "banner_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "picture_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ServerVisibility"
           }
         }
       },
@@ -566,43 +608,6 @@
           },
           "user_id_requested": {
             "$ref": "#/components/schemas/UserId"
-          }
-        }
-      },
-      "InsertServerInput": {
-        "type": "object",
-        "required": [
-          "name",
-          "owner_id",
-          "visibility"
-        ],
-        "properties": {
-          "banner_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "owner_id": {
-            "$ref": "#/components/schemas/OwnerId"
-          },
-          "picture_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "visibility": {
-            "$ref": "#/components/schemas/ServerVisibility"
           }
         }
       },
@@ -835,11 +840,8 @@
           "Private"
         ]
       },
-      "UpdateServerInput": {
+      "UpdateServerRequest": {
         "type": "object",
-        "required": [
-          "id"
-        ],
         "properties": {
           "banner_url": {
             "type": [
@@ -852,9 +854,6 @@
               "string",
               "null"
             ]
-          },
-          "id": {
-            "$ref": "#/components/schemas/ServerId"
           },
           "name": {
             "type": [

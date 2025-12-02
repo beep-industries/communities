@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub struct ServerId(pub Uuid);
 
 impl std::fmt::Display for ServerId {
@@ -29,10 +30,10 @@ impl From<Uuid> for OwnerId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub struct OwnerId(pub Uuid);
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, sqlx::Type, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, sqlx::Type, Default, ToSchema)]
 #[sqlx(type_name = "server_visibility", rename_all = "lowercase")]
 pub enum ServerVisibility {
     #[default]
@@ -40,7 +41,7 @@ pub enum ServerVisibility {
     Private,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Server {
     pub id: ServerId,
     pub name: String,
@@ -54,7 +55,7 @@ pub struct Server {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct InsertServerInput {
     pub name: String,
     pub owner_id: OwnerId,
@@ -64,7 +65,7 @@ pub struct InsertServerInput {
     pub visibility: ServerVisibility,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateServerInput {
     pub id: ServerId,
     pub name: Option<String>,
@@ -72,6 +73,28 @@ pub struct UpdateServerInput {
     pub banner_url: Option<String>,
     pub description: Option<String>,
     pub visibility: Option<ServerVisibility>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct UpdateServerRequest {
+    pub name: Option<String>,
+    pub picture_url: Option<String>,
+    pub banner_url: Option<String>,
+    pub description: Option<String>,
+    pub visibility: Option<ServerVisibility>,
+}
+
+impl UpdateServerRequest {
+    pub fn into_input(self, id: ServerId) -> UpdateServerInput {
+        UpdateServerInput {
+            id,
+            name: self.name,
+            picture_url: self.picture_url,
+            banner_url: self.banner_url,
+            description: self.description,
+            visibility: self.visibility,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

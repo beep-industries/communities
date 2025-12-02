@@ -62,7 +62,7 @@ pub trait ServerService: Send + Sync {
 
     /// Retrieves a server by its unique identifier.
     ///
-    /// This meethod performs the core business logic for fetching a server, including
+    /// This method performs the core business logic for fetching a server, including
     /// any necessary authorization checks and data validation. The implementation
     /// should handle cases where the server doesn't exist gracefully.
     ///

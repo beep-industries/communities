@@ -116,3 +116,14 @@ impl AsyncTestContext for TestContext {
         self.app.shutdown().await;
     }
 }
+
+impl TestContext {
+    /// Create a new authenticated router with a different user ID
+    pub async fn create_authenticated_router_with_different_user(&self) -> TestServer {
+        let token = self.jwt.make_for_user(Uuid::new_v4(), 3600);
+        let cookie = Cookie::new("access_token", token);
+        let mut router = TestServer::new(self.app.app_router()).unwrap();
+        router.add_cookie(cookie);
+        router
+    }
+}

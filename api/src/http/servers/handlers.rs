@@ -59,13 +59,13 @@ pub async fn create_server(
 pub async fn get_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<Server>, ApiError> {
     let server_id = ServerId::from(id);
     let server = state.service.get_server(&server_id).await?;
 
-    // Only allow access to public servers
-    if server.visibility != ServerVisibility::Public {
+    // Only allow access to public servers or if user is the owner
+    if server.visibility != ServerVisibility::Public && server.owner_id.0 != user_identity.user_id {
         return Err(ApiError::Forbidden);
     }
 

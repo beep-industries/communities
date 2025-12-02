@@ -273,6 +273,27 @@ async fn test_list_servers_empty() -> Result<(), Box<dyn std::error::Error>> {
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
+    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo);
+
+    let (servers, total) = service
+        .list_servers(&GetPaginated::default())
+        .await
+        .expect("list_servers returned an error");
+
+    assert_eq!(servers.len(), 0, "Expected empty server list");
+    assert_eq!(total, 0, "Expected total count to be 0");
+
+    Ok(())
+}
+
+// == Update Server Tests ==
+
+#[tokio::test]
+#[cfg(test)]
+async fn test_update_server_success() -> Result<(), Box<dyn std::error::Error>> {
+    let server_mock_repo = MockServerRepository::new();
+    let friend_mock_repo = MockFriendshipRepository::new();
+    let health_mock_repo = MockHealthRepository::new();
     let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo);
 
     // Insert a server

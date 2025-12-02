@@ -195,7 +195,7 @@ async fn test_get_server_success(ctx: &mut context::TestContext) {
     let created: Value = create_res.json();
     let server_id = created.get("id").and_then(|v| v.as_str()).unwrap();
 
-    // Now get the server
+    // Owner can access their public server
     let res = ctx
         .authenticated_router
         .get(&format!("/servers/{}", server_id))
@@ -231,7 +231,7 @@ async fn test_get_private_server_as_owner_succeeds(ctx: &mut context::TestContex
     let created: Value = create_res.json();
     let server_id = created.get("id").and_then(|v| v.as_str()).unwrap();
 
-    // Owner should be able to get their private server
+    // Owner can access their private server
     let res = ctx
         .authenticated_router
         .get(&format!("/servers/{}", server_id))
@@ -270,7 +270,7 @@ async fn test_get_private_server_as_non_owner_fails(ctx: &mut context::TestConte
     // Create a second authenticated router with a different user
     let different_user_router = ctx.create_authenticated_router_with_different_user().await;
 
-    // Different user should get forbidden when trying to access private server
+    // Different user (non-owner) also gets forbidden for private server
     let res = different_user_router
         .get(&format!("/servers/{}", server_id))
         .await;

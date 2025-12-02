@@ -5,7 +5,9 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     server::{
-        entities::{InsertServerInput, Server, ServerId, UpdateServerRequest},
+        entities::{
+            CreateServerRequest, OwnerId, Server, ServerId, ServerVisibility, UpdateServerRequest,
+        },
         ports::ServerService,
     },
 };
@@ -20,7 +22,7 @@ use crate::http::server::{
     post,
     path = "/servers",
     tag = "servers",
-    request_body = InsertServerInput,
+    request_body = CreateServerRequest,
     responses(
         (status = 201, description = "Server created successfully", body = Server),
         (status = 400, description = "Bad request - Invalid server name"),
@@ -30,9 +32,11 @@ use crate::http::server::{
 )]
 pub async fn create_server(
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
-    Json(input): Json<InsertServerInput>,
+    Extension(user_identity): Extension<UserIdentity>,
+    Json(request): Json<CreateServerRequest>,
 ) -> Result<Response<Server>, ApiError> {
+    let owner_id = OwnerId::from(user_identity.user_id);
+    let input = request.into_input(owner_id);
     let server = state.service.create_server(input).await?;
     Ok(Response::created(server))
 }
@@ -47,6 +51,7 @@ pub async fn create_server(
     responses(
         (status = 200, description = "Server retrieved successfully", body = Server),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Server is private"),
         (status = 404, description = "Server not found"),
         (status = 500, description = "Internal server error")
     )
@@ -58,6 +63,12 @@ pub async fn get_server(
 ) -> Result<Response<Server>, ApiError> {
     let server_id = ServerId::from(id);
     let server = state.service.get_server(&server_id).await?;
+
+    // Only allow access to public servers
+    if server.visibility != ServerVisibility::Public {
+        return Err(ApiError::Forbidden);
+    }
+
     Ok(Response::ok(server))
 }
 
@@ -102,6 +113,7 @@ pub async fn list_servers(
         (status = 200, description = "Server updated successfully", body = Server),
         (status = 400, description = "Bad request - Invalid server name"),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Not the server owner"),
         (status = 404, description = "Server not found"),
         (status = 500, description = "Internal server error")
     )
@@ -109,10 +121,18 @@ pub async fn list_servers(
 pub async fn update_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
     Json(request): Json<UpdateServerRequest>,
 ) -> Result<Response<Server>, ApiError> {
-    let input = request.into_input(ServerId::from(id));
+    let server_id = ServerId::from(id);
+
+    // Check if server exists and user is the owner
+    let existing_server = state.service.get_server(&server_id).await?;
+    if existing_server.owner_id.0 != user_identity.user_id {
+        return Err(ApiError::Forbidden);
+    }
+
+    let input = request.into_input(server_id);
     let server = state.service.update_server(input).await?;
     Ok(Response::ok(server))
 }
@@ -127,6 +147,7 @@ pub async fn update_server(
     responses(
         (status = 200, description = "Server deleted successfully"),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Not the server owner"),
         (status = 404, description = "Server not found"),
         (status = 500, description = "Internal server error")
     )
@@ -134,9 +155,16 @@ pub async fn update_server(
 pub async fn delete_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<()>, ApiError> {
     let server_id = ServerId::from(id);
+
+    // Check if server exists and user is the owner
+    let existing_server = state.service.get_server(&server_id).await?;
+    if existing_server.owner_id.0 != user_identity.user_id {
+        return Err(ApiError::Forbidden);
+    }
+
     state.service.delete_server(&server_id).await?;
     Ok(Response::deleted(()))
 }

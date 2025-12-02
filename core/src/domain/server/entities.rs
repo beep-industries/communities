@@ -66,6 +66,28 @@ pub struct InsertServerInput {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct CreateServerRequest {
+    pub name: String,
+    pub picture_url: Option<String>,
+    pub banner_url: Option<String>,
+    pub description: Option<String>,
+    pub visibility: ServerVisibility,
+}
+
+impl CreateServerRequest {
+    pub fn into_input(self, owner_id: OwnerId) -> InsertServerInput {
+        InsertServerInput {
+            name: self.name,
+            owner_id,
+            picture_url: self.picture_url,
+            banner_url: self.banner_url,
+            description: self.description,
+            visibility: self.visibility,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct UpdateServerInput {
     pub id: ServerId,
     pub name: Option<String>,

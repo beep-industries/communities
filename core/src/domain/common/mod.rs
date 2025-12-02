@@ -17,6 +17,9 @@ pub enum CoreError {
     #[error("Failed to insert server with name {name}")]
     FailedToInsertServer { name: String },
 
+    #[error("Server name cannot be empty")]
+    InvalidServerName,
+
     #[error("Failed to manipulate with friendship data")]
     FriendshipDataError,
 

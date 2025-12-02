@@ -214,6 +214,70 @@ async fn test_get_server_success(ctx: &mut context::TestContext) {
     );
 }
 
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_get_private_server_as_owner_succeeds(ctx: &mut context::TestContext) {
+    // Create a private server
+    let input = CreateServerRequest {
+        name: "Private Server".to_string(),
+        picture_url: None,
+        banner_url: None,
+        description: Some("Private description".to_string()),
+        visibility: ServerVisibility::Private,
+    };
+
+    let create_res = ctx.authenticated_router.post("/servers").json(&input).await;
+    create_res.assert_status(StatusCode::CREATED);
+    let created: Value = create_res.json();
+    let server_id = created.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Owner should be able to get their private server
+    let res = ctx
+        .authenticated_router
+        .get(&format!("/servers/{}", server_id))
+        .await;
+
+    res.assert_status(StatusCode::OK);
+
+    let body: Value = res.json();
+    assert_eq!(
+        body.get("name").and_then(|v| v.as_str()),
+        Some("Private Server")
+    );
+    assert_eq!(
+        body.get("visibility").and_then(|v| v.as_str()),
+        Some("Private")
+    );
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_get_private_server_as_non_owner_fails(ctx: &mut context::TestContext) {
+    // Create a private server with one user
+    let input = CreateServerRequest {
+        name: "Someone Else's Private Server".to_string(),
+        picture_url: None,
+        banner_url: None,
+        description: Some("Private description".to_string()),
+        visibility: ServerVisibility::Private,
+    };
+
+    let create_res = ctx.authenticated_router.post("/servers").json(&input).await;
+    create_res.assert_status(StatusCode::CREATED);
+    let created: Value = create_res.json();
+    let server_id = created.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Create a second authenticated router with a different user
+    let different_user_router = ctx.create_authenticated_router_with_different_user().await;
+
+    // Different user should get forbidden when trying to access private server
+    let res = different_user_router
+        .get(&format!("/servers/{}", server_id))
+        .await;
+
+    res.assert_status(StatusCode::FORBIDDEN);
+}
+
 // ============================================================================
 // UPDATE SERVER TESTS
 // ============================================================================

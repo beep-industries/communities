@@ -132,9 +132,7 @@ impl ServerRepository for PostgresServerRepository {
             .pool
             .begin()
             .await
-            .map_err(|_| CoreError::ServerNotFound {
-                id: input.id.clone(),
-            })?;
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         // First, fetch the current server to get existing values
         let current = query_as!(
@@ -186,9 +184,9 @@ impl ServerRepository for PostgresServerRepository {
             id: input.id.clone(),
         })?;
 
-        tx.commit().await.map_err(|_| CoreError::ServerNotFound {
-            id: input.id.clone(),
-        })?;
+        tx.commit()
+            .await
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         Ok(server)
     }
@@ -198,14 +196,14 @@ impl ServerRepository for PostgresServerRepository {
             .pool
             .begin()
             .await
-            .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         // Delete the server inside the database
         let result = sqlx::query(r#"DELETE FROM servers WHERE id = $1"#)
             .bind(id.0)
             .execute(&mut *tx)
             .await
-            .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         if result.rows_affected() == 0 {
             return Err(CoreError::ServerNotFound { id: id.clone() });
@@ -219,7 +217,7 @@ impl ServerRepository for PostgresServerRepository {
 
         tx.commit()
             .await
-            .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         Ok(())
     }
@@ -436,7 +434,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
 }
 
 #[sqlx::test(migrations = "./migrations")]
-async fn test_update_server_updates_fields_and_outbox(pool: PgPool) -> Result<(), CoreError> {
+async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError> {
     use crate::domain::server::entities::{
         InsertServerInput, OwnerId, ServerVisibility, UpdateServerInput,
     };
@@ -634,6 +632,76 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
     assert_eq!(total, 5);
     assert_eq!(servers.len(), 1);
     assert_eq!(servers[0].name, "Server 1");
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_list_servers_returns_all_visibility_types(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+    use uuid::Uuid;
+
+    let create_router =
+        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+
+    let repository =
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+
+    // Arrange: insert servers with mixed visibility
+    let owner_id = OwnerId(Uuid::new_v4());
+
+    // Create 3 public servers
+    for i in 1..=3 {
+        let input = InsertServerInput {
+            name: format!("Public Server {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: Some(format!("Public description {}", i)),
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Create 2 private servers
+    for i in 1..=2 {
+        let input = InsertServerInput {
+            name: format!("Private Server {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: Some(format!("Private description {}", i)),
+            visibility: ServerVisibility::Private,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Act: list all servers
+    let pagination = GetPaginated { page: 1, limit: 10 };
+    let (servers, total) = repository.list(&pagination).await?;
+
+    // Assert: returns all servers regardless of visibility
+    assert_eq!(total, 5, "Should return total count of all servers");
+    assert_eq!(servers.len(), 5, "Should return all servers in the page");
+
+    // Verify we have both public and private servers
+    let public_count = servers
+        .iter()
+        .filter(|s| s.visibility == ServerVisibility::Public)
+        .count();
+    let private_count = servers
+        .iter()
+        .filter(|s| s.visibility == ServerVisibility::Private)
+        .count();
+
+    assert_eq!(public_count, 3, "Should have 3 public servers");
+    assert_eq!(private_count, 2, "Should have 2 private servers");
+
+    // Verify ordering (most recent first)
+    assert_eq!(servers[0].name, "Private Server 2");
+    assert_eq!(servers[1].name, "Private Server 1");
+    assert_eq!(servers[2].name, "Public Server 3");
 
     Ok(())
 }

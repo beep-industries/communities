@@ -7,15 +7,17 @@ use crate::{
         },
         health::port::HealthRepository,
         server::ports::ServerRepository,
+        server_member::ports::MemberRepository,
     },
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-impl<S, F, H> FriendService for Service<S, F, H>
+impl<S, F, H, M> FriendService for Service<S, F, H, M>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
+    M: MemberRepository,
 {
     async fn get_friends(
         &self,
@@ -32,11 +34,12 @@ where
     }
 }
 
-impl<S, F, H> FriendRequestService for Service<S, F, H>
+impl<S, F, H, M> FriendRequestService for Service<S, F, H, M>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
+    M: MemberRepository,
 {
     async fn get_friend_requests(
         &self,

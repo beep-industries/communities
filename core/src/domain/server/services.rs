@@ -6,13 +6,15 @@ use crate::domain::{
         entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
         ports::{ServerRepository, ServerService},
     },
+    server_member::ports::MemberRepository,
 };
 
-impl<S, F, H> ServerService for Service<S, F, H>
+impl<S, F, H, M> ServerService for Service<S, F, H, M>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
+    M: MemberRepository,
 {
     async fn create_server(&self, input: InsertServerInput) -> Result<Server, CoreError> {
         // Validate server name is not empty

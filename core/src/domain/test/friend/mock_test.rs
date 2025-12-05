@@ -13,13 +13,14 @@ async fn test_get_friend_requests_success() -> Result<(), Box<dyn std::error::Er
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     // Add dataset
     friend_mock_repo
@@ -62,13 +63,14 @@ async fn test_get_friend_requests_success_with_pagination() -> Result<(), Box<dy
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     // Add dataset
     friend_mock_repo
@@ -110,13 +112,14 @@ async fn test_create_friend_requests_success() -> Result<(), Box<dyn std::error:
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -155,13 +158,14 @@ async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std:
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -212,13 +216,14 @@ async fn test_accept_friend_requests_success() -> Result<(), Box<dyn std::error:
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -273,13 +278,14 @@ async fn test_accept_friend_requests_fail() -> Result<(), Box<dyn std::error::Er
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -311,13 +317,14 @@ async fn test_decline_friend_requests_success() -> Result<(), Box<dyn std::error
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -364,13 +371,14 @@ async fn test_decline_friend_requests_fail() -> Result<(), Box<dyn std::error::E
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -402,13 +410,14 @@ async fn test_delete_friend_requests_success() -> Result<(), Box<dyn std::error:
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -440,13 +449,14 @@ async fn test_delete_friend_requests_fail() -> Result<(), Box<dyn std::error::Er
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -481,13 +491,14 @@ async fn test_get_friends_success() -> Result<(), Box<dyn std::error::Error>> {
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -525,13 +536,14 @@ async fn test_get_friends_success_with_pagination() -> Result<(), Box<dyn std::e
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -577,13 +589,14 @@ async fn test_delete_friend_success() -> Result<(), Box<dyn std::error::Error>> 
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
@@ -620,13 +633,14 @@ async fn test_delete_friend_fail() -> Result<(), Box<dyn std::error::Error>> {
             },
             health::port::MockHealthRepository,
             server::ports::MockServerRepository,
+            server_member::ports::MockMemberRepository,
         },
     };
 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo);
+    let service = Service::new(server_mock_repo, friend_mock_repo.clone(), health_mock_repo, MockMemberRepository::new());
 
     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());

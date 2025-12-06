@@ -14,8 +14,12 @@ use crate::{
 };
 
 /// Concrete service type with PostgreSQL repositories (using MockMemberRepository until issue #68 is implemented)
-pub type CommunitiesService =
-    Service<PostgresServerRepository, PostgresFriendshipRepository, PostgresHealthRepository, MockMemberRepository>;
+pub type CommunitiesService = Service<
+    PostgresServerRepository,
+    PostgresFriendshipRepository,
+    PostgresHealthRepository,
+    MockMemberRepository,
+>;
 
 #[derive(Clone)]
 pub struct CommunitiesRepositories {

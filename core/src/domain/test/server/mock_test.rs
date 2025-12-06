@@ -21,7 +21,12 @@ async fn test_create_server_success() -> Result<(), Box<dyn std::error::Error>> 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let input = InsertServerInput {
         name: "Test Server".to_string(),
@@ -69,7 +74,12 @@ async fn test_create_server_fail_empty_name() -> Result<(), Box<dyn std::error::
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let input = InsertServerInput {
         name: "".to_string(),
@@ -100,7 +110,12 @@ async fn test_create_server_fail_whitespace_name() -> Result<(), Box<dyn std::er
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let input = InsertServerInput {
         name: "   ".to_string(),
@@ -133,7 +148,12 @@ async fn test_get_server_success() -> Result<(), Box<dyn std::error::Error>> {
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert a server using repository
     let input = InsertServerInput {
@@ -164,7 +184,12 @@ async fn test_get_server_not_found() -> Result<(), Box<dyn std::error::Error>> {
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let non_existent_id = ServerId::from(Uuid::new_v4());
     let error = service
@@ -188,7 +213,12 @@ async fn test_list_servers_success() -> Result<(), Box<dyn std::error::Error>> {
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert multiple servers
     for i in 1..=3 {
@@ -220,7 +250,12 @@ async fn test_list_servers_with_pagination() -> Result<(), Box<dyn std::error::E
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert 25 servers
     for i in 1..=25 {
@@ -274,7 +309,12 @@ async fn test_list_servers_empty() -> Result<(), Box<dyn std::error::Error>> {
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let (servers, total) = service
         .list_servers(&GetPaginated::default())
@@ -295,7 +335,12 @@ async fn test_update_server_success() -> Result<(), Box<dyn std::error::Error>> 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert a server
     let input = InsertServerInput {
@@ -351,7 +396,12 @@ async fn test_update_server_partial_update() -> Result<(), Box<dyn std::error::E
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert a server
     let input = InsertServerInput {
@@ -408,7 +458,12 @@ async fn test_update_server_not_found() -> Result<(), Box<dyn std::error::Error>
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let update_input = UpdateServerInput {
         id: ServerId::from(Uuid::new_v4()),
@@ -438,7 +493,12 @@ async fn test_update_server_fail_empty_name() -> Result<(), Box<dyn std::error::
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert a server
     let input = InsertServerInput {
@@ -483,7 +543,12 @@ async fn test_delete_server_success() -> Result<(), Box<dyn std::error::Error>> 
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo.clone(), friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo.clone(),
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     // Insert a server
     let input = InsertServerInput {
@@ -515,7 +580,12 @@ async fn test_delete_server_not_found() -> Result<(), Box<dyn std::error::Error>
     let server_mock_repo = MockServerRepository::new();
     let friend_mock_repo = MockFriendshipRepository::new();
     let health_mock_repo = MockHealthRepository::new();
-    let service = Service::new(server_mock_repo, friend_mock_repo, health_mock_repo, MockMemberRepository::new());
+    let service = Service::new(
+        server_mock_repo,
+        friend_mock_repo,
+        health_mock_repo,
+        MockMemberRepository::new(),
+    );
 
     let non_existent_id = ServerId::from(Uuid::new_v4());
     let error = service

@@ -60,3 +60,26 @@ pub struct UpdateMemberInput {
     pub user_id: UserId,
     pub nickname: Option<String>,
 }
+
+/// Event emitted when a member is created
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreateMemberEvent {
+    pub server_id: ServerId,
+    pub user_id: UserId,
+    pub nickname: Option<String>,
+}
+
+/// Event emitted when a member is updated
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UpdateMemberEvent {
+    pub server_id: ServerId,
+    pub user_id: UserId,
+    pub nickname: Option<String>,
+}
+
+/// Event emitted when a member is deleted
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DeleteMemberEvent {
+    pub server_id: ServerId,
+    pub user_id: UserId,
+}

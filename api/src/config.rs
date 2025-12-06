@@ -121,5 +121,5 @@ pub enum Environment {
     #[default]
     Development,
     Production,
-    Test
+    Test,
 }

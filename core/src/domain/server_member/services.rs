@@ -18,7 +18,9 @@ where
         // Validate server exists
         let server = self.server_repository.find_by_id(&input.server_id).await?;
         if server.is_none() {
-            return Err(CoreError::ServerNotFound { id: input.server_id });
+            return Err(CoreError::ServerNotFound {
+                id: input.server_id,
+            });
         }
 
         // Check if member already exists
@@ -100,10 +102,7 @@ where
             .find_by_server_and_user(&server_id, &user_id)
             .await?;
         if existing.is_none() {
-            return Err(CoreError::MemberNotFound {
-                server_id,
-                user_id,
-            });
+            return Err(CoreError::MemberNotFound { server_id, user_id });
         }
 
         // Delete member

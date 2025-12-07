@@ -45,6 +45,21 @@ pub struct ServerMember {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[cfg(feature = "postgres")]
+impl From<&sqlx::postgres::PgRow> for ServerMember {
+    fn from(row: &sqlx::postgres::PgRow) -> Self {
+        use sqlx::Row;
+        Self {
+            id: MemberId(row.get("id")),
+            server_id: ServerId(row.get("server_id")),
+            user_id: UserId(row.get("user_id")),
+            nickname: row.get("nickname"),
+            joined_at: row.get("joined_at"),
+            updated_at: row.get("updated_at"),
+        }
+    }
+}
+
 /// Input for creating a new server member
 #[derive(Debug, Clone, ToSchema)]
 pub struct CreateMemberInput {

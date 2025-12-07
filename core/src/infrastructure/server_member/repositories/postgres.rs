@@ -1,17 +1,18 @@
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         server_member::{
-            entities::{
-                CreateMemberInput, DeleteMemberEvent, MemberId, ServerMember, UpdateMemberInput,
-            },
+            entities::{CreateMemberInput, DeleteMemberEvent, ServerMember, UpdateMemberInput},
             ports::MemberRepository,
         },
     },
-    infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
+    infrastructure::{
+        MessageRoutingInfo,
+        outbox::{MessageRouter, OutboxEventRecord},
+    },
 };
 
 #[derive(Clone)]
@@ -51,16 +52,7 @@ impl MemberRepository for PostgresMemberRepository {
             msg: format!("Failed to insert member: {}", e),
         })?;
 
-        let member = ServerMember {
-            id: MemberId(row.get("id")),
-            server_id: crate::domain::server::entities::ServerId(row.get("server_id")),
-            user_id: crate::domain::friend::entities::UserId(row.get("user_id")),
-            nickname: row.get("nickname"),
-            joined_at: row.get("joined_at"),
-            updated_at: row.get("updated_at"),
-        };
-
-        Ok(member)
+        Ok((&row).into())
     }
 
     async fn find_by_server_and_user(
@@ -83,14 +75,7 @@ impl MemberRepository for PostgresMemberRepository {
             msg: format!("Failed to find member: {}", e),
         })?;
 
-        Ok(row.map(|r| ServerMember {
-            id: MemberId(r.get("id")),
-            server_id: crate::domain::server::entities::ServerId(r.get("server_id")),
-            user_id: crate::domain::friend::entities::UserId(r.get("user_id")),
-            nickname: r.get("nickname"),
-            joined_at: r.get("joined_at"),
-            updated_at: r.get("updated_at"),
-        }))
+        Ok(row.map(|r| (&r).into()))
     }
 
     async fn list_by_server(
@@ -130,17 +115,7 @@ impl MemberRepository for PostgresMemberRepository {
             msg: format!("Failed to list members: {}", e),
         })?;
 
-        let members: Vec<ServerMember> = rows
-            .into_iter()
-            .map(|r| ServerMember {
-                id: MemberId(r.get("id")),
-                server_id: crate::domain::server::entities::ServerId(r.get("server_id")),
-                user_id: crate::domain::friend::entities::UserId(r.get("user_id")),
-                nickname: r.get("nickname"),
-                joined_at: r.get("joined_at"),
-                updated_at: r.get("updated_at"),
-            })
-            .collect();
+        let members: Vec<ServerMember> = rows.into_iter().map(|r| (&r).into()).collect();
 
         Ok((members, total as u64))
     }
@@ -177,14 +152,7 @@ impl MemberRepository for PostgresMemberRepository {
             user_id: input.user_id,
         })?;
 
-        let member = ServerMember {
-            id: MemberId(row.get("id")),
-            server_id: crate::domain::server::entities::ServerId(row.get("server_id")),
-            user_id: crate::domain::friend::entities::UserId(row.get("user_id")),
-            nickname: row.get("nickname"),
-            joined_at: row.get("joined_at"),
-            updated_at: row.get("updated_at"),
-        };
+        let member: ServerMember = (&row).into();
 
         tx.commit().await.map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to commit transaction: {}", e),
@@ -245,7 +213,6 @@ mod tests {
     use super::*;
     use crate::domain::friend::entities::UserId;
     use crate::domain::server::entities::{ServerId, ServerVisibility};
-    use crate::infrastructure::outbox::MessageRouter;
     use sqlx::Row;
 
     // Helper function to create a test server
@@ -269,7 +236,7 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_insert_member_writes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
+    async fn test_insert_member_writes_row(pool: PgPool) -> Result<(), CoreError> {
         let delete_router =
             MessageRoutingInfo::new("member.exchange".to_string(), "member.deleted".to_string());
 
@@ -398,7 +365,7 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_update_member_updates_fields_and_outbox(pool: PgPool) -> Result<(), CoreError> {
+    async fn test_update_member_updates_fields(pool: PgPool) -> Result<(), CoreError> {
         let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
 
         let server_id = ServerId(Uuid::new_v4());

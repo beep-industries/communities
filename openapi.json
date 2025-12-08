@@ -496,6 +496,392 @@
           }
         }
       }
+    },
+    "/servers/{server_id}/members": {
+      "get": {
+        "tags": [
+          "server_members"
+        ],
+        "operationId": "list_members",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "description": "Server ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of members retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ServerMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Cannot access private server members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Server not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "server_members"
+        ],
+        "operationId": "create_member",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "description": "Server ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Member created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid nickname",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Server not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Member already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/servers/{server_id}/members/{user_id}": {
+      "put": {
+        "tags": [
+          "server_members"
+        ],
+        "operationId": "update_member",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "description": "Server ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid nickname",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not authorized to update member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "server_members"
+        ],
+        "operationId": "delete_member",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "description": "Server ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not authorized to remove member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -519,6 +905,27 @@
         "properties": {
           "user_id_invited": {
             "$ref": "#/components/schemas/UserId"
+          }
+        }
+      },
+      "CreateMemberRequest": {
+        "type": "object",
+        "description": "Request body for creating a new server member",
+        "required": [
+          "user_id"
+        ],
+        "properties": {
+          "nickname": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional custom nickname in the server",
+            "example": "CoolNickname"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "User ID to add as member"
           }
         }
       },
@@ -566,6 +973,29 @@
           }
         }
       },
+      "ErrorBody": {
+        "type": "object",
+        "required": [
+          "message",
+          "status"
+        ],
+        "properties": {
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "Friend": {
         "type": "object",
         "required": [
@@ -610,6 +1040,11 @@
             "$ref": "#/components/schemas/UserId"
           }
         }
+      },
+      "MemberId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Unique identifier for a server member"
       },
       "OwnerId": {
         "type": "string",
@@ -776,6 +1211,71 @@
           }
         }
       },
+      "PaginatedResponse_ServerMember": {
+        "type": "object",
+        "required": [
+          "data",
+          "total",
+          "page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Represents a user's membership in a server",
+              "required": [
+                "id",
+                "server_id",
+                "user_id",
+                "joined_at"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/MemberId",
+                  "description": "Unique member identifier"
+                },
+                "joined_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When member joined"
+                },
+                "nickname": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Custom nickname in server"
+                },
+                "server_id": {
+                  "$ref": "#/components/schemas/ServerId",
+                  "description": "Associated server"
+                },
+                "updated_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Last update timestamp"
+                },
+                "user_id": {
+                  "$ref": "#/components/schemas/UserId",
+                  "description": "Associated user"
+                }
+              }
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "total": {
+            "$ref": "#/components/schemas/u64"
+          }
+        }
+      },
       "Server": {
         "type": "object",
         "required": [
@@ -833,12 +1333,70 @@
         "type": "string",
         "format": "uuid"
       },
+      "ServerMember": {
+        "type": "object",
+        "description": "Represents a user's membership in a server",
+        "required": [
+          "id",
+          "server_id",
+          "user_id",
+          "joined_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/MemberId",
+            "description": "Unique member identifier"
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When member joined"
+          },
+          "nickname": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Custom nickname in server"
+          },
+          "server_id": {
+            "$ref": "#/components/schemas/ServerId",
+            "description": "Associated server"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Last update timestamp"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "Associated user"
+          }
+        }
+      },
       "ServerVisibility": {
         "type": "string",
         "enum": [
           "Public",
           "Private"
         ]
+      },
+      "UpdateMemberRequest": {
+        "type": "object",
+        "description": "Request body for updating a server member",
+        "properties": {
+          "nickname": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "New nickname for the member",
+            "example": "NewNickname"
+          }
+        }
       },
       "UpdateServerRequest": {
         "type": "object",

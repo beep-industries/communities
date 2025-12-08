@@ -14,7 +14,7 @@ use crate::{
             middleware::auth::entities::AuthValidator,
         },
     },
-    server_routes,
+    server_member_routes, server_routes,
 };
 
 #[derive(OpenApi)]
@@ -53,6 +53,7 @@ impl App {
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             .merge(server_routes())
+            .merge(server_member_routes())
             // Add application routes here
             .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
                 auth_validator.clone(),

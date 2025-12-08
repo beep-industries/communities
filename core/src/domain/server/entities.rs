@@ -55,6 +55,12 @@ pub struct Server {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+impl Server {
+    pub fn is_public(&self) -> bool {
+        self.visibility == ServerVisibility::Public
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct InsertServerInput {
     pub name: String,

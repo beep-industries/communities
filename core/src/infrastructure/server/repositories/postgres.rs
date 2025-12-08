@@ -33,7 +33,7 @@ impl PostgresServerRepository {
 }
 
 impl ServerRepository for PostgresServerRepository {
-    async fn find_by_id(&self, id: &ServerId) -> Result<Option<Server>, CoreError> {
+    async fn find_by_id(&self, id: &ServerId) -> Result<Server, CoreError> {
         let server = query_as!(
             Server,
             r#"
@@ -47,8 +47,10 @@ impl ServerRepository for PostgresServerRepository {
         .fetch_optional(&self.pool)
         .await
         .map_err(|_| CoreError::ServerNotFound { id: id.clone() })?;
-
-        Ok(server)
+        match server {
+            Some(s) => Ok(s),
+            None => Err(CoreError::ServerNotFound { id: id.clone() }),
+        }
     }
 
     async fn list(
@@ -265,8 +267,6 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
 
     // Assert: it can be fetched back
     let fetched = repository.find_by_id(&created.id).await?;
-    assert!(fetched.is_some());
-    let fetched = fetched.unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.name, created.name);
 
@@ -328,10 +328,14 @@ async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<()
 
     // Try to find a server with a random UUID that doesn't exist
     let nonexistent_id = ServerId(Uuid::new_v4());
-    let result = repository.find_by_id(&nonexistent_id).await?;
+    let result = repository.find_by_id(&nonexistent_id).await;
 
-    // Assert: should return None
-    assert!(result.is_none());
+    // Assert: should return error
+    assert!(result.is_err());
+    match result {
+        Err(CoreError::ServerNotFound { id }) => assert_eq!(id, nonexistent_id),
+        _ => panic!("Expected ServerNotFound error"),
+    }
 
     Ok(())
 }
@@ -393,9 +397,13 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
     // Act: delete it
     repository.delete(&created.id).await?;
 
-    // Assert: it's gone
-    let fetched = repository.find_by_id(&created.id).await?;
-    assert!(fetched.is_none());
+    // Assert: it's gone - should return error
+    let fetched = repository.find_by_id(&created.id).await;
+    assert!(fetched.is_err());
+    match fetched {
+        Err(CoreError::ServerNotFound { .. }) => {}
+        _ => panic!("Expected ServerNotFound error"),
+    }
 
     // Assert: an outbox message for delete was written
     let row = sqlx::query(
@@ -488,8 +496,6 @@ async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError
 
     // Assert: it can be fetched back with updates
     let fetched = repository.find_by_id(&created.id).await?;
-    assert!(fetched.is_some());
-    let fetched = fetched.unwrap();
     assert_eq!(fetched.name, "updated name");
     assert_eq!(
         fetched.picture_url,

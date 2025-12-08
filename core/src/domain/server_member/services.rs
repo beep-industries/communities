@@ -16,16 +16,7 @@ where
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists
-        let found_server = self.server_repository.find_by_id(&input.server_id).await?;
-        let server = match found_server {
-            None => {
-                return Err(CoreError::ServerNotFound {
-                    id: input.server_id,
-                });
-            }
-            Some(server) => server,
-        };
-
+        let server = self.server_repository.find_by_id(&input.server_id).await?;
         if server.is_public() == false {
             return Err(CoreError::ServerNotFound {
                 id: input.server_id,
@@ -63,10 +54,9 @@ where
     ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
         // Validate server exists
         let server = self.server_repository.find_by_id(&server_id).await?;
-        if server.is_none() {
+        if server.is_public() == false {
             return Err(CoreError::ServerNotFound { id: server_id });
         }
-
         // List members
         let (members, total) = self
             .member_repository

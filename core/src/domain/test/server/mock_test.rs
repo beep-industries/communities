@@ -1,7 +1,7 @@
 use crate::{
     Service,
     domain::{
-        common::GetPaginated,
+        common::{CoreError, GetPaginated},
         friend::ports::MockFriendshipRepository,
         health::port::MockHealthRepository,
         server::{
@@ -567,9 +567,13 @@ async fn test_delete_server_success() -> Result<(), Box<dyn std::error::Error>> 
         .await
         .expect("delete_server returned an error");
 
-    // Verify server is deleted
-    let deleted_server = server_mock_repo.find_by_id(&created_server.id).await?;
-    assert!(deleted_server.is_none(), "Expected server to be deleted");
+    // Verify server is deleted - should return error
+    let deleted_server = server_mock_repo.find_by_id(&created_server.id).await;
+    assert!(deleted_server.is_err(), "Expected server to be deleted");
+    match deleted_server {
+        Err(CoreError::ServerNotFound { .. }) => {}
+        _ => panic!("Expected ServerNotFound error"),
+    }
 
     Ok(())
 }

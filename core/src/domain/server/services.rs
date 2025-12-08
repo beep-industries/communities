@@ -34,13 +34,7 @@ where
         // @TODO Authorization: Check if the user has permission to access the server
 
         let server = self.server_repository.find_by_id(server_id).await?;
-
-        match server {
-            Some(server) => Ok(server),
-            None => Err(CoreError::ServerNotFound {
-                id: server_id.clone(),
-            }),
-        }
+        Ok(server)
     }
 
     async fn list_servers(
@@ -55,15 +49,6 @@ where
     }
 
     async fn update_server(&self, input: UpdateServerInput) -> Result<Server, CoreError> {
-        // Check if server exists
-        let existing_server = self.server_repository.find_by_id(&input.id).await?;
-
-        if existing_server.is_none() {
-            return Err(CoreError::ServerNotFound {
-                id: input.id.clone(),
-            });
-        }
-
         // Validate name if it's being updated
         if let Some(ref name) = input.name {
             if name.trim().is_empty() {
@@ -80,15 +65,6 @@ where
     }
 
     async fn delete_server(&self, server_id: &ServerId) -> Result<(), CoreError> {
-        // Check if server exists
-        let existing_server = self.server_repository.find_by_id(server_id).await?;
-
-        if existing_server.is_none() {
-            return Err(CoreError::ServerNotFound {
-                id: server_id.clone(),
-            });
-        }
-
         // @TODO Authorization: Verify user is the server owner or has admin privileges
 
         // Delete the server

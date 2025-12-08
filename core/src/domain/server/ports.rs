@@ -10,10 +10,7 @@ pub trait ServerRepository: Send + Sync {
         &self,
         input: InsertServerInput,
     ) -> impl Future<Output = Result<Server, CoreError>> + Send;
-    fn find_by_id(
-        &self,
-        id: &ServerId,
-    ) -> impl Future<Output = Result<Option<Server>, CoreError>> + Send;
+    fn find_by_id(&self, id: &ServerId) -> impl Future<Output = Result<Server, CoreError>> + Send;
     fn list(
         &self,
         pagination: &GetPaginated,
@@ -157,10 +154,14 @@ impl MockServerRepository {
 }
 
 impl ServerRepository for MockServerRepository {
-    async fn find_by_id(&self, id: &ServerId) -> Result<Option<Server>, CoreError> {
+    async fn find_by_id(&self, id: &ServerId) -> Result<Server, CoreError> {
         let servers = self.servers.lock().unwrap();
 
-        let server = servers.iter().find(|s| &s.id == id).cloned();
+        let server = servers
+            .iter()
+            .find(|s| &s.id == id)
+            .cloned()
+            .ok_or_else(|| CoreError::ServerNotFound { id: id.clone() })?;
 
         Ok(server)
     }

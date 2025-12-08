@@ -17,8 +17,8 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::http::server::{
-    ApiError, AppState, Response, middleware::auth::entities::UserIdentity,
-    response::PaginatedResponse, api_error::ErrorBody,
+    ApiError, AppState, Response, api_error::ErrorBody, middleware::auth::entities::UserIdentity,
+    response::PaginatedResponse,
 };
 
 /// Request body for creating a new server member
@@ -63,11 +63,10 @@ pub struct UpdateMemberRequest {
 pub async fn create_member(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user_identity): Extension<UserIdentity>,
+    Extension(_user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateMemberRequest>,
 ) -> Result<Response<ServerMember>, ApiError> {
     let server_id = ServerId::from(server_id);
-
 
     let input = CreateMemberInput {
         server_id,
@@ -99,20 +98,10 @@ pub async fn create_member(
 pub async fn list_members(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user_identity): Extension<UserIdentity>,
+    Extension(_user_identity): Extension<UserIdentity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
     let server_id = ServerId::from(server_id);
-
-    // Verify server exists and user has access
-    let server = state.service.get_server(&server_id).await?;
-    
-    // Check if user can view members (public server or server owner)
-    if server.visibility != communities_core::domain::server::entities::ServerVisibility::Public
-        && server.owner_id.0 != user_identity.user_id
-    {
-        return Err(ApiError::Forbidden);
-    }
 
     let page = pagination.page;
     let (members, total) = state.service.list_members(server_id, pagination).await?;

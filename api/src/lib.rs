@@ -7,4 +7,5 @@ pub use http::friend::routes::friend_routes;
 pub use http::health::routes::health_routes;
 pub use http::server::middleware::auth::{AuthMiddleware, entities::AuthValidator};
 pub use http::server::{ApiError, AppState};
+pub use http::server_members::routes::server_member_routes;
 pub use http::servers::routes::server_routes;

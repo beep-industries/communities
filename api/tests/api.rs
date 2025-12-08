@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 use test_context::test_context;
 
 pub mod context;
+
 #[test_context(context::TestContext)]
 #[tokio::test]
 async fn test_example(ctx: &mut context::TestContext) {
@@ -39,3 +40,5 @@ async fn test_authenticated_get_friends_ok(ctx: &mut context::TestContext) {
         "'page' field must be a number"
     );
 }
+
+

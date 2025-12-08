@@ -80,6 +80,13 @@ impl From<CoreError> for ApiError {
             CoreError::InvalidServerName => ApiError::BadRequest {
                 msg: "Server name cannot be empty".to_string(),
             },
+            CoreError::MemberNotFound { .. } => ApiError::NotFound,
+            CoreError::MemberAlreadyExists { .. } => ApiError::Conflict {
+                error_code: "MEMBER_ALREADY_EXISTS".to_string(),
+            },
+            CoreError::InvalidMemberNickname => ApiError::BadRequest {
+                msg: "Invalid member nickname: cannot be empty or whitespace".to_string(),
+            },
             _ => ApiError::InternalServerError,
         }
     }
@@ -101,7 +108,7 @@ impl From<FriendshipError> for ApiError {
         }
     }
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ErrorBody {
     pub message: String,
     pub error_code: Option<String>,

@@ -4,6 +4,8 @@ use uuid::Uuid;
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
+        friend::entities::UserId,
+        server::entities::ServerId,
         server_member::{
             entities::{CreateMemberInput, DeleteMemberEvent, ServerMember, UpdateMemberInput},
             ports::MemberRepository,
@@ -57,30 +59,36 @@ impl MemberRepository for PostgresMemberRepository {
 
     async fn find_by_server_and_user(
         &self,
-        server_id: &crate::domain::server::entities::ServerId,
-        user_id: &crate::domain::friend::entities::UserId,
-    ) -> Result<Option<ServerMember>, CoreError> {
-        let row = sqlx::query(
+        server_id: &ServerId,
+        user_id: &UserId,
+    ) -> Result<ServerMember, CoreError> {
+        let row = sqlx::query_as!(
+            ServerMember,
             r#"
             SELECT id, server_id, user_id, nickname, joined_at, updated_at
             FROM server_members
             WHERE server_id = $1 AND user_id = $2
             "#,
+            server_id.0,
+            user_id.0,
         )
-        .bind(server_id.0)
-        .bind(user_id.0)
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to find member: {}", e),
         })?;
-
-        Ok(row.map(|r| (&r).into()))
+        match row {
+            Some(member) => Ok(member),
+            None => Err(CoreError::MemberNotFound {
+                server_id: *server_id,
+                user_id: *user_id,
+            }),
+        }
     }
 
     async fn list_by_server(
         &self,
-        server_id: &crate::domain::server::entities::ServerId,
+        server_id: &ServerId,
         pagination: &GetPaginated,
     ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
         let offset = (pagination.page - 1) * pagination.limit;
@@ -161,11 +169,7 @@ impl MemberRepository for PostgresMemberRepository {
         Ok(member)
     }
 
-    async fn delete(
-        &self,
-        server_id: &crate::domain::server::entities::ServerId,
-        user_id: &crate::domain::friend::entities::UserId,
-    ) -> Result<(), CoreError> {
+    async fn delete(&self, server_id: &ServerId, user_id: &UserId) -> Result<(), CoreError> {
         let mut tx = self
             .pool
             .begin()
@@ -267,8 +271,6 @@ mod tests {
         let fetched = repository
             .find_by_server_and_user(&server_id, &user_id)
             .await?;
-        assert!(fetched.is_some());
-        let fetched = fetched.unwrap();
         assert_eq!(fetched.id, created.id);
         assert_eq!(fetched.server_id, created.server_id);
 
@@ -300,8 +302,6 @@ mod tests {
             .await?;
 
         // Assert: member is found
-        assert!(found.is_some());
-        let found = found.unwrap();
         assert_eq!(found.id, created.id);
         assert_eq!(found.server_id, server_id);
         assert_eq!(found.user_id, user_id);
@@ -311,7 +311,7 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_find_by_server_and_user_returns_none_for_nonexistent(
+    async fn test_find_by_server_and_user_returns_error_for_nonexistent(
         pool: PgPool,
     ) -> Result<(), CoreError> {
         let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
@@ -321,10 +321,8 @@ mod tests {
         let nonexistent_user = UserId(Uuid::new_v4());
         let result = repository
             .find_by_server_and_user(&nonexistent_server, &nonexistent_user)
-            .await?;
-
-        // Assert: should return None
-        assert!(result.is_none());
+            .await;
+        assert!(matches!(result, Err(CoreError::MemberNotFound { .. })));
 
         Ok(())
     }
@@ -400,8 +398,6 @@ mod tests {
         let fetched = repository
             .find_by_server_and_user(&server_id, &user_id)
             .await?;
-        assert!(fetched.is_some());
-        let fetched = fetched.unwrap();
         assert_eq!(fetched.nickname, Some("NewNick".to_string()));
 
         Ok(())
@@ -461,9 +457,9 @@ mod tests {
         // Assert: member is gone
         let fetched = repository
             .find_by_server_and_user(&server_id, &user_id)
-            .await?;
-        assert!(fetched.is_none());
+            .await;
 
+        assert!(matches!(fetched, Err(CoreError::MemberNotFound { .. })));
         // Assert: an outbox message for delete was written
         let row = sqlx::query(
             r#"

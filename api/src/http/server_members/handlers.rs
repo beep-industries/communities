@@ -98,10 +98,18 @@ pub async fn create_member(
 pub async fn list_members(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
     let server_id = ServerId::from(server_id);
+    let user_id = UserId::from(user_identity.user_id);
+
+    // Check if the user is a member of the server
+    let _ = state
+        .service
+        .get_member(server_id, user_id)
+        .await
+        .map_err(|_| ApiError::NotFound)?;
 
     let page = pagination.page;
     let (members, total) = state.service.list_members(server_id, pagination).await?;
@@ -168,7 +176,7 @@ pub async fn update_member(
         ("user_id" = String, Path, description = "User ID")
     ),
     responses(
-        (status = 200, description = "Member removed successfully", body = serde_json::Value),
+        (status = 200, description = "Member removed successfully", ),
         (status = 401, description = "Unauthorized", body = ErrorBody),
         (status = 403, description = "Forbidden - Not authorized to remove member", body = ErrorBody),
         (status = 404, description = "Member not found", body = ErrorBody),

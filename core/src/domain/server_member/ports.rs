@@ -23,7 +23,7 @@ pub trait MemberRepository: Send + Sync {
         &self,
         server_id: &ServerId,
         user_id: &UserId,
-    ) -> impl Future<Output = Result<Option<ServerMember>, CoreError>> + Send;
+    ) -> impl Future<Output = Result<ServerMember, CoreError>> + Send;
 
     /// List all members of a server with pagination
     fn list_by_server(
@@ -106,6 +106,19 @@ pub trait MemberService: Send + Sync {
         server_id: ServerId,
         user_id: UserId,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
+
+    /// Get a server member by server ID and user ID
+    /// # Arguments
+    /// * `server_id` - The server ID
+    /// * `user_id` - The user ID
+    /// # Returns
+    /// * `Ok(ServerMember)` - The found member
+    /// * `Err(CoreError::MemberNotFound)` - If the member doesn't exist    
+    fn get_member(
+        &self,
+        server_id: ServerId,
+        user_id: UserId,
+    ) -> impl Future<Output = Result<ServerMember, CoreError>> + Send;
 }
 
 /// Mock implementation of MemberRepository for testing
@@ -143,13 +156,19 @@ impl MemberRepository for MockMemberRepository {
         &self,
         server_id: &ServerId,
         user_id: &UserId,
-    ) -> Result<Option<ServerMember>, CoreError> {
+    ) -> Result<ServerMember, CoreError> {
         let members = self.members.lock().unwrap();
         let member = members
             .iter()
             .find(|m| m.server_id == *server_id && m.user_id == *user_id)
             .cloned();
-        Ok(member)
+        match member {
+            Some(m) => Ok(m),
+            None => Err(CoreError::MemberNotFound {
+                server_id: *server_id,
+                user_id: *user_id,
+            }),
+        }
     }
 
     async fn list_by_server(

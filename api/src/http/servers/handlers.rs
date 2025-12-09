@@ -4,9 +4,10 @@ use axum::{
 };
 use communities_core::domain::{
     common::GetPaginated,
+    friend::entities::UserId,
     server::{
         entities::{
-            CreateServerRequest, OwnerId, Server, ServerId, ServerVisibility, UpdateServerRequest,
+            CreateServerRequest, Server, ServerId, ServerVisibility, UpdateServerRequest,
         },
         ports::ServerService,
     },
@@ -35,8 +36,7 @@ pub async fn create_server(
     Extension(user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateServerRequest>,
 ) -> Result<Response<Server>, ApiError> {
-    let owner_id = OwnerId::from(user_identity.user_id);
-    let input = request.into_input(owner_id);
+    let input = request.into_input(UserId::from(user_identity.user_id));
     let server = state.service.create_server(input).await?;
     Ok(Response::created(server))
 }

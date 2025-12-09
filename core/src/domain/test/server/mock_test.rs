@@ -2,10 +2,10 @@ use crate::{
     Service,
     domain::{
         common::{CoreError, GetPaginated},
-        friend::ports::MockFriendshipRepository,
+        friend::{entities::UserId, ports::MockFriendshipRepository},
         health::port::MockHealthRepository,
         server::{
-            entities::{InsertServerInput, OwnerId, ServerId, ServerVisibility, UpdateServerInput},
+            entities::{InsertServerInput, ServerId, ServerVisibility, UpdateServerInput},
             ports::{MockServerRepository, ServerRepository, ServerService},
         },
         server_member::ports::MockMemberRepository,
@@ -30,7 +30,7 @@ async fn test_create_server_success() -> Result<(), Box<dyn std::error::Error>> 
 
     let input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: Some("https://example.com/picture.png".to_string()),
         banner_url: Some("https://example.com/banner.png".to_string()),
         description: Some("A test server".to_string()),
@@ -83,7 +83,7 @@ async fn test_create_server_fail_empty_name() -> Result<(), Box<dyn std::error::
 
     let input = InsertServerInput {
         name: "".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -119,7 +119,7 @@ async fn test_create_server_fail_whitespace_name() -> Result<(), Box<dyn std::er
 
     let input = InsertServerInput {
         name: "   ".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -158,7 +158,7 @@ async fn test_get_server_success() -> Result<(), Box<dyn std::error::Error>> {
     // Insert a server using repository
     let input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -224,7 +224,7 @@ async fn test_list_servers_success() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=3 {
         let input = InsertServerInput {
             name: format!("Test Server {}", i),
-            owner_id: OwnerId::from(Uuid::new_v4()),
+            owner_id: UserId::from(Uuid::new_v4()),
             picture_url: None,
             banner_url: None,
             description: None,
@@ -261,7 +261,7 @@ async fn test_list_servers_with_pagination() -> Result<(), Box<dyn std::error::E
     for i in 1..=25 {
         let input = InsertServerInput {
             name: format!("Test Server {}", i),
-            owner_id: OwnerId::from(Uuid::new_v4()),
+            owner_id: UserId::from(Uuid::new_v4()),
             picture_url: None,
             banner_url: None,
             description: None,
@@ -345,7 +345,7 @@ async fn test_update_server_success() -> Result<(), Box<dyn std::error::Error>> 
     // Insert a server
     let input = InsertServerInput {
         name: "Original Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -406,7 +406,7 @@ async fn test_update_server_partial_update() -> Result<(), Box<dyn std::error::E
     // Insert a server
     let input = InsertServerInput {
         name: "Original Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: Some("https://example.com/original.png".to_string()),
         banner_url: None,
         description: Some("Original description".to_string()),
@@ -503,7 +503,7 @@ async fn test_update_server_fail_empty_name() -> Result<(), Box<dyn std::error::
     // Insert a server
     let input = InsertServerInput {
         name: "Original Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -553,7 +553,7 @@ async fn test_delete_server_success() -> Result<(), Box<dyn std::error::Error>> 
     // Insert a server
     let input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,

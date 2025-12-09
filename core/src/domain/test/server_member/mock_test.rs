@@ -5,7 +5,7 @@ use crate::domain::common::{CoreError, GetPaginated};
 use crate::domain::friend::entities::UserId;
 use crate::domain::friend::ports::MockFriendshipRepository;
 use crate::domain::health::port::MockHealthRepository;
-use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+use crate::domain::server::entities::{InsertServerInput, ServerVisibility};
 use crate::domain::server::ports::{MockServerRepository, ServerRepository};
 use crate::domain::server_member::entities::{CreateMemberInput, UpdateMemberInput};
 use crate::domain::server_member::ports::{MemberRepository, MemberService, MockMemberRepository};
@@ -21,7 +21,7 @@ async fn test_create_member_success() -> Result<(), Box<dyn std::error::Error>> 
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -91,7 +91,7 @@ async fn test_create_member_already_exists() -> Result<(), Box<dyn std::error::E
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -141,7 +141,7 @@ async fn test_create_member_invalid_nickname() -> Result<(), Box<dyn std::error:
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -190,7 +190,7 @@ async fn test_list_members_success() -> Result<(), Box<dyn std::error::Error>> {
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -235,7 +235,7 @@ async fn test_list_members_empty() -> Result<(), Box<dyn std::error::Error>> {
     // Create test server with no members
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -295,7 +295,7 @@ async fn test_list_members_with_pagination() -> Result<(), Box<dyn std::error::E
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -341,7 +341,7 @@ async fn test_update_member_success() -> Result<(), Box<dyn std::error::Error>> 
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -392,7 +392,7 @@ async fn test_update_member_partial() -> Result<(), Box<dyn std::error::Error>> 
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -474,7 +474,7 @@ async fn test_update_member_invalid_nickname() -> Result<(), Box<dyn std::error:
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -524,7 +524,7 @@ async fn test_delete_member_success() -> Result<(), Box<dyn std::error::Error>> 
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,
@@ -604,7 +604,7 @@ async fn test_server_not_found_when_joining_private_server()
     // Create test server
     let server_input = InsertServerInput {
         name: "Test Server".to_string(),
-        owner_id: OwnerId::from(Uuid::new_v4()),
+        owner_id: UserId::from(Uuid::new_v4()),
         picture_url: None,
         banner_url: None,
         description: None,

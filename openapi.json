@@ -1046,10 +1046,6 @@
         "format": "uuid",
         "description": "Unique identifier for a server member"
       },
-      "OwnerId": {
-        "type": "string",
-        "format": "uuid"
-      },
       "PaginatedResponse_Friend": {
         "type": "object",
         "required": [
@@ -1180,7 +1176,7 @@
                   "type": "string"
                 },
                 "owner_id": {
-                  "$ref": "#/components/schemas/OwnerId"
+                  "$ref": "#/components/schemas/UserId"
                 },
                 "picture_url": {
                   "type": [
@@ -1309,7 +1305,7 @@
             "type": "string"
           },
           "owner_id": {
-            "$ref": "#/components/schemas/OwnerId"
+            "$ref": "#/components/schemas/UserId"
           },
           "picture_url": {
             "type": [

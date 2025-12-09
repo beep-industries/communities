@@ -51,6 +51,12 @@ pub enum CoreError {
 
     #[error("Invalid member nickname: cannot be empty or whitespace")]
     InvalidMemberNickname,
+
+    #[error("Failed to insert member for server {server_id} and user {user_id}")]
+    FailedToInsertMember {
+        server_id: ServerId,
+        user_id: UserId,
+    },
 }
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]

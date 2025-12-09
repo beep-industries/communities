@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::domain::friend::entities::UserId;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub struct ServerId(pub Uuid);
 
@@ -24,15 +26,6 @@ impl From<ServerId> for Uuid {
     }
 }
 
-impl From<Uuid> for OwnerId {
-    fn from(uuid: Uuid) -> Self {
-        OwnerId(uuid)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
-pub struct OwnerId(pub Uuid);
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, sqlx::Type, Default, ToSchema)]
 #[sqlx(type_name = "server_visibility", rename_all = "lowercase")]
 pub enum ServerVisibility {
@@ -48,7 +41,7 @@ pub struct Server {
     pub banner_url: Option<String>,
     pub picture_url: Option<String>,
     pub description: Option<String>,
-    pub owner_id: OwnerId,
+    pub owner_id: UserId,
     pub visibility: ServerVisibility,
 
     pub created_at: DateTime<Utc>,
@@ -64,7 +57,7 @@ impl Server {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct InsertServerInput {
     pub name: String,
-    pub owner_id: OwnerId,
+    pub owner_id: UserId,
     pub picture_url: Option<String>,
     pub banner_url: Option<String>,
     pub description: Option<String>,
@@ -81,7 +74,7 @@ pub struct CreateServerRequest {
 }
 
 impl CreateServerRequest {
-    pub fn into_input(self, owner_id: OwnerId) -> InsertServerInput {
+    pub fn into_input(self, owner_id: UserId) -> InsertServerInput {
         InsertServerInput {
             name: self.name,
             owner_id,

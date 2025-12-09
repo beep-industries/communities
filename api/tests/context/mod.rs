@@ -22,6 +22,7 @@ pub struct TestContext {
     pub authenticated_router: TestServer,
     pub repositories: CommunitiesRepositories,
     pub jwt: JwtMaker,
+    pub authenticated_user_id: Uuid,
 }
 
 #[derive(Clone)]
@@ -94,7 +95,8 @@ impl AsyncTestContext for TestContext {
             .expect("Failed to set state");
 
         let jwt = JwtMaker::new(test_secret);
-        let token = jwt.make_for_user(Uuid::new_v4(), 3600);
+        let authenticated_user_id = Uuid::new_v4();
+        let token = jwt.make_for_user(authenticated_user_id, 3600);
         let cookie = Cookie::new("access_token", token);
         // Build authenticated router (with middleware)
         let unauthenticated_router = TestServer::new(app.app_router()).unwrap();
@@ -109,6 +111,7 @@ impl AsyncTestContext for TestContext {
             authenticated_router,
             repositories,
             jwt,
+            authenticated_user_id,
         }
     }
 

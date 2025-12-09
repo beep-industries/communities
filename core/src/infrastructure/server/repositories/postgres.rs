@@ -4,7 +4,6 @@ use uuid::Uuid;
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
-        friend::entities::UserId,
         server::{
             entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
             ports::ServerRepository,
@@ -123,7 +122,6 @@ impl ServerRepository for PostgresServerRepository {
         })?;
 
         let member_id = Uuid::new_v4();
-
         let _ = query_as!(
             ServerMember,
             r#"
@@ -141,7 +139,6 @@ impl ServerRepository for PostgresServerRepository {
             server_id: server.id.clone(),
             user_id: input.owner_id.clone(),
         })?;
-
         // Write the create event to the outbox table for eventual processing
         let create_server_event =
             OutboxEventRecord::new(self.create_server_router.clone(), input.clone());
@@ -612,7 +609,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
 
     // Arrange: insert a server first
-    let owner_id = UserId(Uuid::new_v4());
+    let owner_id = crate::domain::friend::entities::UserId(Uuid::new_v4());
     let input = InsertServerInput {
         name: "test server".to_string(),
         owner_id: owner_id.clone(),

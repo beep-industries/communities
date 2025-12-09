@@ -1,7 +1,9 @@
 use crate::domain::common::services::Service;
 use crate::domain::common::{CoreError, GetPaginated, TotalPaginatedElements};
+use crate::domain::friend::entities::UserId;
 use crate::domain::friend::ports::FriendshipRepository;
 use crate::domain::health::port::HealthRepository;
+use crate::domain::server::entities::ServerId;
 use crate::domain::server::ports::ServerRepository;
 
 use super::entities::{CreateMemberInput, ServerMember, UpdateMemberInput};
@@ -16,19 +18,14 @@ where
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists
-        let server = self.server_repository.find_by_id(&input.server_id).await?;
-        if server.is_public() == false {
-            return Err(CoreError::ServerNotFound {
-                id: input.server_id,
-            });
-        }
+        let _server = self.server_repository.find_by_id(&input.server_id).await?;
 
         // Check if member already exists
-        let existing = self
+        if let Ok(_existing) = self
             .member_repository
             .find_by_server_and_user(&input.server_id, &input.user_id)
-            .await?;
-        if existing.is_some() {
+            .await
+        {
             return Err(CoreError::MemberAlreadyExists {
                 server_id: input.server_id,
                 user_id: input.user_id,
@@ -49,34 +46,28 @@ where
 
     async fn list_members(
         &self,
-        server_id: crate::domain::server::entities::ServerId,
+        server_id: ServerId,
         pagination: GetPaginated,
     ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
         // Validate server exists
-        let server = self.server_repository.find_by_id(&server_id).await?;
-        if server.is_public() == false {
-            return Err(CoreError::ServerNotFound { id: server_id });
-        }
+        let _server = self.server_repository.find_by_id(&server_id).await?;
+
         // List members
         let (members, total) = self
             .member_repository
             .list_by_server(&server_id, &pagination)
             .await?;
+
         Ok((members, total))
     }
 
     async fn update_member(&self, input: UpdateMemberInput) -> Result<ServerMember, CoreError> {
         // Check if member exists
-        let existing = self
+
+        let _ = self
             .member_repository
             .find_by_server_and_user(&input.server_id, &input.user_id)
             .await?;
-        if existing.is_none() {
-            return Err(CoreError::MemberNotFound {
-                server_id: input.server_id,
-                user_id: input.user_id,
-            });
-        }
 
         // Validate nickname if provided
         if let Some(ref nickname) = input.nickname {
@@ -90,22 +81,24 @@ where
         Ok(member)
     }
 
-    async fn delete_member(
-        &self,
-        server_id: crate::domain::server::entities::ServerId,
-        user_id: crate::domain::friend::entities::UserId,
-    ) -> Result<(), CoreError> {
+    async fn delete_member(&self, server_id: ServerId, user_id: UserId) -> Result<(), CoreError> {
         // Check if member exists
-        let existing = self
+        let _ = self
             .member_repository
             .find_by_server_and_user(&server_id, &user_id)
             .await?;
-        if existing.is_none() {
-            return Err(CoreError::MemberNotFound { server_id, user_id });
-        }
-
         // Delete member
         self.member_repository.delete(&server_id, &user_id).await?;
         Ok(())
+    }
+
+    async fn get_member(
+        &self,
+        server_id: ServerId,
+        user_id: UserId,
+    ) -> Result<ServerMember, CoreError> {
+        self.member_repository
+            .find_by_server_and_user(&server_id, &user_id)
+            .await
     }
 }

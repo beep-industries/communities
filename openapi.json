@@ -828,12 +828,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Member removed successfully",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
+            "description": "Member removed successfully"
           },
           "401": {
             "description": "Unauthorized",

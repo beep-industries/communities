@@ -5,11 +5,11 @@ use sqlx::{
 
 use crate::{
     domain::common::{CoreError, services::Service},
-    domain::server_member::ports::MockMemberRepository,
     infrastructure::{
         MessageRoutingInfo, friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
         server::repositories::postgres::PostgresServerRepository,
+        server_member::repositories::PostgresMemberRepository,
     },
 };
 
@@ -18,7 +18,7 @@ pub type CommunitiesService = Service<
     PostgresServerRepository,
     PostgresFriendshipRepository,
     PostgresHealthRepository,
-    MockMemberRepository,
+    PostgresMemberRepository,
 >;
 
 #[derive(Clone)]
@@ -27,7 +27,7 @@ pub struct CommunitiesRepositories {
     pub server_repository: PostgresServerRepository,
     pub friendship_repository: PostgresFriendshipRepository,
     pub health_repository: PostgresHealthRepository,
-    pub member_repository: MockMemberRepository,
+    pub member_repository: PostgresMemberRepository,
 }
 
 pub async fn create_repositories(
@@ -46,7 +46,8 @@ pub async fn create_repositories(
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
-    let member_repository = MockMemberRepository::new();
+    let member_repository =
+        PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
     Ok(CommunitiesRepositories {
         pool,
         server_repository,

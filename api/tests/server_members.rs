@@ -1,5 +1,9 @@
 use api::{ApiError, http::server::api_error::ErrorBody};
 use axum::http::StatusCode;
+use communities_core::domain::server::{
+    entities::{InsertServerInput, ServerVisibility},
+    ports::ServerService,
+};
 use serde_json::{Value, json};
 use test_context::test_context;
 
@@ -230,22 +234,26 @@ async fn test_list_members_ok(ctx: &mut context::TestContext) {
 async fn test_list_members_pagination(ctx: &mut context::TestContext) {
     // First create a server
     let create_server_res = ctx
-        .authenticated_router
-        .post("/servers")
-        .json(&json!({
-            "name": "Test Server",
-            "visibility": "Public"
-        }))
-        .await;
-
-    create_server_res.assert_status(StatusCode::CREATED);
-    let server: Value = create_server_res.json();
-    let server_id = server["id"].as_str().unwrap();
-
+        .app
+        .state
+        .service
+        .create_server(InsertServerInput {
+            name: "Test Server".to_string(),
+            owner_id: ctx.authenticated_user_id.into(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Public,
+        })
+        .await
+        .unwrap();
     // List members with custom pagination
     let res = ctx
         .authenticated_router
-        .get(&format!("/servers/{}/members?page=2&limit=5", server_id))
+        .get(&format!(
+            "/servers/{}/members?page=2&limit=5",
+            create_server_res.id
+        ))
         .await;
 
     res.assert_status(StatusCode::OK);

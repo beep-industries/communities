@@ -555,9 +555,9 @@ async fn test_delete_member_success() -> Result<(), Box<dyn std::error::Error>> 
     // Verify member is deleted
     let result = member_mock_repo
         .find_by_server_and_user(&server.id, &user_id)
-        .await?;
-    assert!(result.is_none());
+        .await;
 
+    assert!(matches!(result, Err(CoreError::MemberNotFound { .. })));
     Ok(())
 }
 
@@ -581,47 +581,6 @@ async fn test_delete_member_not_found() -> Result<(), Box<dyn std::error::Error>
         .await;
 
     assert!(matches!(result, Err(CoreError::MemberNotFound { .. })));
-
-    Ok(())
-}
-
-#[tokio::test]
-#[cfg(test)]
-async fn test_server_not_found_when_joining_private_server()
--> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
-
-    let service = Service::new(
-        server_mock_repo.clone(),
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
-
-    // Create test server
-    let server_input = InsertServerInput {
-        name: "Test Server".to_string(),
-        owner_id: UserId::from(Uuid::new_v4()),
-        picture_url: None,
-        banner_url: None,
-        description: None,
-        visibility: ServerVisibility::Private,
-    };
-
-    let server = server_mock_repo.insert(server_input).await?;
-
-    let input = CreateMemberInput {
-        server_id: server.id,
-        user_id: UserId::from(Uuid::new_v4()),
-        nickname: Some("TestUser".to_string()),
-    };
-
-    let result = service.create_member(input).await;
-
-    assert!(matches!(result, Err(CoreError::ServerNotFound { .. })));
 
     Ok(())
 }

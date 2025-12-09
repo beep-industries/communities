@@ -5,7 +5,10 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
-    server::{entities::ServerId, ports::ServerService},
+    server::{
+        entities::{ServerId, ServerVisibility},
+        ports::ServerService,
+    },
     server_member::{
         entities::{CreateMemberInput, ServerMember, UpdateMemberInput},
         ports::MemberService,
@@ -68,6 +71,12 @@ pub async fn create_member(
 ) -> Result<Response<ServerMember>, ApiError> {
     let server_id = ServerId::from(server_id);
 
+    // Check server exists and is public
+    let server = state.service.get_server(&server_id).await?;
+    if server.visibility != ServerVisibility::Public {
+        return Err(ApiError::Forbidden);
+    }
+
     let input = CreateMemberInput {
         server_id,
         user_id: request.user_id,
@@ -104,12 +113,18 @@ pub async fn list_members(
     let server_id = ServerId::from(server_id);
     let user_id = UserId::from(user_identity.user_id);
 
-    // Check if the user is a member of the server
-    let _ = state
-        .service
-        .get_member(server_id, user_id)
-        .await
-        .map_err(|_| ApiError::NotFound)?;
+    // Check if server exists and user has permission to list members
+    let server = state.service.get_server(&server_id).await?;
+
+    // For private servers, only members can list other members
+    if server.visibility != ServerVisibility::Public {
+        // Check if the user is a member of the private server
+        state
+            .service
+            .get_member(server_id, user_id)
+            .await
+            .map_err(|_| ApiError::Forbidden)?;
+    }
 
     let page = pagination.page;
     let (members, total) = state.service.list_members(server_id, pagination).await?;
@@ -176,7 +191,7 @@ pub async fn update_member(
         ("user_id" = String, Path, description = "User ID")
     ),
     responses(
-        (status = 200, description = "Member removed successfully", ),
+        (status = 200, description = "Member removed successfully"),
         (status = 401, description = "Unauthorized", body = ErrorBody),
         (status = 403, description = "Forbidden - Not authorized to remove member", body = ErrorBody),
         (status = 404, description = "Member not found", body = ErrorBody),
@@ -194,7 +209,10 @@ pub async fn delete_member(
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != user_identity.user_id && user_id.0 != user_identity.user_id {
+    if server.owner_id.0 != user_identity.user_id
+        && user_id.0 != user_identity.user_id
+        && user_id.0 != server.owner_id.0
+    {
         return Err(ApiError::Forbidden);
     }
 

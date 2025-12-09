@@ -1,12 +1,15 @@
 use sqlx::{PgPool, query_as};
+use uuid::Uuid;
 
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
+        friend::entities::UserId,
         server::{
             entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
             ports::ServerRepository,
         },
+        server_member::ServerMember,
     },
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
@@ -119,6 +122,26 @@ impl ServerRepository for PostgresServerRepository {
             name: input.name.clone(),
         })?;
 
+        let member_id = Uuid::new_v4();
+
+        let _ = query_as!(
+            ServerMember,
+            r#"
+            INSERT INTO server_members (id, server_id, user_id)
+            VALUES ($1, $2, $3)
+            RETURNING id, server_id, user_id, nickname, joined_at, updated_at
+            "#,
+            member_id,
+            server.id.0,
+            input.owner_id.0,
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| CoreError::FailedToInsertMember {
+            server_id: server.id.clone(),
+            user_id: input.owner_id.clone(),
+        })?;
+
         // Write the create event to the outbox table for eventual processing
         let create_server_event =
             OutboxEventRecord::new(self.create_server_router.clone(), input.clone());
@@ -229,7 +252,10 @@ impl ServerRepository for PostgresServerRepository {
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
     use crate::infrastructure::outbox::MessageRouter;
     use uuid::Uuid;
 
@@ -242,7 +268,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
         create_router.clone(),
     );
 
-    let owner_id = OwnerId(Uuid::new_v4());
+    let owner_id = UserId(Uuid::new_v4());
     let input = InsertServerInput {
         name: "my test server".to_string(),
         owner_id: owner_id.clone(),
@@ -270,9 +296,37 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.name, created.name);
 
+    // Assert: server member was automatically created for the owner
+    use sqlx::Row;
+    let member_row = sqlx::query(
+        r#"
+        SELECT server_id, user_id, nickname
+        FROM server_members
+        WHERE server_id = $1 AND user_id = $2
+        "#,
+    )
+    .bind(created.id.0)
+    .bind(owner_id.0)
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+    let member_server_id: Uuid = member_row
+        .try_get("server_id")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    let member_user_id: Uuid = member_row
+        .try_get("user_id")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+    let member_nickname: Option<String> = member_row
+        .try_get("nickname")
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+    assert_eq!(member_server_id, created.id.0);
+    assert_eq!(member_user_id, owner_id.0);
+    assert!(member_nickname.is_none(), "Default nickname should be None");
+
     // Assert: an outbox message was written with expected routing and payload
     // Note: payload is the serialized InsertServerInput
-    use sqlx::Row;
     let row = sqlx::query(
         r#"
         SELECT exchange_name, routing_key, payload
@@ -305,7 +359,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
         payload.get("name").and_then(|v| v.as_str()),
         Some(created.name.as_str())
     );
-    // OwnerId is a newtype around Uuid and serializes to the inner value
+    // UserId is a newtype around Uuid and serializes to the inner value
     let owner_str = owner_id.0.to_string();
     assert_eq!(
         payload.get("owner_id").and_then(|v| v.as_str()),
@@ -369,7 +423,10 @@ async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreE
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
     use crate::infrastructure::outbox::MessageRouter;
     use sqlx::Row;
     use uuid::Uuid;
@@ -383,7 +440,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
         PostgresServerRepository::new(pool.clone(), delete_router.clone(), create_router);
 
     // Arrange: insert a server first
-    let owner_id = OwnerId(Uuid::new_v4());
+    let owner_id = UserId(Uuid::new_v4());
     let input = InsertServerInput {
         name: "to delete".to_string(),
         owner_id: owner_id.clone(),
@@ -445,8 +502,9 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{
-        InsertServerInput, OwnerId, ServerVisibility, UpdateServerInput,
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility, UpdateServerInput},
     };
     use uuid::Uuid;
 
@@ -457,7 +515,7 @@ async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError
         PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
 
     // Arrange: insert a server first
-    let owner_id = OwnerId(Uuid::new_v4());
+    let owner_id = UserId(Uuid::new_v4());
     let input = InsertServerInput {
         name: "original name".to_string(),
         owner_id: owner_id.clone(),
@@ -544,9 +602,7 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
 async fn test_update_server_with_no_fields_returns_unchanged(
     pool: PgPool,
 ) -> Result<(), CoreError> {
-    use crate::domain::server::entities::{
-        InsertServerInput, OwnerId, ServerVisibility, UpdateServerInput,
-    };
+    use crate::domain::server::entities::{InsertServerInput, ServerVisibility, UpdateServerInput};
     use uuid::Uuid;
 
     let create_router =
@@ -556,7 +612,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
 
     // Arrange: insert a server first
-    let owner_id = OwnerId(Uuid::new_v4());
+    let owner_id = UserId(Uuid::new_v4());
     let input = InsertServerInput {
         name: "test server".to_string(),
         owner_id: owner_id.clone(),
@@ -589,7 +645,10 @@ async fn test_update_server_with_no_fields_returns_unchanged(
 #[sqlx::test(migrations = "./migrations")]
 async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError> {
     use crate::domain::common::GetPaginated;
-    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
     use uuid::Uuid;
 
     let create_router =
@@ -599,7 +658,7 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
         PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
 
     // Arrange: insert multiple servers
-    let owner_id = OwnerId(Uuid::new_v4());
+    let owner_id = UserId(Uuid::new_v4());
     for i in 1..=5 {
         let input = InsertServerInput {
             name: format!("Server {}", i),
@@ -647,7 +706,10 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
 #[sqlx::test(migrations = "./migrations")]
 async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreError> {
     use crate::domain::common::GetPaginated;
-    use crate::domain::server::entities::{InsertServerInput, OwnerId, ServerVisibility};
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
     use uuid::Uuid;
 
     let create_router =
@@ -657,7 +719,7 @@ async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreE
         PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
 
     // Arrange: insert servers with mixed visibility
-    let owner_id = OwnerId(Uuid::new_v4());
+    let owner_id = UserId(Uuid::new_v4());
 
     // Create 3 public servers
     for i in 1..=3 {

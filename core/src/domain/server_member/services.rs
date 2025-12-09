@@ -18,7 +18,11 @@ where
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists
-        let _server = self.server_repository.find_by_id(&input.server_id).await?;
+        let server = self.server_repository.find_by_id(&input.server_id).await?;
+
+        if server.is_public() == false {
+            return Err(CoreError::ServerNotFound { id: server.id });
+        }
 
         // Check if member already exists
         if let Ok(_existing) = self

@@ -364,6 +364,105 @@ async fn test_update_member_not_found(ctx: &mut context::TestContext) {
 
 #[test_context(context::TestContext)]
 #[tokio::test]
+async fn test_create_member_private_server_forbidden(ctx: &mut context::TestContext) {
+    // First create a private server
+    let create_server_res = ctx
+        .authenticated_router
+        .post("/servers")
+        .json(&json!({
+            "name": "Private Test Server",
+            "visibility": "Private"
+        }))
+        .await;
+
+    create_server_res.assert_status(StatusCode::CREATED);
+    let server: Value = create_server_res.json();
+    let server_id = server["id"].as_str().unwrap();
+
+    // Try to add a member to a private server (should be forbidden)
+    let res = ctx
+        .authenticated_router
+        .post(&format!("/servers/{}/members", server_id))
+        .json(&json!({
+            "user_id": "550e8400-e29b-41d4-a716-446655440000",
+            "nickname": "TestNickname"
+        }))
+        .await;
+
+    res.assert_status(StatusCode::FORBIDDEN);
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_list_members_private_server_when_not_member(ctx: &mut context::TestContext) {
+    // Create a private server with the authenticated user
+    let create_server_res = ctx
+        .authenticated_router
+        .post("/servers")
+        .json(&json!({
+            "name": "Private Test Server",
+            "visibility": "Private"
+        }))
+        .await;
+
+    create_server_res.assert_status(StatusCode::CREATED);
+    let server: Value = create_server_res.json();
+    let server_id = server["id"].as_str().unwrap();
+
+    // Try to list members with a different user (not a member)
+    let different_user_router = ctx.create_authenticated_router_with_different_user().await;
+    let res = different_user_router
+        .get(&format!("/servers/{}/members?page=1&limit=20", server_id))
+        .await;
+
+    // Should be forbidden since the user is not a member of the private server
+    res.assert_status(StatusCode::FORBIDDEN);
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_list_members_private_server_when_member(ctx: &mut context::TestContext) {
+    // Create a private server (authenticated user becomes owner and member)
+    let create_server_res = ctx
+        .app
+        .state
+        .service
+        .create_server(InsertServerInput {
+            name: "Private Test Server".to_string(),
+            owner_id: ctx.authenticated_user_id.into(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Private,
+        })
+        .await
+        .unwrap();
+
+    // List members as the owner (who is also a member)
+    let res = ctx
+        .authenticated_router
+        .get(&format!(
+            "/servers/{}/members?page=1&limit=20",
+            create_server_res.id
+        ))
+        .await;
+
+    // Should succeed since the authenticated user is a member (owner)
+    res.assert_status(StatusCode::OK);
+
+    let body: Value = res.json();
+    assert!(body.is_object(), "response must be a JSON object");
+    assert!(
+        body.get("data").map(|v| v.is_array()).unwrap_or(false),
+        "'data' field must be an array"
+    );
+    // Should have at least 1 member (the owner)
+    let data = body.get("data").and_then(|v| v.as_array()).unwrap();
+    assert!(data.len() >= 1, "Should have at least the owner as member");
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
 async fn test_delete_member_unauthenticated(ctx: &mut context::TestContext) {
     let server_id = "550e8400-e29b-41d4-a716-446655440001";
     let user_id = "550e8400-e29b-41d4-a716-446655440000";

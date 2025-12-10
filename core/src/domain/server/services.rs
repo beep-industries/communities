@@ -1,4 +1,5 @@
 use crate::domain::{
+    channel::ports::ChannelRepository,
     common::{CoreError, GetPaginated, TotalPaginatedElements, services::Service},
     friend::ports::FriendshipRepository,
     health::port::HealthRepository,
@@ -9,12 +10,13 @@ use crate::domain::{
     server_member::ports::MemberRepository,
 };
 
-impl<S, F, H, M> ServerService for Service<S, F, H, M>
+impl<S, F, H, M, C> ServerService for Service<S, F, H, M, C>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
     M: MemberRepository,
+    C: ChannelRepository,
 {
     async fn create_server(&self, input: InsertServerInput) -> Result<Server, CoreError> {
         // Validate server name is not empty

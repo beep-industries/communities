@@ -5,16 +5,18 @@ use crate::domain::friend::ports::FriendshipRepository;
 use crate::domain::health::port::HealthRepository;
 use crate::domain::server::entities::ServerId;
 use crate::domain::server::ports::ServerRepository;
+use crate::domain::channel::ports::ChannelRepository;
 
 use super::entities::{CreateMemberInput, ServerMember, UpdateMemberInput};
 use super::ports::{MemberRepository, MemberService};
 
-impl<S, F, H, M> MemberService for Service<S, F, H, M>
+impl<S, F, H, M, C> MemberService for Service<S, F, H, M, C>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
     M: MemberRepository,
+    C: ChannelRepository,
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists

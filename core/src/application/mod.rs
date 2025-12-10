@@ -5,6 +5,7 @@ use sqlx::{
 
 use crate::{
     domain::common::{CoreError, services::Service},
+    domain::channel::ports::MockChannelRepository,
     infrastructure::{
         MessageRoutingInfo, friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
@@ -13,12 +14,13 @@ use crate::{
     },
 };
 
-/// Concrete service type with PostgreSQL repositories (using MockMemberRepository until issue #68 is implemented)
+/// Concrete service type with PostgreSQL repositories (using MockChannelRepository until channel repository is implemented)
 pub type CommunitiesService = Service<
     PostgresServerRepository,
     PostgresFriendshipRepository,
     PostgresHealthRepository,
     PostgresMemberRepository,
+    MockChannelRepository,
 >;
 
 #[derive(Clone)]
@@ -28,6 +30,7 @@ pub struct CommunitiesRepositories {
     pub friendship_repository: PostgresFriendshipRepository,
     pub health_repository: PostgresHealthRepository,
     pub member_repository: PostgresMemberRepository,
+    pub channel_repository: MockChannelRepository,
 }
 
 pub async fn create_repositories(
@@ -48,12 +51,14 @@ pub async fn create_repositories(
     let health_repository = PostgresHealthRepository::new(pool.clone());
     let member_repository =
         PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+    let channel_repository = MockChannelRepository::new();
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
         friendship_repository,
         health_repository,
         member_repository,
+        channel_repository,
     })
 }
 
@@ -64,6 +69,7 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
             self.friendship_repository,
             self.health_repository,
             self.member_repository,
+            self.channel_repository,
         )
     }
 }

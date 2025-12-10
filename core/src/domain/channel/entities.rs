@@ -29,7 +29,7 @@ pub enum ChannelError {
     EmptyUpdatePayload,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct ChannelId(pub Uuid);
 
 /// The string is the value of the name
@@ -120,15 +120,37 @@ pub struct CreateServerChannelInput {
     pub channel_type: ChannelType,
 }
 
+#[derive(Default, Clone)]
 pub struct UpdateChannelInput {
-    pub name: Option<String>,
+    pub id: ChannelId,
+    pub name: Option<ChannelName>,
     pub parent_id: Option<ChannelId>,
 }
 
 impl UpdateChannelInput {
     // Check if all element are none
-    pub fn is_empty(self) -> bool {
+    fn is_empty(self) -> bool {
         self.name.is_none() && self.parent_id.is_none()
+    }
+
+    pub fn into_repo_input(&mut self) -> Result<UpdateChannelRepoInput, ChannelError> {
+        if self.clone().is_empty() {
+            return Err(ChannelError::EmptyUpdatePayload.into());
+        }
+
+        let mut repo_input = UpdateChannelRepoInput {
+            id: self.id,
+            parent_id: self.parent_id,
+            ..Default::default()
+        };
+
+        repo_input.name = if let Some(mut channel_name) = self.name.clone() {
+            Some(channel_name.value()?)
+        } else {
+            None
+        };
+
+        Ok(repo_input)
     }
 }
 
@@ -137,4 +159,11 @@ pub struct CreateChannelRepoInput {
     pub server_id: Option<ServerId>,
     pub parent_id: Option<ChannelId>,
     pub channel_type: ChannelType,
+}
+
+#[derive(Default)]
+pub struct UpdateChannelRepoInput {
+    pub id: ChannelId,
+    pub name: Option<String>,
+    pub parent_id: Option<ChannelId>,
 }

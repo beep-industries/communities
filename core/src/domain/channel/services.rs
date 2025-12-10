@@ -4,7 +4,7 @@ use crate::{
         channel::{
             entities::{
                 Channel, ChannelError, ChannelType, CreateChannelInput, CreatePrivateChannelInput,
-                CreateServerChannelInput,
+                CreateServerChannelInput, MAX_CHANNEL_NAME_SIZE,
             },
             ports::{ChannelRepository, ChannelService},
         },
@@ -29,12 +29,9 @@ where
         create_channel_input: CreatePrivateChannelInput,
     ) -> Result<Channel, CoreError> {
         let channel_name = create_channel_input.name.trim().to_string();
-        
-        if channel_name.len() > 30 {
-            return Err(ChannelError::IncorrectChannelPayload {
-                msg: "The name of the channel is too long".into(),
-            }
-            .into());
+
+        if channel_name.len() > MAX_CHANNEL_NAME_SIZE {
+            return Err(ChannelError::ChannelNameTooLong.into());
         }
 
         let repo_channel_input = CreateChannelInput {
@@ -43,7 +40,7 @@ where
             parent_id: None,
             channel_type: ChannelType::Private,
         };
-        
+
         self.channel_repository.create(repo_channel_input).await
     }
 
@@ -51,7 +48,30 @@ where
         &self,
         create_channel_input: CreateServerChannelInput,
     ) -> Result<Channel, CoreError> {
-        todo!()
+        let channel_name = create_channel_input.name.trim().to_string();
+
+        // Verify that the channel type is correct
+        // It should only be server type
+        let channel_type = match create_channel_input.channel_type {
+            ChannelType::ServerFolder | ChannelType::ServerText | ChannelType::ServerVoice => {
+                create_channel_input.channel_type
+            }
+            _ => return Err(ChannelError::WrongChannelType.into()),
+        };
+
+        if channel_name.len() > MAX_CHANNEL_NAME_SIZE {
+            return Err(ChannelError::ChannelNameTooLong.into());
+        }
+
+        // TODO: Verify and use the parent id with the get channel function
+        let repo_channel_input = CreateChannelInput {
+            name: channel_name,
+            server_id: Some(create_channel_input.server_id),
+            parent_id: None,
+            channel_type,
+        };
+        
+        self.channel_repository.create(repo_channel_input).await
     }
 
     async fn list_channels_in_server(

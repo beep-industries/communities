@@ -69,7 +69,11 @@ pub enum CoreError {
 impl From<ChannelError> for CoreError {
     fn from(value: ChannelError) -> Self {
         match value {
-            ChannelError::IncorrectChannelPayload { msg } => Self::CreationFailure { msg },
+            ChannelError::ChannelNameTooLong | ChannelError::WrongChannelType => {
+                Self::CreationFailure {
+                    msg: value.to_string(),
+                }
+            }
         }
     }
 }

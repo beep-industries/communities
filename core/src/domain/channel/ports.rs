@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use crate::domain::channel::entities::{
-    CreateChannelInput, CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
+    CreateChannelRepoInput, CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
 };
 use crate::domain::{
     channel::entities::{Channel, ChannelId},
@@ -15,7 +15,7 @@ use crate::domain::{
 pub trait ChannelRepository: Send + Sync {
     fn create(
         &self,
-        create_channel_input: CreateChannelInput,
+        create_channel_input: CreateChannelRepoInput,
     ) -> impl Future<Output = Result<Channel, CoreError>> + Send;
     fn list_in_server(
         &self,
@@ -77,7 +77,10 @@ impl MockChannelRepository {
 }
 
 impl ChannelRepository for MockChannelRepository {
-    async fn create(&self, create_channel_input: CreateChannelInput) -> Result<Channel, CoreError> {
+    async fn create(
+        &self,
+        create_channel_input: CreateChannelRepoInput,
+    ) -> Result<Channel, CoreError> {
         use chrono::Utc;
         let channel = Channel {
             id: ChannelId(Uuid::new_v4()),

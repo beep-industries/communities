@@ -34,5 +34,21 @@ pub enum ChannelType {
     ServerText,
     ServerVoice,
     ServerFolder,
-    DirectMessage,
+    Private,
+}
+
+pub struct CreatePrivateChannelInput {
+    pub name: String,
+}
+
+pub struct CreateServerChannelInput {
+    pub name: String,
+    pub server_id: ServerId,
+    pub parent_id: Option<ChannelId>,
+    pub channel_type: ChannelType,
+}
+
+pub struct UpdateChannelInput {
+    pub name: Option<String>,
+    pub parent_id: Option<ChannelId>,
 }

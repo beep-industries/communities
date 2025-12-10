@@ -3,8 +3,8 @@ use crate::{
     domain::{
         channel::{
             entities::{
-                Channel, ChannelError, ChannelType, CreateChannelInput, CreatePrivateChannelInput,
-                CreateServerChannelInput, MAX_CHANNEL_NAME_SIZE,
+                Channel, ChannelError, ChannelType, CreateChannelRepoInput,
+                CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
             },
             ports::{ChannelRepository, ChannelService},
         },
@@ -26,15 +26,11 @@ where
 {
     async fn create_private_channel(
         &self,
-        create_channel_input: CreatePrivateChannelInput,
+        mut create_channel_input: CreatePrivateChannelInput,
     ) -> Result<Channel, CoreError> {
-        let channel_name = create_channel_input.name.trim().to_string();
+        let channel_name = create_channel_input.name.value()?;
 
-        if channel_name.len() > MAX_CHANNEL_NAME_SIZE {
-            return Err(ChannelError::ChannelNameTooLong.into());
-        }
-
-        let repo_channel_input = CreateChannelInput {
+        let repo_channel_input = CreateChannelRepoInput {
             name: channel_name,
             server_id: None,
             parent_id: None,
@@ -46,11 +42,9 @@ where
 
     async fn create_server_channel(
         &self,
-        create_channel_input: CreateServerChannelInput,
+        mut create_channel_input: CreateServerChannelInput,
     ) -> Result<Channel, CoreError> {
-        let channel_name = create_channel_input.name.trim().to_string();
-
-        // Verify that the channel type is correct
+        let channel_name = create_channel_input.name.value()?;
         // It should only be server type
         let channel_type = match create_channel_input.channel_type {
             ChannelType::ServerFolder | ChannelType::ServerText | ChannelType::ServerVoice => {
@@ -59,18 +53,14 @@ where
             _ => return Err(ChannelError::WrongChannelType.into()),
         };
 
-        if channel_name.len() > MAX_CHANNEL_NAME_SIZE {
-            return Err(ChannelError::ChannelNameTooLong.into());
-        }
-
         // TODO: Verify and use the parent id with the get channel function
-        let repo_channel_input = CreateChannelInput {
+        let repo_channel_input = CreateChannelRepoInput {
             name: channel_name,
             server_id: Some(create_channel_input.server_id),
             parent_id: None,
             channel_type,
         };
-        
+
         self.channel_repository.create(repo_channel_input).await
     }
 
@@ -83,8 +73,15 @@ where
 
     async fn update_channel(
         &self,
-        update_channel_input: super::entities::UpdateChannelInput,
+        update_channel_input: UpdateChannelInput,
     ) -> Result<Channel, CoreError> {
+        // if update_channel_input.is_empty() {
+        //     return Err(ChannelError::EmptyUpdatePayload.into());
+        // }
+
+        // if channel_name.trim() > MAX_CHANNEL_NAME_SIZE {
+        //     return Err(ChannelError::ChannelNameTooLong.into());
+        // }
         todo!()
     }
 

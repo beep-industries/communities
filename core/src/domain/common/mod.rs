@@ -62,18 +62,20 @@ pub enum CoreError {
     #[error("Channel with id {id} not found")]
     ChannelNotFound { id: ChannelId },
 
-    #[error("Failed to create resource: {msg}")]
-    CreationFailure { msg: String },
+    #[error("Channel fields provided are not correctly formatted: {msg}")]
+    ChannelPayloadError { msg: String, err: ChannelError },
 }
 
 impl From<ChannelError> for CoreError {
     fn from(value: ChannelError) -> Self {
         match value {
-            ChannelError::ChannelNameTooLong | ChannelError::WrongChannelType => {
-                Self::CreationFailure {
-                    msg: value.to_string(),
-                }
-            }
+            ChannelError::ChannelNameTooLong
+            | ChannelError::WrongChannelType
+            | ChannelError::ChannelNameTooShort
+            | ChannelError::EmptyUpdatePayload => Self::ChannelPayloadError {
+                msg: value.to_string(),
+                err: value,
+            },
         }
     }
 }

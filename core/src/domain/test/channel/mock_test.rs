@@ -3,7 +3,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::domain::channel::entities::{
-        ChannelType, CreatePrivateChannelInput, CreateServerChannelInput,
+        ChannelName, ChannelType, CreatePrivateChannelInput, CreateServerChannelInput,
     };
     use crate::domain::channel::ports::ChannelService;
     use crate::domain::common::CoreError;
@@ -15,7 +15,7 @@ mod tests {
         let service = create_mock_service();
 
         let input = CreatePrivateChannelInput {
-            name: "Direct Message".to_string(),
+            name: ChannelName::new("Direct Message".to_string()),
         };
 
         let created = service.create_private_channel(input).await?;
@@ -33,7 +33,7 @@ mod tests {
         let service = create_mock_service();
 
         let input = CreatePrivateChannelInput {
-            name: "  Trimmed Name  ".to_string(),
+            name: ChannelName::new("  Trimmed Name  ".to_string()),
         };
 
         let created = service.create_private_channel(input).await?;
@@ -49,17 +49,21 @@ mod tests {
         let service = create_mock_service();
 
         let input = CreatePrivateChannelInput {
-            name: "This is a very long channel name that exceeds the maximum limit".to_string(),
+            name: ChannelName::new(
+                "This is a very long channel name that exceeds the maximum limit".to_string(),
+            ),
         };
 
         let result = service.create_private_channel(input).await;
 
         assert!(result.is_err());
         match result {
-            Err(CoreError::CreationFailure { msg }) => {
+            Err(CoreError::ChannelPayloadError { msg, .. }) => {
                 assert!(msg.contains("Channel name is too long"));
             }
-            _ => panic!("Expected CoreError::CreationFailure with channel name too long message"),
+            _ => {
+                panic!("Expected CoreError::ChannelPayloadError with channel name too long message")
+            }
         }
 
         Ok(())
@@ -71,7 +75,7 @@ mod tests {
         let server_id = ServerId::from(Uuid::new_v4());
 
         let input = CreateServerChannelInput {
-            name: "general".to_string(),
+            name: ChannelName::new("general".to_string()),
             server_id,
             parent_id: None,
             channel_type: ChannelType::ServerText,
@@ -93,7 +97,7 @@ mod tests {
         let server_id = ServerId::from(Uuid::new_v4());
 
         let input = CreateServerChannelInput {
-            name: "  voice channel  ".to_string(),
+            name: ChannelName::new("  voice channel  ".to_string()),
             server_id,
             parent_id: None,
             channel_type: ChannelType::ServerVoice,
@@ -113,7 +117,9 @@ mod tests {
         let server_id = ServerId::from(Uuid::new_v4());
 
         let input = CreateServerChannelInput {
-            name: "This is a very long channel name that exceeds the maximum limit".to_string(),
+            name: ChannelName::new(
+                "This is a very long channel name that exceeds the maximum limit".to_string(),
+            ),
             server_id,
             parent_id: None,
             channel_type: ChannelType::ServerText,
@@ -123,10 +129,12 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(CoreError::CreationFailure { msg }) => {
+            Err(CoreError::ChannelPayloadError { msg, .. }) => {
                 assert!(msg.contains("Channel name is too long"));
             }
-            _ => panic!("Expected CoreError::CreationFailure with channel name too long message"),
+            _ => {
+                panic!("Expected CoreError::ChannelPayloadError with channel name too long message")
+            }
         }
 
         Ok(())
@@ -138,7 +146,7 @@ mod tests {
         let server_id = ServerId::from(Uuid::new_v4());
 
         let input = CreateServerChannelInput {
-            name: "wrong-type".to_string(),
+            name: ChannelName::new("wrong-type".to_string()),
             server_id,
             parent_id: None,
             channel_type: ChannelType::Private,
@@ -148,10 +156,10 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(CoreError::CreationFailure { msg }) => {
+            Err(CoreError::ChannelPayloadError { msg, .. }) => {
                 assert!(msg.contains("Channel type is incorrect"));
             }
-            _ => panic!("Expected CoreError::CreationFailure with wrong channel type message"),
+            _ => panic!("Expected CoreError::ChannelPayloadError with wrong channel type message"),
         }
 
         Ok(())
@@ -164,7 +172,7 @@ mod tests {
         let server_id = ServerId::from(Uuid::new_v4());
 
         let input = CreateServerChannelInput {
-            name: "Category".to_string(),
+            name: ChannelName::new("Category".to_string()),
             server_id,
             parent_id: None,
             channel_type: ChannelType::ServerFolder,

@@ -2,6 +2,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use utoipa::{IntoParams, ToSchema};
 
+use crate::domain::channel::entities::ChannelId;
 use crate::domain::friend::entities::UserId;
 use crate::domain::server::entities::ServerId;
 
@@ -56,6 +57,11 @@ pub enum CoreError {
     FailedToInsertMember {
         server_id: ServerId,
         user_id: UserId,
+    },
+
+    #[error("Channel with id {id} not found")]
+    ChannelNotFound {
+        id: ChannelId,
     },
 }
 

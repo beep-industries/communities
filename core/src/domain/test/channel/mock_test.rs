@@ -61,7 +61,10 @@ mod tests {
     async fn test_find_by_id_not_found() -> Result<(), Box<dyn std::error::Error>> {
         let service = create_mock_service();
 
-        let result = service.channel_repository.find_by_id(ChannelId::from(Uuid::new_v4())).await;
+        let result = service
+            .channel_repository
+            .find_by_id(ChannelId::from(Uuid::new_v4()))
+            .await;
 
         assert!(matches!(result, Err(CoreError::ChannelNotFound { .. })));
 
@@ -149,7 +152,10 @@ mod tests {
         let mut updated_channel = channel.clone();
         updated_channel.name = "new-name".to_string();
 
-        let result = service.channel_repository.update(updated_channel.clone()).await?;
+        let result = service
+            .channel_repository
+            .update(updated_channel.clone())
+            .await?;
 
         assert_eq!(result.id, channel_id);
         assert_eq!(result.name, "new-name");
@@ -216,7 +222,10 @@ mod tests {
     async fn test_delete_channel_not_found() -> Result<(), Box<dyn std::error::Error>> {
         let service = create_mock_service();
 
-        let result = service.channel_repository.delete(ChannelId::from(Uuid::new_v4())).await;
+        let result = service
+            .channel_repository
+            .delete(ChannelId::from(Uuid::new_v4()))
+            .await;
 
         assert!(matches!(result, Err(CoreError::ChannelNotFound { .. })));
 
@@ -285,8 +294,14 @@ mod tests {
             updated_at: Utc::now(),
         };
 
-        service.channel_repository.create(parent_channel.clone()).await?;
-        let created_child = service.channel_repository.create(child_channel.clone()).await?;
+        service
+            .channel_repository
+            .create(parent_channel.clone())
+            .await?;
+        let created_child = service
+            .channel_repository
+            .create(child_channel.clone())
+            .await?;
 
         assert_eq!(created_child.parent_id, Some(parent_id));
 
@@ -302,15 +317,18 @@ mod tests {
             name: "DM".to_string(),
             server_id: None,
             parent_id: None,
-            channel_type: ChannelType::DirectMessage,
+            channel_type: ChannelType::Private,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         };
 
-        let created = service.channel_repository.create(dm_channel.clone()).await?;
+        let created = service
+            .channel_repository
+            .create(dm_channel.clone())
+            .await?;
 
         assert_eq!(created.server_id, None);
-        assert_eq!(created.channel_type, ChannelType::DirectMessage);
+        assert_eq!(created.channel_type, ChannelType::Private);
 
         Ok(())
     }

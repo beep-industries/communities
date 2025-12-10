@@ -1,6 +1,9 @@
 use std::future::Future;
 use std::sync::{Arc, Mutex};
 
+use crate::domain::channel::entities::{
+    CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
+};
 use crate::domain::{
     channel::entities::{Channel, ChannelId},
     common::CoreError,
@@ -22,15 +25,21 @@ pub trait ChannelRepository: Send + Sync {
 }
 
 pub trait ChannelService: Send + Sync {
-    fn create_private_channel(&self) -> impl Future<Output = Result<Channel, CoreError>> + Send;
-    fn create_server_channel(&self) -> impl Future<Output = Result<Channel, CoreError>> + Send;
+    fn create_private_channel(
+        &self,
+        create_channel_input: CreatePrivateChannelInput,
+    ) -> impl Future<Output = Result<Channel, CoreError>> + Send;
+    fn create_server_channel(
+        &self,
+        create_channel_input: CreateServerChannelInput,
+    ) -> impl Future<Output = Result<Channel, CoreError>> + Send;
     fn list_channels_in_server(
         &self,
         server_id: ServerId,
     ) -> impl Future<Output = Result<Vec<Channel>, CoreError>> + Send;
     fn update_channel(
         &self,
-        channel: Channel,
+        update_channel_input: UpdateChannelInput,
     ) -> impl Future<Output = Result<Channel, CoreError>> + Send;
     fn delete_channel(
         &self,

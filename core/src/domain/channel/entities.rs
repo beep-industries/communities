@@ -1,7 +1,14 @@
 use chrono::{DateTime, Utc};
+use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::server::entities::ServerId;
+
+#[derive(Error, Debug, Clone)]
+pub enum ChannelError {
+    #[error("The payload of the channel is not correct: {msg}")]
+    IncorrectChannelPayload { msg: String },
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ChannelId(pub Uuid);
@@ -51,4 +58,11 @@ pub struct CreateServerChannelInput {
 pub struct UpdateChannelInput {
     pub name: Option<String>,
     pub parent_id: Option<ChannelId>,
+}
+
+pub struct CreateChannelInput {
+    pub name: String,
+    pub server_id: Option<ServerId>,
+    pub parent_id: Option<ChannelId>,
+    pub channel_type: ChannelType,
 }

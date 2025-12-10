@@ -2,7 +2,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use utoipa::{IntoParams, ToSchema};
 
-use crate::domain::channel::entities::ChannelId;
+use crate::domain::channel::entities::{ChannelError, ChannelId};
 use crate::domain::friend::entities::UserId;
 use crate::domain::server::entities::ServerId;
 
@@ -60,9 +60,18 @@ pub enum CoreError {
     },
 
     #[error("Channel with id {id} not found")]
-    ChannelNotFound {
-        id: ChannelId,
-    },
+    ChannelNotFound { id: ChannelId },
+
+    #[error("Failed to create resource: {msg}")]
+    CreationFailure { msg: String },
+}
+
+impl From<ChannelError> for CoreError {
+    fn from(value: ChannelError) -> Self {
+        match value {
+            ChannelError::IncorrectChannelPayload { msg } => Self::CreationFailure { msg },
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]

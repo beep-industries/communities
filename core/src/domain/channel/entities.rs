@@ -4,10 +4,18 @@ use uuid::Uuid;
 
 use crate::domain::server::entities::ServerId;
 
+pub const MAX_CHANNEL_NAME_SIZE: usize = 30;
+
 #[derive(Error, Debug, Clone)]
 pub enum ChannelError {
-    #[error("The payload of the channel is not correct: {msg}")]
-    IncorrectChannelPayload { msg: String },
+    #[error(
+        "Channel name is too long. It should not be longer than {}",
+        MAX_CHANNEL_NAME_SIZE
+    )]
+    ChannelNameTooLong,
+
+    #[error("Channel type is incorrect")]
+    WrongChannelType
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

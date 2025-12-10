@@ -1,22 +1,17 @@
 use uuid::Uuid;
 
-use crate::domain::common::services::Service;
 use crate::domain::common::{CoreError, GetPaginated};
 use crate::domain::friend::entities::UserId;
-use crate::domain::friend::ports::MockFriendshipRepository;
-use crate::domain::health::port::MockHealthRepository;
 use crate::domain::server::entities::{InsertServerInput, ServerVisibility};
-use crate::domain::server::ports::{MockServerRepository, ServerRepository};
+use crate::domain::server::ports::ServerRepository;
 use crate::domain::server_member::entities::{CreateMemberInput, UpdateMemberInput};
-use crate::domain::server_member::ports::{MemberRepository, MemberService, MockMemberRepository};
+use crate::domain::server_member::ports::{MemberRepository, MemberService};
+use crate::domain::test::create_mock_service;
 
 #[tokio::test]
 #[cfg(test)]
 async fn test_create_member_success() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -27,14 +22,9 @@ async fn test_create_member_success() -> Result<(), Box<dyn std::error::Error>> 
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let input = CreateMemberInput {
         server_id: server.id,
@@ -55,17 +45,9 @@ async fn test_create_member_success() -> Result<(), Box<dyn std::error::Error>> 
 #[tokio::test]
 #[cfg(test)]
 async fn test_create_member_server_not_found() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let input = CreateMemberInput {
         server_id: Uuid::new_v4().into(),
@@ -83,10 +65,7 @@ async fn test_create_member_server_not_found() -> Result<(), Box<dyn std::error:
 #[tokio::test]
 #[cfg(test)]
 async fn test_create_member_already_exists() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -97,7 +76,7 @@ async fn test_create_member_already_exists() -> Result<(), Box<dyn std::error::E
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     let user_id = UserId::from(Uuid::new_v4());
 
@@ -107,14 +86,9 @@ async fn test_create_member_already_exists() -> Result<(), Box<dyn std::error::E
         user_id,
         nickname: None,
     };
-    member_mock_repo.insert(first_input).await?;
+    service.member_repository.insert(first_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     // Try to add the same member again
     let duplicate_input = CreateMemberInput {
@@ -133,10 +107,7 @@ async fn test_create_member_already_exists() -> Result<(), Box<dyn std::error::E
 #[tokio::test]
 #[cfg(test)]
 async fn test_create_member_invalid_nickname() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -147,14 +118,9 @@ async fn test_create_member_invalid_nickname() -> Result<(), Box<dyn std::error:
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     // Test with empty nickname
     let input = CreateMemberInput {
@@ -182,10 +148,7 @@ async fn test_create_member_invalid_nickname() -> Result<(), Box<dyn std::error:
 #[tokio::test]
 #[cfg(test)]
 async fn test_list_members_success() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -196,7 +159,7 @@ async fn test_list_members_success() -> Result<(), Box<dyn std::error::Error>> {
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     // Add multiple members
     for i in 0..3 {
@@ -205,15 +168,10 @@ async fn test_list_members_success() -> Result<(), Box<dyn std::error::Error>> {
             user_id: UserId::from(Uuid::new_v4()),
             nickname: Some(format!("User{}", i)),
         };
-        member_mock_repo.insert(input).await?;
+        service.member_repository.insert(input).await?;
     }
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let pagination = GetPaginated { page: 1, limit: 10 };
     let (members, total) = service.list_members(server.id, pagination).await?;
@@ -227,10 +185,7 @@ async fn test_list_members_success() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::test]
 #[cfg(test)]
 async fn test_list_members_empty() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server with no members
     let server_input = InsertServerInput {
@@ -241,14 +196,9 @@ async fn test_list_members_empty() -> Result<(), Box<dyn std::error::Error>> {
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let pagination = GetPaginated { page: 1, limit: 10 };
     let (members, total) = service.list_members(server.id, pagination).await?;
@@ -262,17 +212,9 @@ async fn test_list_members_empty() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::test]
 #[cfg(test)]
 async fn test_list_members_server_not_found() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let pagination = GetPaginated { page: 1, limit: 10 };
     let result = service
@@ -287,10 +229,7 @@ async fn test_list_members_server_not_found() -> Result<(), Box<dyn std::error::
 #[tokio::test]
 #[cfg(test)]
 async fn test_list_members_with_pagination() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -301,7 +240,7 @@ async fn test_list_members_with_pagination() -> Result<(), Box<dyn std::error::E
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     // Add 5 members
     for i in 0..5 {
@@ -310,15 +249,10 @@ async fn test_list_members_with_pagination() -> Result<(), Box<dyn std::error::E
             user_id: UserId::from(Uuid::new_v4()),
             nickname: Some(format!("User{}", i)),
         };
-        member_mock_repo.insert(input).await?;
+        service.member_repository.insert(input).await?;
     }
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     // Get page 2 with limit 2
     let pagination = GetPaginated { page: 2, limit: 2 };
@@ -333,10 +267,7 @@ async fn test_list_members_with_pagination() -> Result<(), Box<dyn std::error::E
 #[tokio::test]
 #[cfg(test)]
 async fn test_update_member_success() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -347,7 +278,7 @@ async fn test_update_member_success() -> Result<(), Box<dyn std::error::Error>> 
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     let user_id = UserId::from(Uuid::new_v4());
 
@@ -357,14 +288,9 @@ async fn test_update_member_success() -> Result<(), Box<dyn std::error::Error>> 
         user_id,
         nickname: Some("OldNickname".to_string()),
     };
-    member_mock_repo.insert(create_input).await?;
+    service.member_repository.insert(create_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     // Update member
     let update_input = UpdateMemberInput {
@@ -384,10 +310,7 @@ async fn test_update_member_success() -> Result<(), Box<dyn std::error::Error>> 
 #[tokio::test]
 #[cfg(test)]
 async fn test_update_member_partial() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -398,7 +321,7 @@ async fn test_update_member_partial() -> Result<(), Box<dyn std::error::Error>> 
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     let user_id = UserId::from(Uuid::new_v4());
 
@@ -408,14 +331,9 @@ async fn test_update_member_partial() -> Result<(), Box<dyn std::error::Error>> 
         user_id,
         nickname: Some("OriginalNickname".to_string()),
     };
-    member_mock_repo.insert(create_input).await?;
+    service.member_repository.insert(create_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     // Update with None nickname (should remain unchanged)
     let update_input = UpdateMemberInput {
@@ -438,17 +356,9 @@ async fn test_update_member_partial() -> Result<(), Box<dyn std::error::Error>> 
 #[tokio::test]
 #[cfg(test)]
 async fn test_update_member_not_found() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let update_input = UpdateMemberInput {
         server_id: Uuid::new_v4().into(),
@@ -466,10 +376,7 @@ async fn test_update_member_not_found() -> Result<(), Box<dyn std::error::Error>
 #[tokio::test]
 #[cfg(test)]
 async fn test_update_member_invalid_nickname() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -480,7 +387,7 @@ async fn test_update_member_invalid_nickname() -> Result<(), Box<dyn std::error:
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     let user_id = UserId::from(Uuid::new_v4());
 
@@ -490,14 +397,9 @@ async fn test_update_member_invalid_nickname() -> Result<(), Box<dyn std::error:
         user_id,
         nickname: Some("ValidNickname".to_string()),
     };
-    member_mock_repo.insert(create_input).await?;
+    service.member_repository.insert(create_input).await?;
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     // Update with empty nickname
     let update_input = UpdateMemberInput {
@@ -516,10 +418,7 @@ async fn test_update_member_invalid_nickname() -> Result<(), Box<dyn std::error:
 #[tokio::test]
 #[cfg(test)]
 async fn test_delete_member_success() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
     // Create test server
     let server_input = InsertServerInput {
@@ -530,7 +429,7 @@ async fn test_delete_member_success() -> Result<(), Box<dyn std::error::Error>> 
         description: None,
         visibility: ServerVisibility::Public,
     };
-    let server = server_mock_repo.insert(server_input).await?;
+    let server = service.server_repository.insert(server_input).await?;
 
     let user_id = UserId::from(Uuid::new_v4());
 
@@ -540,20 +439,15 @@ async fn test_delete_member_success() -> Result<(), Box<dyn std::error::Error>> 
         user_id,
         nickname: None,
     };
-    member_mock_repo.insert(create_input).await?;
+    service.member_repository.insert(create_input).await?;
 
-    let service = Service::new(
-        server_mock_repo.clone(),
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo.clone(),
-    );
-
+    // Service already created above
     // Delete member
     service.delete_member(server.id, user_id).await?;
 
     // Verify member is deleted
-    let result = member_mock_repo
+    let result = service
+        .member_repository
         .find_by_server_and_user(&server.id, &user_id)
         .await;
 
@@ -564,17 +458,9 @@ async fn test_delete_member_success() -> Result<(), Box<dyn std::error::Error>> 
 #[tokio::test]
 #[cfg(test)]
 async fn test_delete_member_not_found() -> Result<(), Box<dyn std::error::Error>> {
-    let server_mock_repo = MockServerRepository::new();
-    let friend_mock_repo = MockFriendshipRepository::new();
-    let health_mock_repo = MockHealthRepository::new();
-    let member_mock_repo = MockMemberRepository::new();
+    let service = create_mock_service();
 
-    let service = Service::new(
-        server_mock_repo,
-        friend_mock_repo,
-        health_mock_repo,
-        member_mock_repo,
-    );
+    // Service already created above
 
     let result = service
         .delete_member(Uuid::new_v4().into(), UserId::from(Uuid::new_v4()))

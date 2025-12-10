@@ -73,7 +73,7 @@ impl ChannelRepository for MockChannelRepository {
         let channels = self.channels.lock().unwrap();
         let filtered: Vec<Channel> = channels
             .iter()
-            .filter(|c| c.server_id == server_id)
+            .filter(|c| c.server_id == Some(server_id))
             .cloned()
             .collect();
         Ok(filtered)

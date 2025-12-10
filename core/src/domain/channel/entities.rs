@@ -22,8 +22,8 @@ impl std::fmt::Display for ChannelId {
 pub struct Channel {
     pub id: ChannelId,
     pub name: String,
-    pub server_id: ServerId,
-    pub parent_id: ChannelId,
+    pub server_id: Option<ServerId>,
+    pub parent_id: Option<ChannelId>,
     pub channel_type: ChannelType,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

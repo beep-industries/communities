@@ -4,7 +4,8 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use crate::domain::channel::entities::{
-    CreateChannelRepoInput, CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
+    CreateChannelRepoInput, CreatePrivateChannelInput, CreateServerChannelInput,
+    UpdateChannelInput, UpdateChannelRepoInput,
 };
 use crate::domain::{
     channel::entities::{Channel, ChannelId},
@@ -21,7 +22,10 @@ pub trait ChannelRepository: Send + Sync {
         &self,
         server_id: ServerId,
     ) -> impl Future<Output = Result<Vec<Channel>, CoreError>> + Send;
-    fn update(&self, channel: Channel) -> impl Future<Output = Result<Channel, CoreError>> + Send;
+    fn update(
+        &self,
+        update_input: UpdateChannelRepoInput,
+    ) -> impl Future<Output = Result<Channel, CoreError>> + Send;
     fn delete(&self, channel_id: ChannelId) -> impl Future<Output = Result<(), CoreError>> + Send;
     fn find_by_id(
         &self,
@@ -108,16 +112,25 @@ impl ChannelRepository for MockChannelRepository {
         Ok(filtered)
     }
 
-    async fn update(&self, channel: Channel) -> Result<Channel, CoreError> {
+    async fn update(&self, update_input: UpdateChannelRepoInput) -> Result<Channel, CoreError> {
+        use chrono::Utc;
         let mut channels = self.channels.lock().unwrap();
-        let existing = channels.iter_mut().find(|c| c.id == channel.id);
+        let existing = channels.iter_mut().find(|c| c.id == update_input.id);
 
         match existing {
             Some(c) => {
-                *c = channel.clone();
-                Ok(channel)
+                if let Some(name) = update_input.name {
+                    c.name = name;
+                }
+                if let Some(parent_id) = update_input.parent_id {
+                    c.parent_id = Some(parent_id);
+                }
+                c.updated_at = Utc::now();
+                Ok(c.clone())
             }
-            None => Err(CoreError::ChannelNotFound { id: channel.id }),
+            None => Err(CoreError::ChannelNotFound {
+                id: update_input.id,
+            }),
         }
     }
 

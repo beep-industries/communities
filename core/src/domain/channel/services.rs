@@ -73,16 +73,10 @@ where
 
     async fn update_channel(
         &self,
-        update_channel_input: UpdateChannelInput,
+        mut update_channel_input: UpdateChannelInput,
     ) -> Result<Channel, CoreError> {
-        // if update_channel_input.is_empty() {
-        //     return Err(ChannelError::EmptyUpdatePayload.into());
-        // }
-
-        // if channel_name.trim() > MAX_CHANNEL_NAME_SIZE {
-        //     return Err(ChannelError::ChannelNameTooLong.into());
-        // }
-        todo!()
+        let repo_input = update_channel_input.into_repo_input()?;
+        self.channel_repository.update(repo_input).await
     }
 
     async fn delete_channel(

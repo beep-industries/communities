@@ -3,7 +3,7 @@ use crate::{
     domain::{
         channel::{
             entities::{
-                Channel, ChannelError, ChannelType, CreateChannelRepoInput,
+                Channel, ChannelError, ChannelId, ChannelType, CreateChannelRepoInput,
                 CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
             },
             ports::{ChannelRepository, ChannelService},
@@ -68,7 +68,7 @@ where
         &self,
         server_id: ServerId,
     ) -> Result<Vec<Channel>, CoreError> {
-        todo!()
+        self.channel_repository.list_in_server(server_id).await
     }
 
     async fn update_channel(
@@ -79,17 +79,11 @@ where
         self.channel_repository.update(repo_input).await
     }
 
-    async fn delete_channel(
-        &self,
-        channel_id: super::entities::ChannelId,
-    ) -> Result<(), CoreError> {
-        todo!()
+    async fn delete_channel(&self, channel_id: ChannelId) -> Result<(), CoreError> {
+        self.channel_repository.delete(channel_id).await
     }
 
-    async fn get_channel_by_id(
-        &self,
-        channel_id: super::entities::ChannelId,
-    ) -> Result<Channel, CoreError> {
-        todo!()
+    async fn get_channel_by_id(&self, channel_id: ChannelId) -> Result<Channel, CoreError> {
+        self.channel_repository.find_by_id(channel_id).await
     }
 }

@@ -1,8 +1,10 @@
 use std::future::Future;
 use std::sync::{Arc, Mutex};
 
+use uuid::Uuid;
+
 use crate::domain::channel::entities::{
-    CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
+    CreateChannelInput, CreatePrivateChannelInput, CreateServerChannelInput, UpdateChannelInput,
 };
 use crate::domain::{
     channel::entities::{Channel, ChannelId},
@@ -11,7 +13,10 @@ use crate::domain::{
 };
 
 pub trait ChannelRepository: Send + Sync {
-    fn create(&self, channel: Channel) -> impl Future<Output = Result<Channel, CoreError>> + Send;
+    fn create(
+        &self,
+        create_channel_input: CreateChannelInput,
+    ) -> impl Future<Output = Result<Channel, CoreError>> + Send;
     fn list_in_server(
         &self,
         server_id: ServerId,
@@ -72,8 +77,20 @@ impl MockChannelRepository {
 }
 
 impl ChannelRepository for MockChannelRepository {
-    async fn create(&self, channel: Channel) -> Result<Channel, CoreError> {
+    async fn create(&self, create_channel_input: CreateChannelInput) -> Result<Channel, CoreError> {
+        use chrono::Utc;
+        let channel = Channel {
+            id: ChannelId(Uuid::new_v4()),
+            name: create_channel_input.name,
+            server_id: create_channel_input.server_id,
+            parent_id: create_channel_input.parent_id,
+            channel_type: create_channel_input.channel_type,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+
         let mut channels = self.channels.lock().unwrap();
+
         channels.push(channel.clone());
         Ok(channel)
     }

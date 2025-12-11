@@ -17,7 +17,7 @@ pub enum ChannelError {
     ChannelNameTooLong,
 
     #[error(
-        "Channel name is too short. It should not be  than {}",
+        "Channel name is too short. It should not be shorter than {}",
         MIN_CHANNEL_NAME_SIZE
     )]
     ChannelNameTooShort,
@@ -33,7 +33,7 @@ pub enum ChannelError {
 pub struct ChannelId(pub Uuid);
 
 /// The string is the value of the name
-/// The Option<bool> represetant if the state of the validation
+/// The Option<bool> represent if the state of the validation
 /// If the validation is not already
 #[derive(Clone, Debug)]
 pub struct ChannelName(String, Option<bool>);
@@ -68,12 +68,12 @@ impl ChannelName {
         if let Some(is_valid) = self.1 {
             is_valid
         } else {
-            self.check().is_err()
+            self.check().is_ok()
         }
     }
 
     pub fn value(&mut self) -> Result<String, ChannelError> {
-        self.clone().check()?;
+        self.check()?;
         Ok(self.clone().0)
     }
 }
@@ -129,7 +129,7 @@ pub struct UpdateChannelInput {
 
 impl UpdateChannelInput {
     // Check if all element are none
-    fn is_empty(self) -> bool {
+    fn is_empty(&self) -> bool {
         self.name.is_none() && self.parent_id.is_none()
     }
 

@@ -4,7 +4,7 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use beep_auth::User;
+use beep_auth::Identity;
 use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
@@ -36,10 +36,10 @@ use crate::http::server::{
 )]
 pub async fn create_server(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Json(request): Json<CreateServerRequest>,
 ) -> Result<Response<Server>, ApiError> {
-    let input = request.into_input(UserId::from(user.id));
+    let input = request.into_input(UserId::from(identity.id().to_string()));
     let server = state.service.create_server(input).await?;
     Ok(Response::created(server))
 }
@@ -62,13 +62,13 @@ pub async fn create_server(
 pub async fn get_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
 ) -> Result<Response<Server>, ApiError> {
     let server_id = ServerId::from(id);
     let server = state.service.get_server(&server_id).await?;
 
     // Only allow access to public servers or if user is the owner
-    if server.visibility != ServerVisibility::Public && server.owner_id.0 != Uuid::from_str(&user.id).unwrap() {
+    if server.visibility != ServerVisibility::Public && server.owner_id.0 != Uuid::from_str(&identity.id()).unwrap() {
         return Err(ApiError::Forbidden);
     }
 
@@ -90,7 +90,7 @@ pub async fn get_server(
 )]
 pub async fn list_servers(
     State(state): State<AppState>,
-    Extension(_user): Extension<User>,
+    Extension(_identity): Extension<Identity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<Server>>, ApiError> {
     let (servers, total) = state.service.list_servers(&pagination).await?;
@@ -124,14 +124,14 @@ pub async fn list_servers(
 pub async fn update_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Json(request): Json<UpdateServerRequest>,
 ) -> Result<Response<Server>, ApiError> {
     let server_id = ServerId::from(id);
 
     // Check if server exists and user is the owner
     let existing_server = state.service.get_server(&server_id).await?;
-    if existing_server.owner_id.0 != Uuid::from_str(&user.id).unwrap() {
+    if existing_server.owner_id.0 != Uuid::from_str(&identity.id()).unwrap() {
         return Err(ApiError::Forbidden);
     }
 
@@ -158,13 +158,13 @@ pub async fn update_server(
 pub async fn delete_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
 ) -> Result<Response<()>, ApiError> {
     let server_id = ServerId::from(id);
 
     // Check if server exists and user is the owner
     let existing_server = state.service.get_server(&server_id).await?;
-    if existing_server.owner_id.0 != Uuid::from_str(&user.id).unwrap() {
+    if existing_server.owner_id.0 != Uuid::from_str(&identity.id()).unwrap() {
         return Err(ApiError::Forbidden);
     }
 

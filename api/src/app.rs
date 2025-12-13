@@ -1,5 +1,6 @@
 use communities_core::create_state;
 use sqlx::postgres::PgConnectOptions;
+use tracing::info;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
@@ -116,12 +117,15 @@ impl App {
                 msg: format!("Failed to bind API server: {}", api_addr),
             })?;
 
+        info!("Starting servers: API ({}) and Health ({})", api_addr, health_addr);
+
         // Run both servers concurrently
         tokio::try_join!(
             axum::serve(health_listener, self.health_router.clone().into_make_service()),
             axum::serve(api_listener, self.app_router.clone().with_state(self.state.clone()).into_make_service())
         )
         .expect("Failed to start servers");
+
         Ok(())
     }
 

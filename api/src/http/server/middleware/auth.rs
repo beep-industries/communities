@@ -34,7 +34,10 @@ pub async fn auth_middleware(
 
     let identity = match state.auth_repository.identify(token).await {
         Ok(identity) => identity,
-        Err(_) => return ApiError::Unauthorized.into_response(),
+        Err(e) => {
+            tracing::error!("Error identifying token: {}", e);
+            return ApiError::Unauthorized.into_response();
+        }
     };
 
     req.extensions_mut().insert(identity);

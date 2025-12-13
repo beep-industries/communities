@@ -1,7 +1,10 @@
+use std::str::FromStr;
+
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
+use beep_auth::User;
 use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
@@ -20,7 +23,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::http::server::{
-    ApiError, AppState, Response, api_error::ErrorBody, middleware::auth::entities::UserIdentity,
+    ApiError, AppState, Response, api_error::ErrorBody,
     response::PaginatedResponse,
 };
 
@@ -66,7 +69,7 @@ pub struct UpdateMemberRequest {
 pub async fn create_member(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(_user): Extension<User>,
     Json(request): Json<CreateMemberRequest>,
 ) -> Result<Response<ServerMember>, ApiError> {
     let server_id = ServerId::from(server_id);
@@ -107,11 +110,11 @@ pub async fn create_member(
 pub async fn list_members(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user_identity): Extension<UserIdentity>,
+    Extension(user): Extension<User>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
     let server_id = ServerId::from(server_id);
-    let user_id = UserId::from(user_identity.user_id);
+    let user_id = UserId::from(user.id);
 
     // Check if server exists and user has permission to list members
     let server = state.service.get_server(&server_id).await?;
@@ -160,7 +163,7 @@ pub async fn list_members(
 pub async fn update_member(
     Path((server_id, user_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-    Extension(user_identity): Extension<UserIdentity>,
+    Extension(user): Extension<User>,
     Json(request): Json<UpdateMemberRequest>,
 ) -> Result<Response<ServerMember>, ApiError> {
     let server_id = ServerId::from(server_id);
@@ -168,7 +171,7 @@ pub async fn update_member(
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != user_identity.user_id && user_id.0 != user_identity.user_id {
+    if server.owner_id.0 != Uuid::from_str(&user.id).unwrap() && user_id.0 != Uuid::from_str(&user.id).unwrap() {
         return Err(ApiError::Forbidden);
     }
 
@@ -202,15 +205,15 @@ pub async fn update_member(
 pub async fn delete_member(
     Path((server_id, user_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-    Extension(user_identity): Extension<UserIdentity>,
+    Extension(user): Extension<User>,
 ) -> Result<Response<serde_json::Value>, ApiError> {
     let server_id = ServerId::from(server_id);
     let user_id = UserId::from(user_id);
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != user_identity.user_id
-        && user_id.0 != user_identity.user_id
+    if server.owner_id.0 != Uuid::from_str(&user.id).unwrap()
+        && user_id.0 != Uuid::from_str(&user.id).unwrap()
         && user_id.0 != server.owner_id.0
     {
         return Err(ApiError::Forbidden);

@@ -13,7 +13,7 @@ use crate::{
     },
     infrastructure::{
         MessageRoutingInfo,
-        outbox::{MessageRouter, OutboxEventRecord},
+        outbox::{OutboxEventRecord},
     },
 };
 

@@ -59,7 +59,7 @@ You can now see all the possible way to configure the service:
 ```bash
 Communities API Server
 
-Usage: api [OPTIONS] --database-password <database_password> --jwt-secret-key <jwt_secret_key>
+Usage: api [OPTIONS] --database-password <database_password>
 
 Options:
       --database-host <HOST>
@@ -72,8 +72,10 @@ Options:
           [env: DATABASE_PASSWORD=]
       --database-name <database_name>
           [env: DATABASE_NAME=] [default: communities]
-      --jwt-secret-key <jwt_secret_key>
-          [env: JWT_SECRET_KEY=a-string-secret-at-least-256-bits-long]
+      --keycloak-internal-url <keycloak_internal_url>
+          [env: KEYCLOAK_INTERNAL_URL=] [default: localhost]
+      --keycloak-realm <keycloak_realm>
+          [env: KEYCLOAK_REALM=] [default: user]
       --server-api-port <api_port>
           [env: API_PORT=3001] [default: 8080]
       --server-health-port <HEALTH_PORT>

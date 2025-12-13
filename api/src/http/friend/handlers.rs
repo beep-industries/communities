@@ -1,4 +1,4 @@
-use beep_auth::User;
+use beep_auth::Identity;
 use communities_core::domain::{
     common::GetPaginated,
     friend::{
@@ -36,10 +36,10 @@ use crate::http::server::{
 )]
 pub async fn get_friends(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<Friend>>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
 
     let (friends, total) = state.service.get_friends(&pagination, &user_id).await?;
 
@@ -68,9 +68,9 @@ pub async fn get_friends(
 pub async fn delete_friend(
     Path(friend_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
 ) -> Result<Response<()>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
     let friend_id = UserId::from(friend_id);
 
     state
@@ -98,10 +98,10 @@ pub async fn delete_friend(
 )]
 pub async fn get_friend_requests(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<FriendRequest>>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
 
     let (friends, total) = state
         .service
@@ -131,10 +131,10 @@ pub async fn get_friend_requests(
 )]
 pub async fn create_friend_request(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Json(input): Json<CreateFriendRequestInput>,
 ) -> Result<Response<FriendRequest>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
     let friend_request = state
         .service
         .create_friend_request(&user_id, &input.user_id_invited)
@@ -156,10 +156,10 @@ pub async fn create_friend_request(
 )]
 pub async fn accept_friend_request(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Json(input): Json<AcceptFriendRequestInput>,
 ) -> Result<Response<Friend>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
     let friend = state
         .service
         .accept_friend_request(&input.user_id_requested, &user_id)
@@ -181,10 +181,10 @@ pub async fn accept_friend_request(
 )]
 pub async fn decline_friend_request(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Json(input): Json<DeclineFriendRequestInput>,
 ) -> Result<Response<FriendRequest>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
     let friend_request = state
         .service
         .decline_friend_request(&input.user_id_requested, &user_id)
@@ -207,10 +207,10 @@ pub async fn decline_friend_request(
 )]
 pub async fn delete_friend_request(
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Path(user_id_invited): Path<Uuid>,
 ) -> Result<Response<()>, ApiError> {
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
     let user_id_invited = UserId::from(user_id_invited);
     state
         .service

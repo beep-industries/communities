@@ -4,7 +4,7 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use beep_auth::User;
+use beep_auth::Identity;
 use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
@@ -69,7 +69,7 @@ pub struct UpdateMemberRequest {
 pub async fn create_member(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user): Extension<User>,
+    Extension(_identity): Extension<Identity>,
     Json(request): Json<CreateMemberRequest>,
 ) -> Result<Response<ServerMember>, ApiError> {
     let server_id = ServerId::from(server_id);
@@ -110,11 +110,11 @@ pub async fn create_member(
 pub async fn list_members(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
     let server_id = ServerId::from(server_id);
-    let user_id = UserId::from(user.id);
+    let user_id = UserId::from(identity.id().to_string());
 
     // Check if server exists and user has permission to list members
     let server = state.service.get_server(&server_id).await?;
@@ -163,7 +163,7 @@ pub async fn list_members(
 pub async fn update_member(
     Path((server_id, user_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
     Json(request): Json<UpdateMemberRequest>,
 ) -> Result<Response<ServerMember>, ApiError> {
     let server_id = ServerId::from(server_id);
@@ -171,7 +171,7 @@ pub async fn update_member(
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != Uuid::from_str(&user.id).unwrap() && user_id.0 != Uuid::from_str(&user.id).unwrap() {
+    if server.owner_id.0 != Uuid::from_str(&identity.id()).unwrap() && user_id.0 != Uuid::from_str(&identity.id()).unwrap() {
         return Err(ApiError::Forbidden);
     }
 
@@ -205,15 +205,15 @@ pub async fn update_member(
 pub async fn delete_member(
     Path((server_id, user_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-    Extension(user): Extension<User>,
+    Extension(identity): Extension<Identity>,
 ) -> Result<Response<serde_json::Value>, ApiError> {
     let server_id = ServerId::from(server_id);
     let user_id = UserId::from(user_id);
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != Uuid::from_str(&user.id).unwrap()
-        && user_id.0 != Uuid::from_str(&user.id).unwrap()
+    if server.owner_id.0 != Uuid::from_str(&identity.id()).unwrap()
+        && user_id.0 != Uuid::from_str(&identity.id()).unwrap()
         && user_id.0 != server.owner_id.0
     {
         return Err(ApiError::Forbidden);

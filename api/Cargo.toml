@@ -21,6 +21,10 @@ beep-auth = "0.1"
 # Database
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid"] }
 
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 # Utils
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.18", features = ["serde", "v4"] }

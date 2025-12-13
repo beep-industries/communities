@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use sqlx::{
     PgPool,
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -14,7 +16,9 @@ use crate::{
     },
 };
 
-/// Concrete service type with PostgreSQL repositories (using MockChannelRepository until channel repository is implemented)
+use beep_auth::KeycloakAuthRepository;
+
+/// Concrete service type with PostgreSQL repositories (using MockMemberRepository until issue #68 is implemented)
 pub type CommunitiesService = Service<
     PostgresServerRepository,
     PostgresFriendshipRepository,
@@ -24,8 +28,9 @@ pub type CommunitiesService = Service<
 >;
 
 #[derive(Clone)]
-pub struct CommunitiesRepositories {
+pub struct CommunitiesState {
     pool: PgPool,
+    pub auth_repository: Arc<KeycloakAuthRepository>,
     pub server_repository: PostgresServerRepository,
     pub friendship_repository: PostgresFriendshipRepository,
     pub health_repository: PostgresHealthRepository,
@@ -33,10 +38,11 @@ pub struct CommunitiesRepositories {
     pub channel_repository: MockChannelRepository,
 }
 
-pub async fn create_repositories(
+pub async fn create_state(
     pg_connection_options: PgConnectOptions,
+    auth_repository: KeycloakAuthRepository,
     message_routing_infos: MessageRoutingInfos,
-) -> Result<CommunitiesRepositories, CoreError> {
+) -> Result<CommunitiesState, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect_with(pg_connection_options)
@@ -52,8 +58,9 @@ pub async fn create_repositories(
     let member_repository =
         PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
     let channel_repository = MockChannelRepository::new();
-    Ok(CommunitiesRepositories {
+    Ok(CommunitiesState {
         pool,
+        auth_repository: Arc::new(auth_repository),
         server_repository,
         friendship_repository,
         health_repository,
@@ -62,7 +69,7 @@ pub async fn create_repositories(
     })
 }
 
-impl Into<CommunitiesService> for CommunitiesRepositories {
+impl Into<CommunitiesService> for CommunitiesState {
     fn into(self) -> CommunitiesService {
         Service::new(
             self.server_repository,
@@ -74,7 +81,7 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
     }
 }
 
-impl CommunitiesRepositories {
+impl CommunitiesState {
     pub async fn shutdown_pool(&self) {
         let _ = &self.pool.close().await;
     }

@@ -8,13 +8,23 @@ license.workspace = true
 [dependencies]
 axum = "0.8"
 tokio = { version = "1", features = ["full"] }
+
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
+
 communities-core = { path = "../core", package = "communities_core" }
+# Authentication
+beep-auth = "0.1"
+
+# Database
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid"] }
+
+# Utils
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.18", features = ["serde", "v4"] }
+tower-http = { version = "0.6", features = ["cors"] }
 
 # JWT
 jsonwebtoken = "9.2"
@@ -23,6 +33,8 @@ clap = { version = "4.5.53", features = ["derive", "env"] }
 env = "1.0.1"
 dotenv = "0.15.0"
 thiserror = { workspace = true }
+
+# OpenAPI
 utoipa-axum = "0.2.0"
 utoipa = "5.4.0"
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }

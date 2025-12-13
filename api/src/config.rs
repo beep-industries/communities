@@ -1,3 +1,4 @@
+use beep_auth::KeycloakAuthRepository;
 use clap::Parser;
 use clap::ValueEnum;
 use communities_core::application::MessageRoutingInfos;
@@ -12,7 +13,7 @@ pub struct Config {
     pub database: DatabaseConfig,
 
     #[command(flatten)]
-    pub jwt: JwtConfig,
+    pub keycloak: KeycloakConfig,
 
     #[command(flatten)]
     pub server: ServerConfig,
@@ -88,14 +89,28 @@ impl Into<PgConnectOptions> for DatabaseConfig {
             .database(&self.db_name)
     }
 }
+
 #[derive(Clone, Parser, Debug, Default)]
-pub struct JwtConfig {
+pub struct KeycloakConfig {
     #[arg(
-        long = "jwt-secret-key",
-        env = "JWT_SECRET_KEY",
-        name = "jwt_secret_key"
+        long = "keycloak-internal-url",
+        env = "KEYCLOAK_INTERNAL_URL",
+        default_value = "localhost"
     )]
-    pub secret_key: String,
+    pub internal_url: String,
+
+    #[arg(
+        long = "keycloak-realm",
+        env = "KEYCLOAK_REALM",
+        default_value = "user"
+    )]
+    pub realm: String,
+}
+
+impl Into<KeycloakAuthRepository> for KeycloakConfig {
+    fn into(self) -> KeycloakAuthRepository {
+        KeycloakAuthRepository::new(self.internal_url, Some(self.realm))
+    }
 }
 
 #[derive(Clone, Parser, Debug, Default)]

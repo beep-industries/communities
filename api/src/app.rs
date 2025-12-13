@@ -1,17 +1,18 @@
-use axum::middleware::from_extractor_with_state;
-use communities_core::create_repositories;
+use communities_core::create_state;
 use sqlx::postgres::PgConnectOptions;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
+use beep_auth::KeycloakAuthRepository;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
     Config, friend_routes,
     http::{
         health::routes::health_routes,
         server::{
-            ApiError, AppState, middleware::auth::AuthMiddleware,
-            middleware::auth::entities::AuthValidator,
+            ApiError, AppState,
+            middleware::auth::auth_middleware,
         },
     },
     server_member_routes, server_routes,
@@ -28,55 +29,62 @@ struct ApiDoc;
 pub struct App {
     config: Config,
     pub state: AppState,
-    pub auth_validator: AuthValidator,
-    app_router: axum::Router,
+    app_router: axum::Router<AppState>,
     health_router: axum::Router,
 }
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
-        let state: AppState = create_repositories(
+        let auth_repository = KeycloakAuthRepository::new(
+    format!(
+                "{}/realms/{}",
+                config.keycloak.internal_url, config.keycloak.realm
+            ),
+            None,
+        );
+        let state: AppState = create_state(
             PgConnectOptions::new()
                 .host(&config.database.host)
                 .port(config.database.port)
                 .username(&config.database.user)
                 .password(&config.database.password)
                 .database(&config.database.db_name),
-            config.clone().routing,
+            auth_repository,
+                config.clone().routing,
         )
         .await
         .map_err(|e| ApiError::StartupError {
             msg: format!("Failed to create repositories: {}", e),
         })?
         .into();
-        let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
+
+        let cors = CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any);
+
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             .merge(server_routes())
             .merge(server_member_routes())
             // Add application routes here
-            .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
-                auth_validator.clone(),
+            .layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                auth_middleware,
             ))
+            .layer(cors)
             .split_for_parts();
 
         // Override API documentation info
         let custom_info = ApiDoc::openapi();
         api.info = custom_info.info;
 
-        let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
-            msg: format!("Failed to generate OpenAPI spec: {}", e),
-        })?;
+        // let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
+        //     msg: format!("Failed to generate OpenAPI spec: {}", e),
+        // })?;
 
         let app_router = app_router
-            .with_state(state.clone())
             .merge(Scalar::with_url("/scalar", api));
-        // Write OpenAPI spec to file in development environment
-        if matches!(config.environment, crate::config::Environment::Development) {
-            std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {
-                msg: format!("Failed to write OpenAPI spec to file: {}", e),
-            })?;
-        }
 
         let health_router = axum::Router::new()
             .merge(health_routes())
@@ -84,13 +92,12 @@ impl App {
         Ok(Self {
             config,
             state,
-            auth_validator,
             app_router,
             health_router,
         })
     }
 
-    pub fn app_router(&self) -> axum::Router {
+    pub fn app_router(&self) -> axum::Router<AppState> {
         self.app_router.clone()
     }
 
@@ -111,8 +118,8 @@ impl App {
 
         // Run both servers concurrently
         tokio::try_join!(
-            axum::serve(health_listener, self.health_router.clone()),
-            axum::serve(api_listener, self.app_router.clone())
+            axum::serve(health_listener, self.health_router.clone().into_make_service()),
+            axum::serve(api_listener, self.app_router.clone().with_state(self.state.clone()).into_make_service())
         )
         .expect("Failed to start servers");
         Ok(())

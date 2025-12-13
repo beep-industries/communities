@@ -1,15 +1,15 @@
-use api::config::Environment;
-use api::http::server::middleware::auth::entities::Claims;
+use api::config::{Environment, KeycloakConfig};
 use api::{
     App, Config,
     app::AppBuilder,
-    config::{DatabaseConfig, JwtConfig},
+    config::{DatabaseConfig},
 };
 use axum_extra::extract::cookie::Cookie;
 use axum_test::TestServer;
+use beep_auth::Claims;
 use chrono::Utc;
 use communities_core::application::MessageRoutingInfos;
-use communities_core::{application::CommunitiesRepositories, create_repositories};
+use communities_core::{application::CommunitiesState, create_state};
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use test_context::AsyncTestContext;
 use uuid::Uuid;
@@ -20,7 +20,7 @@ pub struct TestContext {
     pub unauthenticated_router: TestServer,
     // Router without auth middleware for unauthenticated tests
     pub authenticated_router: TestServer,
-    pub repositories: CommunitiesRepositories,
+    pub repositories: CommunitiesState,
     pub jwt: JwtMaker,
     pub authenticated_user_id: Uuid,
 }
@@ -39,9 +39,21 @@ impl JwtMaker {
     pub fn make_for_user(&self, user_id: Uuid, ttl_secs: i64) -> String {
         let now = Utc::now().timestamp();
         let claims = Claims {
-            sub: user_id,
-            iat: now,
-            exp: now + ttl_secs,
+            sub: beep_auth::Subject(user_id.to_string()),
+            iss: "test_issuer".to_string(),
+            aud: None,
+            exp: Some(now + ttl_secs),
+
+            email: None,
+            email_verified: true,
+            name: None,
+            preferred_username: "".to_string(),
+            given_name: None,
+            family_name: None,
+            scope: "".to_string(),
+            client_id: None,
+
+            extra: serde_json::Map::new(),
         };
 
         encode(
@@ -63,10 +75,10 @@ impl AsyncTestContext for TestContext {
             db_name: "communities".to_string(),
         };
 
-        let jwt = JwtConfig {
-            secret_key: "test_secret_key".to_string(),
+        let keycloak: KeycloakConfig = KeycloakConfig {
+            internal_url: "http://localhost:8080/auth".to_string(),
+            realm: "test-realm".to_string(),
         };
-        let test_secret = jwt.secret_key.clone();
 
         let server = api::config::ServerConfig {
             api_port: 8080,
@@ -75,7 +87,7 @@ impl AsyncTestContext for TestContext {
 
         let config = Config {
             database,
-            jwt,
+            keycloak,
             server,
             routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
             routing: MessageRoutingInfos::default(),
@@ -83,7 +95,7 @@ impl AsyncTestContext for TestContext {
         };
 
         let repositories =
-            create_repositories(config.clone().database.into(), config.clone().routing)
+            create_state(config.clone().database.into(), config.clone().keycloak.into(), config.clone().routing)
                 .await
                 .expect("Failed to create repositories");
 
@@ -94,7 +106,7 @@ impl AsyncTestContext for TestContext {
             .await
             .expect("Failed to set state");
 
-        let jwt = JwtMaker::new(test_secret);
+        let jwt = JwtMaker::new("beep_test_secret_key".to_string());
         let authenticated_user_id = Uuid::new_v4();
         let token = jwt.make_for_user(authenticated_user_id, 3600);
         let cookie = Cookie::new("access_token", token);

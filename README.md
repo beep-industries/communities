@@ -37,14 +37,14 @@ sqlx migrate run --source core/migrations
 Launch the API server:
 
 ```bash
-cargo run --bin api
+RUST_LOG=info cargo run --bin api
 ```
 
 The application runs two servers on separate ports:
 
 - **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
   - `GET /health` - Health check with database connectivity
-- **API server** on `http://localhost:3001` - Main application endpoints
+- **API server** on `http://localhost:3003` - Main application endpoints
   - Future business logic endpoints will be added here
 
 This dual-server architecture provides DDOS protection by isolating health checks from API traffic.
@@ -78,11 +78,11 @@ Options:
       --jwt-secret-key <jwt_secret_key>
           [env: JWT_SECRET_KEY=a-string-secret-at-least-256-bits-long]
       --server-api-port <api_port>
-          [env: API_PORT=3001] [default: 8080]
+          [env: API_PORT=3003] [default: 8080]
       --server-health-port <HEALTH_PORT>
           [env: HEALTH_PORT=9090] [default: 8081]
         --cors-origins <origins>
-          [env: CORS_ORIGINS=http://localhost:3000,https://beep.ovh] [default: http://localhost:3000, https://beep.ovh]
+          [env: CORS_ORIGINS=http://localhost:3003,https://beep.ovh] [default: http://localhost:3003, https://beep.ovh]
   -h, --help
           Print help
 ```

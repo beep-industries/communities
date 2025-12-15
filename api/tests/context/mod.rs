@@ -73,7 +73,7 @@ impl AsyncTestContext for TestContext {
             health_port: 8081,
         };
 
-        let cors_origins = vec!["http://localhost:3000".to_string()];
+        let cors_origins = vec!["http://localhost:3003".to_string()];
 
         let config = Config {
             database,

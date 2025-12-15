@@ -18,6 +18,13 @@ pub struct Config {
     pub server: ServerConfig,
 
     #[arg(
+        long = "cors-origins",
+        env = "CORS_ORIGINS",
+        default_value = "http://localhost:3000,https://beep.ovh"
+    )]
+    pub origins: Vec<String>,
+
+    #[arg(
         long = "routing-config",
         env = "ROUTING_CONFIG_PATH",
         default_value = "config/routing.yaml"

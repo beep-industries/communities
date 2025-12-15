@@ -73,10 +73,13 @@ impl AsyncTestContext for TestContext {
             health_port: 8081,
         };
 
+        let cors_origins = vec!["http://localhost:3000".to_string()];
+
         let config = Config {
             database,
             jwt,
             server,
+            origins: cors_origins,
             routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
             routing: MessageRoutingInfos::default(),
             environment: Environment::Test,

@@ -1,5 +1,5 @@
-use axum::{http::{self, Method}, middleware::from_extractor_with_state};
-use communities_core::create_repositories;
+use axum::{http::{HeaderValue, Method}, middleware::from_extractor_with_state};
+use communities_core::{create_repositories, domain::common::CoreError};
 use sqlx::postgres::PgConnectOptions;
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
@@ -51,12 +51,17 @@ impl App {
         })?
         .into();
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
+
+        let cors_origins = config.origins
+            .iter()
+            .map(|origin| {
+                origin
+                    .parse::<HeaderValue>()
+                    .map_err(|e| CoreError::UnknownError { message: format!("{}", e) })
+            })
+            .collect::<Result<Vec<HeaderValue>, CoreError>>()?;
+
         let cors = CorsLayer::new()
-            .allow_origin([
-                "http://localhost:5173".parse::<http::HeaderValue>().unwrap(),
-                "https://beep.ovh".parse::<http::HeaderValue>().unwrap(),
-                "https://staging.beep.ovh".parse::<http::HeaderValue>().unwrap()
-            ])
             .allow_methods([
                 Method::GET,
                 Method::POST,
@@ -64,11 +69,7 @@ impl App {
                 Method::DELETE,
                 Method::OPTIONS,
             ])
-            .allow_headers([
-                http::header::CONTENT_TYPE,
-                http::header::AUTHORIZATION,
-                http::header::ACCEPT,
-            ])
+            .allow_origin(cors_origins)
             .allow_credentials(true);
         
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()

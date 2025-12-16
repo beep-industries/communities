@@ -22,10 +22,10 @@ impl FromRequestParts<KeycloakAuthRepository> for AuthMiddleware {
             .ok_or_else(|| ApiError::Unauthorized)?;
 
         // Validate the token
-        let user_identity = state
-            .validate_token(token)
-            .await
-            .map_err(|_| ApiError::Unauthorized)?;
+        let user_identity = state.identify(token).await.map_err(|e| {
+            dbg!(e);
+            ApiError::Unauthorized
+        })?;
 
         // Add auth state to request
         parts.extensions.insert(user_identity);

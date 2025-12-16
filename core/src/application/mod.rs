@@ -57,7 +57,6 @@ pub async fn create_repositories(
         PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
     let channel_repository = MockChannelRepository::new();
     let auth_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
-
     Ok(CommunitiesRepositories {
         pool,
         auth_repository,

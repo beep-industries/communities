@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -29,7 +30,7 @@ pub enum ChannelError {
     EmptyUpdatePayload,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct ChannelId(pub Uuid);
 
 /// The string is the value of the name
@@ -101,7 +102,7 @@ pub struct Channel {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum ChannelType {
     ServerText,
     ServerVoice,

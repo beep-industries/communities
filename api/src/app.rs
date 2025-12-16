@@ -1,5 +1,14 @@
-use axum::{http::{HeaderValue, Method, header::{AUTHORIZATION, CONTENT_TYPE}}, middleware::from_extractor_with_state};
-use communities_core::{create_repositories, domain::common::CoreError};
+use axum::{
+    http::{
+        HeaderValue, Method,
+        header::{AUTHORIZATION, CONTENT_TYPE},
+    },
+    middleware::from_extractor_with_state,
+};
+use beep_auth::KeycloakAuthRepository;
+use communities_core::{
+    application::CommunitiesRepositories, create_repositories, domain::common::CoreError,
+};
 use sqlx::postgres::PgConnectOptions;
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
@@ -10,10 +19,7 @@ use crate::{
     Config, friend_routes,
     http::{
         health::routes::health_routes,
-        server::{
-            ApiError, AppState, middleware::auth::AuthMiddleware,
-            middleware::auth::entities::AuthValidator,
-        },
+        server::{ApiError, AppState, middleware::auth::AuthMiddleware},
     },
     server_member_routes, server_routes,
 };
@@ -29,14 +35,13 @@ struct ApiDoc;
 pub struct App {
     config: Config,
     pub state: AppState,
-    pub auth_validator: AuthValidator,
     app_router: axum::Router,
     health_router: axum::Router,
 }
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
-        let state: AppState = create_repositories(
+        let repositories: CommunitiesRepositories = create_repositories(
             PgConnectOptions::new()
                 .host(&config.database.host)
                 .port(config.database.port)
@@ -44,20 +49,25 @@ impl App {
                 .password(&config.database.password)
                 .database(&config.database.db_name),
             config.clone().routing,
+            format!(
+                "{}/realms/{}",
+                config.keycloak.internal_url, config.keycloak.realm
+            ),
         )
         .await
         .map_err(|e| ApiError::StartupError {
             msg: format!("Failed to create repositories: {}", e),
-        })?
-        .into();
-        let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
+        })?;
 
-        let cors_origins = config.origins
+        let cors_origins = config
+            .origins
             .iter()
             .map(|origin| {
                 origin
                     .parse::<HeaderValue>()
-                    .map_err(|e| CoreError::UnknownError { message: format!("{}", e) })
+                    .map_err(|e| CoreError::UnknownError {
+                        message: format!("{}", e),
+                    })
             })
             .collect::<Result<Vec<HeaderValue>, CoreError>>()?;
 
@@ -72,15 +82,16 @@ impl App {
             .allow_origin(cors_origins)
             .allow_credentials(true)
             .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
-        
+
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             .merge(server_routes())
             .merge(server_member_routes())
             // Add application routes here
-            .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
-                auth_validator.clone(),
-            ))
+            .route_layer(from_extractor_with_state::<
+                AuthMiddleware,
+                KeycloakAuthRepository,
+            >(repositories.keycloak_repository.clone()))
             .layer(cors)
             .split_for_parts();
 
@@ -91,7 +102,7 @@ impl App {
         let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
             msg: format!("Failed to generate OpenAPI spec: {}", e),
         })?;
-
+        let state: AppState = repositories.into();
         let app_router = app_router
             .with_state(state.clone())
             .merge(Scalar::with_url("/scalar", api));
@@ -108,7 +119,6 @@ impl App {
         Ok(Self {
             config,
             state,
-            auth_validator,
             app_router,
             health_router,
         })

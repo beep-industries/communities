@@ -1,3 +1,4 @@
+use beep_auth::KeycloakAuthRepository;
 use sqlx::{
     PgPool,
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -6,8 +7,7 @@ use sqlx::{
 use crate::{
     domain::common::{CoreError, services::Service},
     infrastructure::{
-        MessageRoutingInfo,
-        channel::repositories::PostgresChannelRepository,
+        MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
         server::repositories::postgres::PostgresServerRepository,
@@ -32,11 +32,13 @@ pub struct CommunitiesRepositories {
     pub health_repository: PostgresHealthRepository,
     pub member_repository: PostgresMemberRepository,
     pub channel_repository: PostgresChannelRepository,
+    pub keycloak_repository: KeycloakAuthRepository,
 }
 
 pub async fn create_repositories(
     pg_connection_options: PgConnectOptions,
     message_routing_infos: MessageRoutingInfos,
+    keycloak_issuer: String,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -57,6 +59,7 @@ pub async fn create_repositories(
         message_routing_infos.create_channel,
         message_routing_infos.delete_channel,
     );
+    let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -64,6 +67,7 @@ pub async fn create_repositories(
         health_repository,
         member_repository,
         channel_repository,
+        keycloak_repository,
     })
 }
 

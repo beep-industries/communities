@@ -1,15 +1,11 @@
 use api::config::{Environment, KeycloakConfig};
-use api::{
-    App, Config,
-    app::AppBuilder,
-    config::{DatabaseConfig},
-};
+use api::{App, Config, app::AppBuilder, config::DatabaseConfig};
 use axum_extra::extract::cookie::Cookie;
 use axum_test::TestServer;
 use beep_auth::Claims;
 use chrono::Utc;
-use communities_core::application::MessageRoutingInfos;
-use communities_core::{application::CommunitiesState, create_state};
+use communities_core::application::{CommunitiesRepositories, MessageRoutingInfos};
+use communities_core::create_repositories;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use test_context::AsyncTestContext;
 use uuid::Uuid;
@@ -20,7 +16,7 @@ pub struct TestContext {
     pub unauthenticated_router: TestServer,
     // Router without auth middleware for unauthenticated tests
     pub authenticated_router: TestServer,
-    pub repositories: CommunitiesState,
+    pub repositories: CommunitiesRepositories,
     pub jwt: JwtMaker,
     pub authenticated_user_id: Uuid,
 }
@@ -94,10 +90,16 @@ impl AsyncTestContext for TestContext {
             environment: Environment::Test,
         };
 
-        let repositories =
-            create_state(config.clone().database.into(), config.clone().keycloak.into(), config.clone().routing)
-                .await
-                .expect("Failed to create repositories");
+        let repositories = create_repositories(
+            config.clone().database.into(),
+            config.clone().routing,
+            format!(
+                "{}/realms/{}",
+                config.keycloak.internal_url, config.keycloak.realm
+            ),
+        )
+        .await
+        .expect("Failed to create repositories");
 
         let app = App::build(config)
             .await

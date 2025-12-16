@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::domain::server::entities::ServerId;
@@ -30,7 +31,7 @@ pub enum ChannelError {
     EmptyUpdatePayload,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, ToSchema)]
 pub struct ChannelId(pub Uuid);
 
 /// The string is the value of the name
@@ -91,7 +92,7 @@ impl std::fmt::Display for ChannelId {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Channel {
     pub id: ChannelId,
     pub name: String,
@@ -102,7 +103,7 @@ pub struct Channel {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub enum ChannelType {
     ServerText,
     ServerVoice,
@@ -155,6 +156,7 @@ impl UpdateChannelInput {
     }
 }
 
+#[derive(Clone)]
 pub struct CreateChannelRepoInput {
     pub name: String,
     pub server_id: Option<ServerId>,
@@ -168,3 +170,40 @@ pub struct UpdateChannelRepoInput {
     pub name: Option<String>,
     pub parent_id: Option<ChannelId>,
 }
+
+// API Request/Response DTOs
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CreateServerChannelRequest {
+    pub name: String,
+    pub server_id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub channel_type: ChannelType,
+}
+
+impl CreateServerChannelRequest {
+    pub fn into_input(self) -> CreateServerChannelInput {
+        CreateServerChannelInput {
+            name: ChannelName::new(self.name),
+            server_id: ServerId::from(self.server_id),
+            parent_id: self.parent_id.map(ChannelId::from),
+            channel_type: self.channel_type,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct UpdateChannelRequest {
+    pub name: Option<String>,
+    pub parent_id: Option<Uuid>,
+}
+
+impl UpdateChannelRequest {
+    pub fn into_input(self, id: ChannelId) -> UpdateChannelInput {
+        UpdateChannelInput {
+            id,
+            name: self.name.map(ChannelName::new),
+            parent_id: self.parent_id.map(ChannelId::from),
+        }
+    }
+}
+

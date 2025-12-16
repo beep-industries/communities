@@ -59,7 +59,7 @@ where
         let repo_channel_input = CreateChannelRepoInput {
             name: channel_name,
             server_id: Some(create_channel_input.server_id),
-            parent_id: None,
+            parent_id: create_channel_input.parent_id,
             channel_type,
         };
 

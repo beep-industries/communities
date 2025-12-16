@@ -2,6 +2,7 @@ use axum::middleware::from_extractor_with_state;
 use beep_auth::KeycloakAuthRepository;
 use communities_core::create_repositories;
 use sqlx::postgres::PgConnectOptions;
+use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
@@ -33,6 +34,11 @@ pub struct App {
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
+        let cors = CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any);
+
         let repositories = create_repositories(
             PgConnectOptions::new()
                 .host(&config.database.host)
@@ -60,6 +66,7 @@ impl App {
                 AuthMiddleware,
                 KeycloakAuthRepository,
             >(repositories.auth_repository.clone()))
+            .layer(cors)
             .split_for_parts();
 
         // Override API documentation info

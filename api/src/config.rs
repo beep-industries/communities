@@ -20,7 +20,8 @@ pub struct Config {
     #[arg(
         long = "cors-origins",
         env = "CORS_ORIGINS",
-        default_value = "http://localhost:3003,https://beep.ovh"
+        default_value = "http://localhost:3003,https://beep.ovh",
+        value_delimiter = ','
     )]
     pub origins: Vec<String>,
 

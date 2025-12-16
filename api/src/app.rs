@@ -1,4 +1,4 @@
-use axum::{http::{HeaderValue, Method}, middleware::from_extractor_with_state};
+use axum::{http::{HeaderValue, Method, header::{AUTHORIZATION, CONTENT_TYPE}}, middleware::from_extractor_with_state};
 use communities_core::{create_repositories, domain::common::CoreError};
 use sqlx::postgres::PgConnectOptions;
 use tower_http::cors::CorsLayer;
@@ -70,7 +70,8 @@ impl App {
                 Method::OPTIONS,
             ])
             .allow_origin(cors_origins)
-            .allow_credentials(true);
+            .allow_credentials(true)
+            .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
         
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())

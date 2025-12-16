@@ -3,6 +3,7 @@ pub mod config;
 pub mod http;
 pub use app::App;
 pub use config::Config;
+pub use http::channels::routes::channel_routes;
 pub use http::friend::routes::friend_routes;
 pub use http::health::routes::health_routes;
 pub use http::server::middleware::auth::AuthMiddleware;

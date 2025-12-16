@@ -16,12 +16,12 @@ It will handle:
 
 ## Quickstart
 
-
 Launch postgres:
 
 ```bash
 docker compose up -d postgres
 ```
+
 Create the .env file to let sqlx know how to connect to the database:
 
 ```bash
@@ -37,12 +37,14 @@ sqlx migrate run --source core/migrations
 Launch the API server:
 
 ```bash
-cargo run --bin api
+RUST_LOG=info cargo run --bin api
 ```
+
 The application runs two servers on separate ports:
+
 - **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
   - `GET /health` - Health check with database connectivity
-- **API server** on `http://localhost:3001` - Main application endpoints
+- **API server** on `http://localhost:3003` - Main application endpoints
   - Future business logic endpoints will be added here
 
 This dual-server architecture provides DDOS protection by isolating health checks from API traffic.
@@ -56,6 +58,7 @@ cargo run --bin api -- --help
 ```
 
 You can now see all the possible way to configure the service:
+
 ```bash
 Communities API Server
 
@@ -75,9 +78,11 @@ Options:
       --jwt-secret-key <jwt_secret_key>
           [env: JWT_SECRET_KEY=a-string-secret-at-least-256-bits-long]
       --server-api-port <api_port>
-          [env: API_PORT=3001] [default: 8080]
+          [env: API_PORT=3003] [default: 8080]
       --server-health-port <HEALTH_PORT>
           [env: HEALTH_PORT=9090] [default: 8081]
+        --cors-origins <origins>
+          [env: CORS_ORIGINS=http://localhost:3003,https://beep.ovh] [default: http://localhost:3003, https://beep.ovh]
   -h, --help
           Print help
 ```
@@ -140,6 +145,7 @@ cargo test domain::test -- -q
 ```
 
 Notes:
+
 - `#[sqlx::test(migrations = "./migrations")]` automatically applies migrations to an isolated test database.
 - Only a reachable Postgres server and `DATABASE_URL` env var are required; you do not need to run migrations manually for tests.
- - If you run the API or any non-`sqlx::test` integration tests that expect existing tables, apply migrations first (see "Apply Database Migrations" below).
+- If you run the API or any non-`sqlx::test` integration tests that expect existing tables, apply migrations first (see "Apply Database Migrations" below).

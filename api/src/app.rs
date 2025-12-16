@@ -1,6 +1,7 @@
-use axum::middleware::from_extractor_with_state;
-use communities_core::create_repositories;
+use axum::{http::{HeaderValue, Method, header::{AUTHORIZATION, CONTENT_TYPE}}, middleware::from_extractor_with_state};
+use communities_core::{create_repositories, domain::common::CoreError};
 use sqlx::postgres::PgConnectOptions;
+use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
@@ -50,6 +51,28 @@ impl App {
         })?
         .into();
         let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
+
+        let cors_origins = config.origins
+            .iter()
+            .map(|origin| {
+                origin
+                    .parse::<HeaderValue>()
+                    .map_err(|e| CoreError::UnknownError { message: format!("{}", e) })
+            })
+            .collect::<Result<Vec<HeaderValue>, CoreError>>()?;
+
+        let cors = CorsLayer::new()
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PUT,
+                Method::DELETE,
+                Method::OPTIONS,
+            ])
+            .allow_origin(cors_origins)
+            .allow_credentials(true)
+            .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
+        
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             .merge(server_routes())
@@ -58,6 +81,7 @@ impl App {
             .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
                 auth_validator.clone(),
             ))
+            .layer(cors)
             .split_for_parts();
 
         // Override API documentation info

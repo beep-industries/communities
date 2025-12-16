@@ -354,65 +354,66 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "./migrations")]
-    async fn test_create_server_channel_writes_row_and_outbox(pool: PgPool) -> Result<(), CoreError>
-    {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+    async fn test_create_server_channel_writes_row_and_outbox(
+            pool: PgPool,
+        ) -> Result<(), CoreError> {
+            let create_router = MessageRoutingInfo::new(
+                "channel.exchange".to_string(),
+                "channel.created".to_string(),
+            );
+            let delete_router = MessageRoutingInfo::new(
+                "channel.exchange".to_string(),
+                "channel.deleted".to_string(),
+            );
 
-        let repository =
-            PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
+            let repository =
+                PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
 
-        let server_id = ServerId(Uuid::new_v4());
-        create_test_server(&pool, server_id).await?;
+            let server_id = ServerId(Uuid::new_v4());
+            create_test_server(&pool, server_id).await?;
 
-        let input = CreateChannelRepoInput {
-            name: "general".to_string(),
-            server_id: Some(server_id),
-            parent_id: None,
-            channel_type: ChannelType::ServerText,
-        };
+            let input = CreateChannelRepoInput {
+                name: "general".to_string(),
+                server_id: Some(server_id),
+                parent_id: None,
+                channel_type: ChannelType::ServerText,
+            };
 
-        // Act: create channel
-        let created = repository.create(input.clone()).await?;
+            // Act: create channel
+            let created = repository.create(input).await?;
 
-        // Assert: returned fields
-        assert_eq!(created.name, "general");
-        assert_eq!(created.server_id, Some(server_id));
-        assert_eq!(created.parent_id, None);
-        assert_eq!(created.channel_type, ChannelType::ServerText);
+            // Assert: returned fields
+            assert_eq!(created.name, "general");
+            assert_eq!(created.server_id, Some(server_id));
+            assert_eq!(created.parent_id, None);
+            assert_eq!(created.channel_type, ChannelType::ServerText);
 
-        // Assert: it can be fetched back
-        let fetched = repository.find_by_id(created.id).await?;
-        assert_eq!(fetched.id, created.id);
-        assert_eq!(fetched.name, created.name);
+            // Assert: it can be fetched back
+            let fetched = repository.find_by_id(created.id).await?;
+            assert_eq!(fetched.id, created.id);
+            assert_eq!(fetched.name, created.name);
 
-        // Assert: outbox event was written
-        let outbox_row = sqlx::query(
-            r#"
-            SELECT exchange_name, routing_key, payload, status
-            FROM outbox_messages
-            WHERE routing_key = 'channel.created'
-            "#,
-        )
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| CoreError::DatabaseError {
-            msg: format!("Failed to query outbox: {}", e),
-        })?;
+            // Assert: outbox event was written
+            let outbox_row = sqlx::query(
+                r#"
+                SELECT exchange_name, routing_key, payload, status
+                FROM outbox_messages
+                WHERE routing_key = 'channel.created'
+                "#,
+            )
+            .fetch_optional(&pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError {
+                msg: format!("Failed to query outbox: {}", e),
+            })?;
 
-        assert!(outbox_row.is_some(), "Outbox event should be written");
-        let row = outbox_row.unwrap();
-        let status: String = row.get("status");
-        assert_eq!(status, "READY");
+            assert!(outbox_row.is_some(), "Outbox event should be written");
+            let row = outbox_row.unwrap();
+            let status: String = row.get("status");
+            assert_eq!(status, "READY");
 
-        Ok(())
-    }
+            Ok(())
+        }
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_create_private_channel_no_outbox(pool: PgPool) -> Result<(), CoreError> {
@@ -600,7 +601,10 @@ mod tests {
             msg: format!("Failed to query outbox: {}", e),
         })?;
 
-        assert!(outbox_row.is_some(), "Delete outbox event should be written");
+        assert!(
+            outbox_row.is_some(),
+            "Delete outbox event should be written"
+        );
 
         Ok(())
     }
@@ -829,4 +833,3 @@ mod tests {
         Ok(())
     }
 }
-

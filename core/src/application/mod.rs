@@ -5,22 +5,23 @@ use sqlx::{
 
 use crate::{
     domain::common::{CoreError, services::Service},
-    domain::channel::ports::MockChannelRepository,
     infrastructure::{
-        MessageRoutingInfo, friend::repositories::postgres::PostgresFriendshipRepository,
+        MessageRoutingInfo,
+        channel::repositories::PostgresChannelRepository,
+        friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
         server::repositories::postgres::PostgresServerRepository,
         server_member::repositories::PostgresMemberRepository,
     },
 };
 
-/// Concrete service type with PostgreSQL repositories (using MockChannelRepository until channel repository is implemented)
+/// Concrete service type with PostgreSQL repositories
 pub type CommunitiesService = Service<
     PostgresServerRepository,
     PostgresFriendshipRepository,
     PostgresHealthRepository,
     PostgresMemberRepository,
-    MockChannelRepository,
+    PostgresChannelRepository,
 >;
 
 #[derive(Clone)]
@@ -30,7 +31,7 @@ pub struct CommunitiesRepositories {
     pub friendship_repository: PostgresFriendshipRepository,
     pub health_repository: PostgresHealthRepository,
     pub member_repository: PostgresMemberRepository,
-    pub channel_repository: MockChannelRepository,
+    pub channel_repository: PostgresChannelRepository,
 }
 
 pub async fn create_repositories(
@@ -51,7 +52,11 @@ pub async fn create_repositories(
     let health_repository = PostgresHealthRepository::new(pool.clone());
     let member_repository =
         PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
-    let channel_repository = MockChannelRepository::new();
+    let channel_repository = PostgresChannelRepository::new(
+        pool.clone(),
+        message_routing_infos.create_channel,
+        message_routing_infos.delete_channel,
+    );
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -98,4 +103,8 @@ pub struct MessageRoutingInfos {
     pub create_server: MessageRoutingInfo,
     /// Routing information for server deletion events
     pub delete_server: MessageRoutingInfo,
+    /// Routing information for channel creation events
+    pub create_channel: MessageRoutingInfo,
+    /// Routing information for channel deletion events
+    pub delete_channel: MessageRoutingInfo,
 }

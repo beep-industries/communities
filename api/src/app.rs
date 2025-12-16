@@ -1,4 +1,6 @@
-use communities_core::{create_repositories, infrastructure::health::repositories};
+use axum::middleware::from_extractor_with_state;
+use beep_auth::KeycloakAuthRepository;
+use communities_core::create_repositories;
 use sqlx::postgres::PgConnectOptions;
 use tracing::info;
 use utoipa::OpenApi;
@@ -9,7 +11,7 @@ use crate::{
     Config, friend_routes,
     http::{
         health::routes::health_routes,
-        server::{ApiError, AppState},
+        server::{ApiError, AppState, middleware::auth::AuthMiddleware},
     },
     server_member_routes, server_routes,
 };
@@ -53,6 +55,11 @@ impl App {
             .merge(friend_routes())
             .merge(server_routes())
             .merge(server_member_routes())
+            // Add application routes here
+            .route_layer(from_extractor_with_state::<
+                AuthMiddleware,
+                KeycloakAuthRepository,
+            >(repositories.auth_repository.clone()))
             .split_for_parts();
 
         // Override API documentation info

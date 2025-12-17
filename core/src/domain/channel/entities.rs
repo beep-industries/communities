@@ -175,18 +175,30 @@ pub struct UpdateChannelRepoInput {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreateServerChannelRequest {
     pub name: String,
-    pub server_id: Uuid,
     pub parent_id: Option<Uuid>,
     pub channel_type: ChannelType,
 }
 
 impl CreateServerChannelRequest {
-    pub fn into_input(self) -> CreateServerChannelInput {
+    pub fn into_input(self, server_id: ServerId) -> CreateServerChannelInput {
         CreateServerChannelInput {
             name: ChannelName::new(self.name),
-            server_id: ServerId::from(self.server_id),
+            server_id: ServerId::from(server_id),
             parent_id: self.parent_id.map(ChannelId::from),
             channel_type: self.channel_type,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CreatePrivateChannelRequest {
+    pub name: String,
+}
+
+impl CreatePrivateChannelRequest {
+    pub fn into_input(self) -> CreatePrivateChannelInput {
+        CreatePrivateChannelInput {
+            name: ChannelName::new(self.name),
         }
     }
 }

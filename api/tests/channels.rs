@@ -240,44 +240,6 @@ async fn test_create_channel_server_not_found(ctx: &mut context::TestContext) {
     res.assert_status(StatusCode::NOT_FOUND);
 }
 
-#[test_context(context::TestContext)]
-#[tokio::test]
-async fn test_create_channel_mismatched_server_id(ctx: &mut context::TestContext) {
-    // First create a server
-    let server_input = CreateServerRequest {
-        name: "Test Server".to_string(),
-        picture_url: None,
-        banner_url: None,
-        description: None,
-        visibility: ServerVisibility::Public,
-    };
-
-    let server_res = ctx
-        .authenticated_router
-        .post("/servers")
-        .json(&server_input)
-        .await;
-    let server: Value = server_res.json();
-    let server_id = server.get("id").and_then(|v| v.as_str()).unwrap();
-
-    // Try to create a channel with mismatched server_id
-    let different_server_id = Uuid::new_v4();
-    let channel_input = json!({
-        "name": "general",
-        "server_id": different_server_id,
-        "parent_id": null,
-        "channel_type": "ServerText"
-    });
-
-    let res = ctx
-        .authenticated_router
-        .post(&format!("/servers/{}/channels", server_id))
-        .json(&channel_input)
-        .await;
-
-    res.assert_status(StatusCode::BAD_REQUEST);
-}
-
 // ============================================================================
 // LIST CHANNELS TESTS
 // ============================================================================

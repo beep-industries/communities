@@ -16,3 +16,7 @@ create_channel:
 delete_channel:
   - "beep.community" # Exchange name
   - "channel.deleted" # Routing key
+
+update_channel:
+  - "beep.community"      # Exchange name
+  - "channel.updated"     # Routing key

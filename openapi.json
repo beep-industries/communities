@@ -13,6 +13,173 @@
     "version": "0.0.1"
   },
   "paths": {
+    "/channels": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "operationId": "create_private_channel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePrivateChannelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Private channel created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid channel data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/channels/{id}": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "operationId": "get_channel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Channel ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channel retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Channel not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "channels"
+        ],
+        "operationId": "update_channel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Channel ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Channel updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid channel data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not authorized to update this channel"
+          },
+          "404": {
+            "description": "Channel not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "channels"
+        ],
+        "operationId": "delete_channel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Channel ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channel deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not authorized to delete this channel"
+          },
+          "404": {
+            "description": "Channel not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/friend-invitations": {
       "get": {
         "tags": [
@@ -542,6 +709,103 @@
         }
       }
     },
+    "/servers/{server_id}/channels": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "operationId": "list_channels",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "description": "Server ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of channels retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Channel"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Server not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "operationId": "create_server_channel",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "description": "Server ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServerChannelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Server channel created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid channel data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not authorized to create channel in this server"
+          },
+          "404": {
+            "description": "Server not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/servers/{server_id}/members": {
       "get": {
         "tags": [
@@ -937,6 +1201,68 @@
           }
         }
       },
+      "Channel": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "channel_type",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "channel_type": {
+            "$ref": "#/components/schemas/ChannelType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ChannelId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChannelId"
+              }
+            ]
+          },
+          "server_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ServerId"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChannelId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "ChannelType": {
+        "type": "string",
+        "enum": [
+          "ServerText",
+          "ServerVoice",
+          "ServerFolder",
+          "Private"
+        ]
+      },
       "CreateFriendRequestInput": {
         "type": "object",
         "required": [
@@ -966,6 +1292,39 @@
           "user_id": {
             "$ref": "#/components/schemas/UserId",
             "description": "User ID to add as member"
+          }
+        }
+      },
+      "CreatePrivateChannelRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateServerChannelRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "channel_type"
+        ],
+        "properties": {
+          "channel_type": {
+            "$ref": "#/components/schemas/ChannelType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -1419,6 +1778,24 @@
           "Public",
           "Private"
         ]
+      },
+      "UpdateChannelRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
       },
       "UpdateMemberRequest": {
         "type": "object",

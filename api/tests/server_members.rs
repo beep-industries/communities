@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 use test_context::test_context;
 
 mod context;
+mod helpers;
 
 #[test_context(context::TestContext)]
 #[tokio::test]

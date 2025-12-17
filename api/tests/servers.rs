@@ -6,6 +6,7 @@ use test_context::test_context;
 use uuid::Uuid;
 
 pub mod context;
+pub mod helpers;
 
 // ============================================================================
 // CREATE SERVER TESTS

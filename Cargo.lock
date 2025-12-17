@@ -77,9 +77,11 @@ checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 name = "api"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
  "axum-extra",
  "axum-test",
+ "base64",
  "beep-auth",
  "chrono",
  "clap",
@@ -87,6 +89,7 @@ dependencies = [
  "dotenv",
  "env",
  "jsonwebtoken 9.3.1",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -99,6 +102,17 @@ dependencies = [
  "utoipa-axum",
  "utoipa-scalar",
  "uuid",
+]
+
+[[package]]
+name = "async-trait"
+version = "0.1.89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

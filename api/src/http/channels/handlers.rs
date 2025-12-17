@@ -5,14 +5,15 @@ use axum::{
 use communities_core::domain::{
     channel::{
         entities::{
-            Channel, ChannelId, CreateServerChannelRequest, UpdateChannelRequest,
+            Channel, ChannelId, CreatePrivateChannelRequest, CreateServerChannelRequest,
+            UpdateChannelRequest,
         },
         ports::ChannelService,
     },
     server::{entities::ServerId, ports::ServerService},
 };
 use uuid::Uuid;
-
+use communities_core::domain::channel::entities::{ChannelName, CreateServerChannelInput};
 use crate::http::server::{
     ApiError, AppState, Response, middleware::auth::entities::UserIdentity,
 };
@@ -26,7 +27,7 @@ use crate::http::server::{
     ),
     request_body = CreateServerChannelRequest,
     responses(
-        (status = 201, description = "Channel created successfully", body = Channel),
+        (status = 201, description = "Server channel created successfully", body = Channel),
         (status = 400, description = "Bad request - Invalid channel data"),
         (status = 401, description = "Unauthorized"),
         (status = 403, description = "Forbidden - Not authorized to create channel in this server"),
@@ -34,7 +35,7 @@ use crate::http::server::{
         (status = 500, description = "Internal server error")
     )
 )]
-pub async fn create_channel(
+pub async fn create_server_channel(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,
@@ -48,16 +49,31 @@ pub async fn create_channel(
 
     // TODO: Check if user has permission to create channels in this server
     // For now, we'll just verify the server exists
+    let input = request.into_input(ServerId::from(server_id));
 
-    // Ensure the request server_id matches the path parameter
-    if request.server_id != server_id {
-        return Err(ApiError::BadRequest {
-            msg: "Server ID in request body must match the URL parameter".to_string(),
-        });
-    }
-
-    let input = request.into_input();
     let channel = state.service.create_server_channel(input).await?;
+    Ok(Response::created(channel))
+}
+
+#[utoipa::path(
+    post,
+    path = "/channels",
+    tag = "channels",
+    request_body = CreatePrivateChannelRequest,
+    responses(
+        (status = 201, description = "Private channel created successfully", body = Channel),
+        (status = 400, description = "Bad request - Invalid channel data"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn create_private_channel(
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+    Json(request): Json<CreatePrivateChannelRequest>,
+) -> Result<Response<Channel>, ApiError> {
+    let input = request.into_input();
+    let channel = state.service.create_private_channel(input).await?;
     Ok(Response::created(channel))
 }
 
@@ -146,7 +162,7 @@ pub async fn update_channel(
 ) -> Result<Response<Channel>, ApiError> {
     let channel_id = ChannelId::from(id);
 
-    // Verify channel exists
+    // Verify channel existsrequest.into_input()
     state.service.get_channel_by_id(channel_id).await?;
 
     // TODO: Check if user has permission to update this channel
@@ -184,6 +200,6 @@ pub async fn delete_channel(
     // TODO: Check if user has permission to delete this channel
 
     state.service.delete_channel(channel_id).await?;
-    Ok(Response::ok(()))
+    Ok(Response::deleted(()))
 }
 

@@ -46,7 +46,7 @@ where
         pagination: &GetPaginated,
     ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
         // @TODO Authorization: Filter servers by visibility based on user permissions
-
+        println!("listing servers");
         let (servers, total) = self.server_repository.list(pagination).await?;
 
         Ok((servers, total))

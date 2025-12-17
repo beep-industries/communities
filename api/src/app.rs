@@ -41,6 +41,7 @@ pub struct App {
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
+        dbg!(config.clone());
         let repositories: CommunitiesRepositories = create_repositories(
             PgConnectOptions::new()
                 .host(&config.database.host)
@@ -82,6 +83,8 @@ impl App {
             .allow_origin(cors_origins)
             .allow_credentials(true)
             .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
+
+        println!("{:?}", cors);
 
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())

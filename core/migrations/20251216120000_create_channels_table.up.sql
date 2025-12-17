@@ -1,5 +1,5 @@
 -- Create channel_type enum
-CREATE TYPE channel_type AS ENUM ('server_text', 'server_voice', 'server_folder', 'private');
+CREATE TYPE channel_type AS ENUM ('serverText', 'serverVoice', 'serverFolder', 'private');
 
 -- Create the channels table
 CREATE TABLE channels (

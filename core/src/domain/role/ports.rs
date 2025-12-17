@@ -13,7 +13,7 @@ pub trait RoleRepository: Send + Sync {
         create_role_input: CreateRoleInput,
     ) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn find_by_id(&self, id: &RoleId) -> impl Future<Output = Result<Role, CoreError>> + Send;
-    fn list(
+    fn list_by_server(
         &self,
         pagination: &GetPaginated,
         server_id: Uuid,
@@ -26,9 +26,12 @@ pub trait RoleRepository: Send + Sync {
 }
 
 pub trait RoleService: Send + Sync {
-    fn create_role(&self) -> impl Future<Output = Result<Role, CoreError>> + Send;
+    fn create_role(
+        &self,
+        create_role_input: CreateRoleInput,
+    ) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn get_role(&self, role_id: &RoleId) -> impl Future<Output = Result<Role, CoreError>> + Send;
-    fn list_roles(
+    fn list_roles_by_server(
         &self,
         pagination: &GetPaginated,
         server_id: Uuid,

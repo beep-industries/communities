@@ -26,6 +26,7 @@ impl From<CommunitiesRepositories> for AppState {
             repositories.health_repository,
             repositories.member_repository,
             repositories.channel_repository,
+            repositories.role_repository,
         );
         AppState { service }
     }

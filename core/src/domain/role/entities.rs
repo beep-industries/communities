@@ -8,8 +8,10 @@ use crate::domain::common::CoreError;
 pub type RoleId = Uuid;
 
 //
+#[derive(Clone)]
 pub struct Permissions(i32);
 
+#[derive(Clone)]
 pub struct Role {
     pub id: RoleId,
     pub server_id: Uuid,

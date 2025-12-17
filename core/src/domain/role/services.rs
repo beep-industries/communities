@@ -27,8 +27,9 @@ where
     R: RoleRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
-        let repo_input = CreateRoleRepoInput::try_from(create_role_input)
-            .map_err(|e| RoleError::BadRolePayload { msg: e.to_string() }.into())?;
+        let repo_input = CreateRoleRepoInput::try_from(create_role_input).map_err(|e| {
+            Into::<CoreError>::into(RoleError::BadRolePayload { msg: e.to_string() })
+        })?;
         self.role_repository.create(repo_input).await
     }
 
@@ -47,8 +48,9 @@ where
     }
 
     async fn update_role(&self, update_role_input: UpdateRoleInput) -> Result<Role, CoreError> {
-        let repo_input = UpdateRoleRepoInput::try_from(update_role_input)
-            .map_err(|e| RoleError::BadRolePayload { msg: e.to_string() }.into())?;
+        let repo_input = UpdateRoleRepoInput::try_from(update_role_input).map_err(|e| {
+            Into::<CoreError>::into(RoleError::BadRolePayload { msg: e.to_string() })
+        })?;
         self.role_repository.update(repo_input).await
     }
 

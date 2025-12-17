@@ -1,25 +1,27 @@
 use crate::{
     domain::{
+        channel::ports::ChannelRepository,
         common::{GetPaginated, TotalPaginatedElements, services::Service},
         friend::{
             entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
             ports::{FriendRequestService, FriendService, FriendshipRepository},
         },
         health::port::HealthRepository,
+        role::ports::RoleRepository,
         server::ports::ServerRepository,
         server_member::ports::MemberRepository,
-        channel::ports::ChannelRepository,
     },
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-impl<S, F, H, M, C> FriendService for Service<S, F, H, M, C>
+impl<S, F, H, M, C, R> FriendService for Service<S, F, H, M, C, R>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,
+    R: RoleRepository,
 {
     async fn get_friends(
         &self,
@@ -36,13 +38,14 @@ where
     }
 }
 
-impl<S, F, H, M, C> FriendRequestService for Service<S, F, H, M, C>
+impl<S, F, H, M, C, R> FriendRequestService for Service<S, F, H, M, C, R>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,
+    R: RoleRepository,
 {
     async fn get_friend_requests(
         &self,

@@ -103,10 +103,10 @@ Before running the API in development (or when setting up a fresh DB), apply the
 docker compose up -d postgres
 
 # Apply all pending migrations
-sqlx migrate run --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
+sqlx migrate run --source core/migrations --database-url postgres://postgres:password@localhost:5433/communities
 
 # (Optional) Show migration status
-sqlx migrate info --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
+sqlx migrate info --source core/migrations --database-url postgres://postgres:password@localhost:5433/communities
 ```
 
 ## How to create a SQLx migration
@@ -126,12 +126,12 @@ Recommended workflow for all tests (infrastructure + domain):
 
 ```zsh
 # Start Postgres from docker-compose & run the migration
-docker compose up -d 
+docker compose up -d
 
-sqlx migrate run --source core/migrations 
+sqlx migrate run --source core/migrations
 
 # Run the test
-cargo test 
+cargo test
 ```
 
 Run only domain tests (no DB needed):

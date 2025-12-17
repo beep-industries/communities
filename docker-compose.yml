@@ -14,9 +14,9 @@ services:
     restart: unless-stopped
 
   # PostgreSQL for Keycloak
-  keycloak-db:
+  keycloak-communities-db:
     image: postgres:17.7
-    container_name: keycloak-db
+    container_name: keycloak-communities-db
     environment:
       POSTGRES_DB: ${KEYCLOAK_DB}
       POSTGRES_USER: ${KEYCLOAK_DB_USER}
@@ -30,9 +30,9 @@ services:
       retries: 5
 
   # Keycloak
-  keycloak:
+  keycloak-communities:
     image: quay.io/keycloak/keycloak:26.4.2
-    container_name: keycloak
+    container_name: keycloak-communities
     command: start --import-realm
     environment:
       KC_HOSTNAME: localhost
@@ -44,7 +44,7 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-db/${KEYCLOAK_DB}
+      KC_DB_URL: jdbc:postgresql://keycloak-communities-db/${KEYCLOAK_DB}
       KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
     volumes:
@@ -53,7 +53,7 @@ services:
       - "8080:8080"
     restart: unless-stopped
     depends_on:
-      keycloak-db:
+      keycloak-communities-db:
         condition: service_healthy
 
 volumes:

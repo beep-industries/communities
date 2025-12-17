@@ -125,17 +125,13 @@ There are two kinds of tests in this repo:
 Recommended workflow for all tests (infrastructure + domain):
 
 ```zsh
-# 1) Start Postgres from docker-compose
-docker compose up -d postgres
+# Start Postgres from docker-compose & run the migration
+docker compose up -d 
 
-# 2) Point SQLx to your database server (the tests will create/drop their own DBs)
-export DATABASE_URL="postgres://postgres:password@localhost:5432/communities"
+sqlx migrate run --source core/migrations 
 
-# 3) Run tests for the core crate (includes infrastructure + domain tests)
-cargo test -p communities_core -- --nocapture
-
-# Or run the entire workspace
-cargo test --workspace -- --nocapture
+# Run the test
+cargo test 
 ```
 
 Run only domain tests (no DB needed):

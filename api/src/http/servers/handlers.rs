@@ -88,7 +88,9 @@ pub async fn list_servers(
     Extension(_user_identity): Extension<UserIdentity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<Server>>, ApiError> {
+    println!("{:?}", pagination);
     let (servers, total) = state.service.list_servers(&pagination).await?;
+    println!("{:?}", servers);
 
     let response = PaginatedResponse {
         data: servers,

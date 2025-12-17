@@ -15,6 +15,7 @@ impl FromRequestParts<KeycloakAuthRepository> for AuthMiddleware {
     ) -> Result<Self, Self::Rejection> {
         // Extract the Authorization header
         let auth_header = parts.headers.get(axum::http::header::AUTHORIZATION);
+        dbg!(auth_header);
 
         // Ensure the header exists and starts with "Bearer "
         let token = auth_header
@@ -22,14 +23,21 @@ impl FromRequestParts<KeycloakAuthRepository> for AuthMiddleware {
             .and_then(|value| value.strip_prefix("Bearer "))
             .ok_or_else(|| ApiError::Unauthorized)?;
 
+        dbg!(token);
+
         // Validate the token
         let keycloak_identity = state
             .identify(token)
             .await
             .map_err(|_| ApiError::Unauthorized)?;
+
+        dbg!(keycloak_identity.clone());
+
         let user_identity = entities::UserIdentity {
             user_id: Uuid::try_parse(keycloak_identity.id()).map_err(|_| ApiError::Unauthorized)?,
         };
+
+        dbg!(user_identity.clone());
         // Add auth state to request
         parts.extensions.insert(user_identity);
         Ok(Self)

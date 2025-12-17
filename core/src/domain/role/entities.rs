@@ -3,6 +3,8 @@ use permission_translation::models::CapilityHexValue;
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::domain::common::CoreError;
+
 pub type RoleId = Uuid;
 
 //
@@ -23,10 +25,65 @@ pub struct CreateRoleInput {
     pub permissions: i32,
 }
 
+pub struct CreateRoleRepoInput {
+    pub server_id: Uuid,
+    pub name: String,
+    pub permissions: Permissions,
+}
+
+#[derive(Debug, Error)]
+pub enum RoleError {
+    #[error("Bad role payload: {msg}")]
+    BadRolePayload { msg: String },
+}
+
+impl Into<CoreError> for RoleError {
+    fn into(self) -> CoreError {
+        match self {
+            RoleError::BadRolePayload { msg } => CoreError::Error { msg },
+        }
+    }
+}
+
+impl TryFrom<CreateRoleInput> for CreateRoleRepoInput {
+    type Error = PermissionError;
+
+    fn try_from(value: CreateRoleInput) -> Result<Self, Self::Error> {
+        Ok(Self {
+            server_id: value.server_id,
+            name: value.name,
+            permissions: Permissions::try_from(value.permissions)?,
+        })
+    }
+}
+
 pub struct UpdateRoleInput {
     pub id: RoleId,
     pub name: Option<String>,
     pub permissions: Option<i32>,
+}
+
+pub struct UpdateRoleRepoInput {
+    pub id: RoleId,
+    pub name: Option<String>,
+    pub permissions: Option<Permissions>,
+}
+
+impl TryFrom<UpdateRoleInput> for UpdateRoleRepoInput {
+    type Error = PermissionError;
+
+    fn try_from(value: UpdateRoleInput) -> Result<Self, Self::Error> {
+        let permissions = match value.permissions {
+            Some(perm) => Some(Permissions::try_from(perm)?),
+            None => None,
+        };
+
+        Ok(Self {
+            id: value.id,
+            name: value.name,
+            permissions,
+        })
+    }
 }
 
 #[derive(Debug)]

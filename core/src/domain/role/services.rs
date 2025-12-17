@@ -6,7 +6,10 @@ use crate::{
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
         role::{
-            entities::{CreateRoleInput, Role, RoleId, UpdateRoleInput},
+            entities::{
+                CreateRoleInput, CreateRoleRepoInput, Role, RoleError, RoleId, UpdateRoleInput,
+                UpdateRoleRepoInput,
+            },
             ports::{RoleRepository, RoleService},
         },
         server::ports::ServerRepository,
@@ -24,7 +27,9 @@ where
     R: RoleRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
-        self.role_repository.create(create_role_input).await
+        let repo_input = CreateRoleRepoInput::try_from(create_role_input)
+            .map_err(|e| RoleError::BadRolePayload { msg: e.to_string() }.into())?;
+        self.role_repository.create(repo_input).await
     }
 
     async fn get_role(&self, role_id: &RoleId) -> Result<Role, CoreError> {
@@ -42,10 +47,12 @@ where
     }
 
     async fn update_role(&self, update_role_input: UpdateRoleInput) -> Result<Role, CoreError> {
-        self.role_repository.update(update_role_input).await
+        let repo_input = UpdateRoleRepoInput::try_from(update_role_input)
+            .map_err(|e| RoleError::BadRolePayload { msg: e.to_string() }.into())?;
+        self.role_repository.update(repo_input).await
     }
 
     async fn delete_role(&self, server_id: &RoleId) -> Result<(), CoreError> {
-        todo!()
+        self.role_repository.delete(server_id).await
     }
 }

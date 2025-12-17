@@ -4,13 +4,15 @@ use uuid::Uuid;
 
 use crate::domain::{
     common::{CoreError, GetPaginated, TotalPaginatedElements},
-    role::entities::{CreateRoleInput, Role, RoleId, UpdateRoleInput},
+    role::entities::{
+        CreateRoleInput, CreateRoleRepoInput, Role, RoleId, UpdateRoleInput, UpdateRoleRepoInput,
+    },
 };
 
 pub trait RoleRepository: Send + Sync {
     fn create(
         &self,
-        create_role_input: CreateRoleInput,
+        create_role_input: CreateRoleRepoInput,
     ) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn find_by_id(&self, id: &RoleId) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn list_by_server(
@@ -20,7 +22,7 @@ pub trait RoleRepository: Send + Sync {
     ) -> impl Future<Output = Result<(Vec<Role>, TotalPaginatedElements), CoreError>> + Send;
     fn update(
         &self,
-        update_role_input: UpdateRoleInput,
+        update_role_input: UpdateRoleRepoInput,
     ) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn delete(&self, id: &RoleId) -> impl Future<Output = Result<(), CoreError>> + Send;
 }

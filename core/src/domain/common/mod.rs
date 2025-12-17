@@ -10,6 +10,9 @@ pub mod services;
 
 #[derive(Error, Debug, Clone)]
 pub enum CoreError {
+    #[error("Error: {msg}")]
+    Error { msg: String },
+
     #[error("Service is currently unavailable")]
     ServiceUnavailable(String),
 

@@ -5,7 +5,7 @@ use crate::domain::{
 };
 
 #[derive(Clone)]
-pub struct Service<S, F, H, M, C, R, O>
+pub struct Service<S, F, H, M, C, R, O, CM>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -14,6 +14,7 @@ where
     C: ChannelRepository,
     R: RoleRepository,
     O: OutboxRepository,
+    CM: ChannelMemberRepository,
 {
     pub(crate) server_repository: S,
     pub(crate) friendship_repository: F,
@@ -22,9 +23,10 @@ where
     pub(crate) channel_repository: C,
     pub(crate) role_repository: R,
     pub(crate) outbox_repository: O,
+    pub(crate) channel_member_repository: CM,
 }
 
-impl<S, F, H, M, C, R, O> Service<S, F, H, M, C, R, O>
+impl<S, F, H, M, C, R, O, CM> Service<S, F, H, M, C, R, O, CM>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -33,6 +35,7 @@ where
     C: ChannelRepository,
     R: RoleRepository,
     O: OutboxRepository,
+    CM: ChannelMemberRepository,
 {
     pub fn new(
         server_repository: S,
@@ -42,6 +45,7 @@ where
         channel_repository: C,
         role_repository: R,
         outbox_repository: O,
+        channel_member_repository: CM,
     ) -> Self {
         Self {
             server_repository,
@@ -51,6 +55,7 @@ where
             channel_repository,
             role_repository,
             outbox_repository,
+            channel_member_repository,
         }
     }
 }

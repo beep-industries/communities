@@ -1,8 +1,10 @@
 pub mod channel;
+pub mod channel_member;
 pub mod common;
 pub mod friend;
 pub mod health;
 pub mod outbox;
+pub mod role;
 pub mod role;
 pub mod server;
 pub mod server_member;

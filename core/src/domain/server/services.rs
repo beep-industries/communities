@@ -6,13 +6,21 @@ use crate::domain::{
     outbox::ports::OutboxRepository,
     role::ports::RoleRepository,
     server::{
-        entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
-        ports::{ServerRepository, ServerService},
+        channel::ports::ChannelRepository,
+        channel_member::ports::ChannelMemberRepository,
+        common::{CoreError, GetPaginated, TotalPaginatedElements, services::Service},
+        friend::ports::FriendshipRepository,
+        health::port::HealthRepository,
+        role::ports::RoleRepository,
+        server::{
+            entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
+            ports::{ServerRepository, ServerService},
+        },
+        server_member::ports::MemberRepository,
     },
-    server_member::ports::MemberRepository,
 };
 
-impl<S, F, H, M, C, R, O> ServerService for Service<S, F, H, M, C, R, O>
+impl<S, F, H, M, C, R, O, CM> ServerService for Service<S, F, H, M, C, R, O, CM>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -21,6 +29,7 @@ where
     C: ChannelRepository,
     R: RoleRepository,
     O: OutboxRepository,
+    CM: ChannelMemberRepository,
 {
     async fn create_server(&self, input: InsertServerInput) -> Result<Server, CoreError> {
         // Validate server name is not empty

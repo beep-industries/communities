@@ -6,6 +6,7 @@ use sqlx::{
 
 use crate::{
     domain::{
+        channel_member::ports::MockChannelMemberRepository,
         common::{CoreError, services::Service},
         role::ports::MockRoleRepository,
     },
@@ -28,6 +29,7 @@ pub type CommunitiesService = Service<
     PostgresChannelRepository,
     MockRoleRepository,
     PostgresOutboxRepository,
+    MockChannelMemberRepository,
 >;
 
 #[derive(Clone)]
@@ -41,6 +43,7 @@ pub struct CommunitiesRepositories {
     pub role_repository: MockRoleRepository,
     pub keycloak_repository: KeycloakAuthRepository,
     pub outbox_repository: PostgresOutboxRepository,
+    pub channel_member_repository: MockChannelMemberRepository,
 }
 
 pub async fn create_repositories(
@@ -70,6 +73,7 @@ pub async fn create_repositories(
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
     let role_repository = MockRoleRepository::new();
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
+    let channel_member_repository = MockChannelMemberRepository::new();
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -80,6 +84,7 @@ pub async fn create_repositories(
         role_repository,
         keycloak_repository,
         outbox_repository,
+        channel_member_repository,
     })
 }
 
@@ -93,6 +98,7 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
             self.channel_repository,
             self.role_repository,
             self.outbox_repository,
+            self.channel_member_repository,
         )
     }
 }

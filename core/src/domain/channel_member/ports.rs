@@ -15,7 +15,7 @@ pub trait ChannelMemberService: Send + Sync {
     ) -> impl Future<Output = Result<ChannelMember, CoreError>> + Send;
     fn delete_channel_member(
         &self,
-        delete: DeleteChannelMemberInput,
+        input: DeleteChannelMemberInput,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 

@@ -8,6 +8,7 @@ use crate::{
             },
             ports::{ChannelRepository, ChannelService},
         },
+        channel_member::ports::ChannelMemberRepository,
         common::CoreError,
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
@@ -18,7 +19,7 @@ use crate::{
     },
 };
 
-impl<S, F, H, M, C, R, O> ChannelService for Service<S, F, H, M, C, R, O>
+impl<S, F, H, M, C, R, O, CM> ChannelService for Service<S, F, H, M, C, R, O, CM>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -27,6 +28,7 @@ where
     C: ChannelRepository,
     R: RoleRepository,
     O: OutboxRepository,
+    CM: ChannelMemberRepository,
 {
     async fn create_private_channel(
         &self,

@@ -7,18 +7,25 @@ use crate::{
         health::port::HealthRepository,
         outbox::ports::OutboxRepository,
         role::{
-            entities::{
-                CreateRoleInput, CreateRoleRepoInput, Role, RoleError, RoleId, UpdateRoleInput,
-                UpdateRoleRepoInput,
+            channel::ports::ChannelRepository,
+            channel_member::ports::ChannelMemberRepository,
+            common::{CoreError, GetPaginated, TotalPaginatedElements},
+            friend::ports::FriendshipRepository,
+            health::port::HealthRepository,
+            role::{
+                entities::{
+                    CreateRoleInput, CreateRoleRepoInput, Role, RoleError, RoleId, UpdateRoleInput,
+                    UpdateRoleRepoInput,
+                },
+                ports::{RoleRepository, RoleService},
             },
-            ports::{RoleRepository, RoleService},
+            server::ports::ServerRepository,
+            server_member::MemberRepository,
         },
-        server::ports::ServerRepository,
-        server_member::MemberRepository,
     },
 };
 
-impl<S, F, H, M, C, R, O> RoleService for Service<S, F, H, M, C, R, O>
+impl<S, F, H, M, C, R, O, CM> RoleService for Service<S, F, H, M, C, R, O, CM>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -27,6 +34,7 @@ where
     C: ChannelRepository,
     R: RoleRepository,
     O: OutboxRepository,
+    CM: ChannelMemberRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
         let repo_input = CreateRoleRepoInput::try_from(create_role_input).map_err(|e| {

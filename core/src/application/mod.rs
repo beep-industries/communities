@@ -5,7 +5,10 @@ use sqlx::{
 };
 
 use crate::{
-    domain::common::{CoreError, services::Service},
+    domain::{
+        common::{CoreError, services::Service},
+        role::ports::{MockRoleRepository, RoleRepository},
+    },
     infrastructure::{
         MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
@@ -22,6 +25,7 @@ pub type CommunitiesService = Service<
     PostgresHealthRepository,
     PostgresMemberRepository,
     PostgresChannelRepository,
+    MockRoleRepository,
 >;
 
 #[derive(Clone)]
@@ -32,6 +36,7 @@ pub struct CommunitiesRepositories {
     pub health_repository: PostgresHealthRepository,
     pub member_repository: PostgresMemberRepository,
     pub channel_repository: PostgresChannelRepository,
+    pub role_repository: MockRoleRepository,
     pub keycloak_repository: KeycloakAuthRepository,
 }
 
@@ -60,6 +65,7 @@ pub async fn create_repositories(
         message_routing_infos.delete_channel,
     );
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
+    let role_repository = MockRoleRepository::new();
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -67,6 +73,7 @@ pub async fn create_repositories(
         health_repository,
         member_repository,
         channel_repository,
+        role_repository,
         keycloak_repository,
     })
 }
@@ -79,6 +86,7 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
             self.health_repository,
             self.member_repository,
             self.channel_repository,
+            self.role_repository,
         )
     }
 }

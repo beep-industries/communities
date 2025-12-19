@@ -11,18 +11,20 @@ use crate::{
         common::CoreError,
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
+        role::ports::RoleRepository,
         server::{entities::ServerId, ports::ServerRepository},
         server_member::MemberRepository,
     },
 };
 
-impl<S, F, H, M, C> ChannelService for Service<S, F, H, M, C>
+impl<S, F, H, M, C, R> ChannelService for Service<S, F, H, M, C, R>
 where
     S: ServerRepository,
     F: FriendshipRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,
+    R: RoleRepository,
 {
     async fn create_private_channel(
         &self,

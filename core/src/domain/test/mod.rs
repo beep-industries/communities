@@ -7,7 +7,7 @@ use crate::{
         server::ports::MockServerRepository, server_member::MockMemberRepository,
     },
 };
-
+pub mod channel_member;
 pub mod channel;
 pub mod friend;
 pub mod role;

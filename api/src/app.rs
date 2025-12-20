@@ -41,7 +41,6 @@ pub struct App {
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
-        dbg!(config.clone());
         let repositories: CommunitiesRepositories = create_repositories(
             PgConnectOptions::new()
                 .host(&config.database.host)

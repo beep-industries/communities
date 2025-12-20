@@ -221,7 +221,6 @@ impl ChannelRepository for PostgresChannelRepository {
             Some(pid) => Some(pid.0),
             None => None,
         };
-        dbg!(input.parent_id);
 
         // Update the channel in the database
         let row = sqlx::query_as!(

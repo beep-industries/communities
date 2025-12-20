@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::{PgPool, Row};
+use sqlx::any::AnyTypeInfoKind::Null;
 use uuid::Uuid;
 
 use crate::{
@@ -58,6 +59,7 @@ impl PostgresChannelRepository {
 /// SQL representation of ChannelType for database queries
 #[derive(Debug, Clone, Copy, sqlx::Type)]
 #[sqlx(type_name = "channel_type", rename_all = "snake_case")]
+#[derive(PartialEq)]
 enum SqlChannelType {
     ServerText,
     ServerVoice,
@@ -217,8 +219,9 @@ impl ChannelRepository for PostgresChannelRepository {
         let new_name = input.name.as_ref().unwrap_or(&current.name);
         let new_parent_id = match input.parent_id {
             Some(pid) => Some(pid.0),
-            None => current.parent_id,
+            None => None,
         };
+        dbg!(input.parent_id);
 
         // Update the channel in the database
         let row = sqlx::query_as!(
@@ -271,6 +274,17 @@ impl ChannelRepository for PostgresChannelRepository {
             msg: format!("Failed to find channel: {}", e),
         })?
         .ok_or_else(|| CoreError::ChannelNotFound { id: channel_id })?;
+
+        // If the channel is a folder, update its children to have no parent
+        if channel.channel_type == SqlChannelType::ServerFolder {
+            sqlx::query(r#"UPDATE channels SET parent_id = NULL WHERE parent_id = $1"#)
+                .bind(channel_id.0)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to update child channels: {}", e),
+                })?;
+        }
 
         // Delete the channel
         let result = sqlx::query(r#"DELETE FROM channels WHERE id = $1"#)

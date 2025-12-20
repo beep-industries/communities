@@ -165,6 +165,7 @@ pub struct CreateChannelRepoInput {
 }
 
 #[derive(Default)]
+#[derive(Debug)]
 pub struct UpdateChannelRepoInput {
     pub id: ChannelId,
     pub name: Option<String>,

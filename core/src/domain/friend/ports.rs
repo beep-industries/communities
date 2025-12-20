@@ -36,6 +36,12 @@ pub trait FriendshipRepository: Send + Sync {
         user_id: &UserId,
     ) -> impl Future<Output = Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError>> + Send;
 
+    fn list_invitations(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> impl Future<Output = Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError>> + Send;
+
     fn get_request(
         &self,
         user_id_requested: &UserId,
@@ -96,6 +102,12 @@ pub trait FriendService: Send + Sync {
 
 pub trait FriendRequestService: Send + Sync {
     fn get_friend_requests(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> impl Future<Output = Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError>> + Send;
+
+    fn get_friend_invitations(
         &self,
         pagination: &GetPaginated,
         user_id: &UserId,
@@ -208,6 +220,30 @@ impl FriendshipRepository for MockFriendshipRepository {
         let filtered_requests: Vec<FriendRequest> = requests
             .iter()
             .filter(|request| &request.user_id_requested == user_id)
+            .cloned()
+            .collect();
+        let total = filtered_requests.len() as TotalPaginatedElements;
+        let start = pagination.page.saturating_sub(1) * pagination.limit;
+
+        let paginated_requests = filtered_requests
+            .into_iter()
+            .skip(start as usize)
+            .take(pagination.limit as usize)
+            .collect();
+
+        Ok((paginated_requests, total))
+    }
+
+    async fn list_invitations(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
+        let requests = self.friend_requests.lock().unwrap();
+
+        let filtered_requests: Vec<FriendRequest> = requests
+            .iter()
+            .filter(|request| &request.user_id_invited == user_id)
             .cloned()
             .collect();
         let total = filtered_requests.len() as TotalPaginatedElements;

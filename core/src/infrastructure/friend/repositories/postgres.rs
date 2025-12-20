@@ -137,6 +137,42 @@ impl FriendshipRepository for PostgresFriendshipRepository {
         Ok((friend_requests, total_count as TotalPaginatedElements))
     }
 
+    async fn list_invitations(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+
+        let total_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM friend_requests WHERE user_id_invited = $1",
+        )
+        .bind(user_id.0)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|_| FriendshipError::DatabaseError)?;
+
+        let friend_requests = query_as!(
+            FriendRequest,
+            r#"
+            SELECT user_id_requested, user_id_invited, status, created_at
+            FROM friend_requests
+            WHERE user_id_invited = $1
+            ORDER BY status ASC, created_at DESC
+            LIMIT $2
+            OFFSET $3
+            "#,
+            user_id.0,
+            (pagination.limit as i64),
+            (offset as i64)
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|_| FriendshipError::DatabaseError)?;
+
+        Ok((friend_requests, total_count as TotalPaginatedElements))
+    }
+
     async fn get_request(
         &self,
         user_id_requested: &UserId,

@@ -6,9 +6,7 @@ use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
     server::{
-        entities::{
-            CreateServerRequest, Server, ServerId, ServerVisibility, UpdateServerRequest,
-        },
+        entities::{CreateServerRequest, Server, ServerId, ServerVisibility, UpdateServerRequest},
         ports::ServerService,
     },
 };

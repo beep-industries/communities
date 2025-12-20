@@ -2,7 +2,11 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::http::{
     friend::handlers::{
-        __path_accept_friend_request, __path_create_friend_request, __path_decline_friend_request, __path_delete_friend, __path_delete_friend_request, __path_get_friend_invitations, __path_get_friend_requests, __path_get_friends, accept_friend_request, create_friend_request, decline_friend_request, delete_friend, delete_friend_request, get_friend_requests, get_friend_invitations, get_friends
+        __path_accept_friend_request, __path_create_friend_request, __path_decline_friend_request,
+        __path_delete_friend, __path_delete_friend_request, __path_get_friend_invitations,
+        __path_get_friend_requests, __path_get_friends, accept_friend_request,
+        create_friend_request, decline_friend_request, delete_friend, delete_friend_request,
+        get_friend_invitations, get_friend_requests, get_friends,
     },
     server::AppState,
 };

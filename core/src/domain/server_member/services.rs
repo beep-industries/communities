@@ -18,7 +18,7 @@ where
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,
-    R: RoleRepository
+    R: RoleRepository,
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists

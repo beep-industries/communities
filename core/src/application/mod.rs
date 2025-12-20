@@ -7,7 +7,7 @@ use sqlx::{
 use crate::{
     domain::{
         common::{CoreError, services::Service},
-        role::ports::{MockRoleRepository},
+        role::ports::MockRoleRepository,
     },
     infrastructure::{
         MessageRoutingInfo, channel::repositories::PostgresChannelRepository,

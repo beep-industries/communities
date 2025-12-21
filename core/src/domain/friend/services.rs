@@ -57,6 +57,16 @@ where
             .await
     }
 
+    async fn get_friend_invitations(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
+        self.friendship_repository
+            .list_invitations(pagination, user_id)
+            .await
+    }
+
     async fn create_friend_request(
         &self,
         user_id_requested: &UserId,

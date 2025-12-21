@@ -23,6 +23,13 @@ mod tests {
                 &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
             )
             .await?;
+        service
+            .friendship_repository
+            .create_request(
+                &UserId::from("123e4567-e89b-12d3-a456-426614174003".to_string()),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
+            )
+            .await?;
 
         // Test the get_friend_requests method
         let friend_requests = service
@@ -56,6 +63,14 @@ mod tests {
                 &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
             )
             .await?;
+        service
+            .friendship_repository
+            .create_request(
+                &UserId::from("123e4567-e89b-12d3-a456-426614174003".to_string()),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
+            )
+            .await?;
+
         let pagination = GetPaginated { page: 2, limit: 10 };
 
         // Test the get_friend_requests method
@@ -73,6 +88,87 @@ mod tests {
             "Expected no friend requests in the list"
         );
         assert_eq!(friend_requests.1, 1, "Expected total count to be 1");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_friend_invitations_success() -> Result<(), Box<dyn std::error::Error>> {
+        let service = create_mock_service();
+
+        // Add dataset
+        service
+            .friendship_repository
+            .create_request(
+                &UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string()),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
+            )
+            .await?;
+        service
+            .friendship_repository
+            .create_request(
+                &UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string()),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174003".to_string()),
+            )
+            .await?;
+
+        // Test the get_friend_invitations method
+        let friend_invitations = service
+            .get_friend_invitations(
+                &GetPaginated::default(),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
+            )
+            .await
+            .expect("get_friend_invitations returned an error");
+
+        assert_eq!(
+            friend_invitations.0.len(),
+            1,
+            "Expected one friend invitation in the list"
+        );
+        assert_eq!(friend_invitations.1, 1, "Expected total count to be 1");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_friend_invitations_success_with_pagination()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let service = create_mock_service();
+
+        // Add dataset
+        service
+            .friendship_repository
+            .create_request(
+                &UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string()),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
+            )
+            .await?;
+        service
+            .friendship_repository
+            .create_request(
+                &UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string()),
+                &UserId::from("123e4567-e89b-12d3-a456-426614174003".to_string()),
+            )
+            .await?;
+
+        let pagination = GetPaginated { page: 2, limit: 10 };
+
+        // Test the get_friend_invitations method
+        let friend_invitations = service
+            .get_friend_invitations(
+                &pagination,
+                &UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string()),
+            )
+            .await
+            .expect("get_friend_invitations returned an error");
+
+        assert_eq!(
+            friend_invitations.0.len(),
+            0,
+            "Expected no friend invitations in the list"
+        );
+        assert_eq!(friend_invitations.1, 1, "Expected total count to be 1");
 
         Ok(())
     }

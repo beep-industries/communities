@@ -117,6 +117,39 @@ pub async fn get_friend_requests(
 }
 
 #[utoipa::path(
+    get,
+    path = "/friend-invitations",
+    tag = "friend-invitations",
+    params(
+        GetPaginated
+    ),
+    responses(
+        (status = 200, description = "List of friend invitations retrieved successfully", body = PaginatedResponse<FriendRequest>),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
+pub async fn get_friend_invitations(
+    State(state): State<AppState>,
+    Extension(user_identity): Extension<UserIdentity>,
+    Query(pagination): Query<GetPaginated>,
+) -> Result<Response<PaginatedResponse<FriendRequest>>, ApiError> {
+    let user_id = UserId::from(user_identity.user_id);
+
+    let (friends, total) = state
+        .service
+        .get_friend_invitations(&pagination, &user_id)
+        .await?;
+
+    let response = PaginatedResponse {
+        data: friends,
+        total,
+        page: pagination.page,
+    };
+
+    Ok(Response::ok(response))
+}
+
+#[utoipa::path(
     post,
     path = "/friend-requests",
     tag = "friend-requests",

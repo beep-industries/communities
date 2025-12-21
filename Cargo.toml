@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["api","core"]
+members = ["api", "core", "outbox_dispacth"]
 
 [workspace.package]
 edition = "2024"

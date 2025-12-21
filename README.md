@@ -16,16 +16,16 @@ It will handle:
 
 ## Quickstart
 
-Launch postgres:
-
-```bash
-docker compose up -d postgres
-```
-
-Create the .env file to let sqlx know how to connect to the database:
+Create the .env file from the example:
 
 ```bash
 cp .env.example .env
+```
+
+Launch Docker services:
+
+```bash
+docker compose up -d
 ```
 
 Run migrations:
@@ -126,12 +126,12 @@ Recommended workflow for all tests (infrastructure + domain):
 
 ```zsh
 # Start Postgres from docker-compose & run the migration
-docker compose up -d 
+docker compose up -d
 
-sqlx migrate run --source core/migrations 
+sqlx migrate run --source core/migrations
 
 # Run the test
-cargo test 
+cargo test
 ```
 
 Run only domain tests (no DB needed):

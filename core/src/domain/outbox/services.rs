@@ -1,5 +1,4 @@
 use futures_util::Stream;
-use serde_json::Value;
 
 use crate::{
     Service,
@@ -48,7 +47,7 @@ where
 
     async fn listen_outbox_event(
         &self,
-    ) -> Result<impl Stream<Item = Result<Value, OutboxError>>, OutboxError> {
+    ) -> Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError> {
         self.outbox_repository.listen_outbox_event().await
     }
 }

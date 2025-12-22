@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sqlx::{PgPool, Row};
-use sqlx::any::AnyTypeInfoKind::Null;
 use uuid::Uuid;
 
 use crate::{
@@ -58,7 +57,7 @@ impl PostgresChannelRepository {
 
 /// SQL representation of ChannelType for database queries
 #[derive(Debug, Clone, Copy, sqlx::Type, PartialEq)]
-#[sqlx(type_name = "channel_type", rename_all = "snake_case")]
+#[sqlx(type_name = "channel_type", rename_all = "camelCase")]
 enum SqlChannelType {
     ServerText,
     ServerVoice,

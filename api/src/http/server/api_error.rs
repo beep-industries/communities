@@ -88,9 +88,7 @@ impl From<CoreError> for ApiError {
                 msg: "Invalid member nickname: cannot be empty or whitespace".to_string(),
             },
             CoreError::ChannelNotFound { .. } => ApiError::NotFound,
-            CoreError::ChannelPayloadError { msg, .. } => ApiError::BadRequest {
-                msg,
-            },
+            CoreError::ChannelPayloadError { msg, .. } => ApiError::BadRequest { msg },
             _ => ApiError::InternalServerError,
         }
     }

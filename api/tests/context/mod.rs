@@ -8,7 +8,7 @@ use serde_json::Value;
 use test_context::AsyncTestContext;
 use uuid::Uuid;
 
-use crate::helpers::auth::{generate_mock_token, get_keycloak_token};
+use super::helpers::auth::{generate_mock_token, get_keycloak_token};
 
 pub struct TestContext {
     pub app: App,

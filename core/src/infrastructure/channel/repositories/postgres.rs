@@ -57,9 +57,8 @@ impl PostgresChannelRepository {
 }
 
 /// SQL representation of ChannelType for database queries
-#[derive(Debug, Clone, Copy, sqlx::Type)]
+#[derive(Debug, Clone, Copy, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "channel_type", rename_all = "snake_case")]
-#[derive(PartialEq)]
 enum SqlChannelType {
     ServerText,
     ServerVoice,

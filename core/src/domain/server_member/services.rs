@@ -4,6 +4,7 @@ use crate::domain::common::{CoreError, GetPaginated, TotalPaginatedElements};
 use crate::domain::friend::entities::UserId;
 use crate::domain::friend::ports::FriendshipRepository;
 use crate::domain::health::port::HealthRepository;
+use crate::domain::outbox::ports::OutboxRepository;
 use crate::domain::role::ports::RoleRepository;
 use crate::domain::server::entities::ServerId;
 use crate::domain::server::ports::ServerRepository;
@@ -11,7 +12,7 @@ use crate::domain::server::ports::ServerRepository;
 use super::entities::{CreateMemberInput, ServerMember, UpdateMemberInput};
 use super::ports::{MemberRepository, MemberService};
 
-impl<S, F, H, M, C, R> MemberService for Service<S, F, H, M, C, R>
+impl<S, F, H, M, C, R, O> MemberService for Service<S, F, H, M, C, R, O>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -19,6 +20,7 @@ where
     M: MemberRepository,
     C: ChannelRepository,
     R: RoleRepository,
+    O: OutboxRepository,
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists

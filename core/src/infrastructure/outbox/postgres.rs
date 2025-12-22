@@ -1,42 +1,16 @@
-use chrono::{DateTime, Utc};
-use futures_util::{Stream, StreamExt, TryStreamExt};
+use futures_util::{Stream, StreamExt};
 use serde_json::Value;
 use sqlx::{PgPool, postgres::PgListener};
 use uuid::Uuid;
 
-use crate::{
-    domain::common::{CoreError, GetPaginated, TotalPaginatedElements},
-    infrastructure::outbox::OutboxError,
+use crate::domain::{
+    common::{GetPaginated, TotalPaginatedElements},
+    outbox::{
+        entities::{OutboxMessage, OutboxStatus},
+        error::OutboxError,
+        ports::OutboxRepository,
+    },
 };
-
-/// Status of an outbox message
-#[derive(Debug, Clone, sqlx::Type, PartialEq, Eq)]
-#[sqlx(type_name = "VARCHAR", rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum OutboxStatus {
-    Ready,
-    Sent,
-}
-
-impl OutboxStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            OutboxStatus::Ready => "READY",
-            OutboxStatus::Sent => "SENT",
-        }
-    }
-}
-
-/// Represents an outbox message entity
-#[derive(Debug, Clone)]
-pub struct OutboxMessage {
-    pub id: Uuid,
-    pub exchange_name: String,
-    pub routing_key: String,
-    pub payload: serde_json::Value,
-    pub status: OutboxStatus,
-    pub failed_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-}
 
 /// PostgreSQL implementation of the outbox repository
 #[derive(Clone)]
@@ -48,9 +22,11 @@ impl PostgresOutboxRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
+}
 
+impl OutboxRepository for PostgresOutboxRepository {
     /// Retrieve outbox events with pagination support
-    pub async fn get(
+    async fn get(
         &self,
         pagination: &GetPaginated,
     ) -> Result<(Vec<OutboxMessage>, TotalPaginatedElements), OutboxError> {
@@ -106,9 +82,9 @@ impl PostgresOutboxRepository {
     }
 
     /// Listen to real-time outbox event notifications using PostgreSQL LISTEN/NOTIFY
-    pub async fn listen(
+    async fn listen_outbox_event(
         &self,
-    ) -> Result<impl Stream<Item = Result<Value, CoreError>>, OutboxError> {
+    ) -> Result<impl Stream<Item = Result<Value, OutboxError>>, OutboxError> {
         let mut listener = PgListener::connect_with(&self.pool)
             .await
             .map_err(|_| OutboxError::ListenerError)?;
@@ -121,19 +97,15 @@ impl PostgresOutboxRepository {
         let outbox_event_stream =
             listener
                 .into_stream()
-                .map(|pg_notification| -> Result<Value, CoreError> {
+                .map(|pg_notification| -> Result<Value, OutboxError> {
                     let notification = match pg_notification {
                         Ok(notification) => notification,
-                        Err(e) => {
-                            return Err(CoreError::Error {
-                                msg: format!("Error on mapping pg notification: {}", e),
-                            });
+                        Err(_) => {
+                            return Err(OutboxError::ListenerError);
                         }
                     };
                     let notif = notification.payload();
-                    let json = Value::try_from(notif).map_err(|e| CoreError::Error {
-                        msg: format!("Error while serializing data: {}", e),
-                    })?;
+                    let json = Value::try_from(notif).map_err(|_| OutboxError::ListenerError)?;
                     Ok(json)
                 });
 
@@ -141,7 +113,7 @@ impl PostgresOutboxRepository {
     }
 
     /// Delete all outbox events that have been marked as sent
-    pub async fn delete_marked(&self) -> Result<u64, OutboxError> {
+    async fn delete_marked(&self) -> Result<u64, OutboxError> {
         let result = sqlx::query!(
             r#"
             DELETE FROM outbox_messages
@@ -156,7 +128,7 @@ impl PostgresOutboxRepository {
     }
 
     /// Update the status of a specific outbox event
-    pub async fn mark_event(
+    async fn mark_event(
         &self,
         id: Uuid,
         status: OutboxStatus,

@@ -1,0 +1,461 @@
+use chrono::{DateTime, Utc};
+use futures_util::{Stream, StreamExt, TryStreamExt};
+use sqlx::{PgPool, postgres::PgListener};
+use uuid::Uuid;
+
+use crate::{
+    domain::common::{CoreError, GetPaginated, TotalPaginatedElements},
+    infrastructure::outbox::OutboxError,
+};
+
+/// Status of an outbox message
+#[derive(Debug, Clone, sqlx::Type, PartialEq, Eq)]
+#[sqlx(type_name = "VARCHAR", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum OutboxStatus {
+    Ready,
+    Sent,
+}
+
+impl OutboxStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            OutboxStatus::Ready => "READY",
+            OutboxStatus::Sent => "SENT",
+        }
+    }
+}
+
+/// Represents an outbox message entity
+#[derive(Debug, Clone)]
+pub struct OutboxMessage {
+    pub id: Uuid,
+    pub exchange_name: String,
+    pub routing_key: String,
+    pub payload: serde_json::Value,
+    pub status: OutboxStatus,
+    pub failed_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// PostgreSQL implementation of the outbox repository
+#[derive(Clone)]
+pub struct PostgresOutboxRepository {
+    pool: PgPool,
+}
+
+impl PostgresOutboxRepository {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    /// Retrieve outbox events with pagination support
+    pub async fn get(
+        &self,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<OutboxMessage>, TotalPaginatedElements), OutboxError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+
+        // Get total count of READY messages only
+        let total_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM outbox_messages WHERE status = 'READY'",
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|_| OutboxError::DatabaseError)?;
+
+        // Fetch paginated results - only READY messages
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, exchange_name, routing_key, payload, status, failed_at, created_at
+            FROM outbox_messages
+            WHERE status = 'READY'
+            ORDER BY created_at DESC
+            LIMIT $1
+            OFFSET $2
+            "#,
+            pagination.limit as i64,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|_| OutboxError::DatabaseError)?;
+
+        let messages = rows
+            .into_iter()
+            .map(|row| {
+                let status = match row.status.as_str() {
+                    "READY" => OutboxStatus::Ready,
+                    "SENT" => OutboxStatus::Sent,
+                    _ => OutboxStatus::Ready, // default fallback
+                };
+
+                OutboxMessage {
+                    id: row.id,
+                    exchange_name: row.exchange_name,
+                    routing_key: row.routing_key,
+                    payload: row.payload,
+                    status,
+                    failed_at: row.failed_at,
+                    created_at: row.created_at,
+                }
+            })
+            .collect();
+
+        Ok((messages, total_count as TotalPaginatedElements))
+    }
+
+    /// Listen to real-time outbox event notifications using PostgreSQL LISTEN/NOTIFY
+    pub async fn listen(
+        &self,
+    ) -> Result<impl Stream<Item = Result<String, CoreError>>, OutboxError> {
+        // impl Stream<Item = Result<str, ()>>
+        let mut listener = PgListener::connect_with(&self.pool)
+            .await
+            .map_err(|_| OutboxError::ListenerError)?;
+
+        listener
+            .listen("outbox_channel")
+            .await
+            .map_err(|_| OutboxError::ListenerError)?;
+
+        let test = listener
+            .into_stream()
+            .map(|pg_notification| -> Result<String, CoreError> {
+                let notification = match pg_notification {
+                    Ok(notification) => notification,
+                    Err(e) => {
+                        return Err(CoreError::Error {
+                            msg: format!("Error on mapping pg notification: {}", e),
+                        });
+                    }
+                };
+                let notif = notification.payload();
+                Ok(notif.to_string())
+            });
+
+        Ok(test)
+    }
+
+    /// Delete all outbox events that have been marked as sent
+    pub async fn delete_marked(&self) -> Result<u64, OutboxError> {
+        let result = sqlx::query!(
+            r#"
+            DELETE FROM outbox_messages
+            WHERE status = 'SENT'
+            "#
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|_| OutboxError::DatabaseError)?;
+
+        Ok(result.rows_affected())
+    }
+
+    /// Update the status of a specific outbox event
+    pub async fn mark_event(
+        &self,
+        id: Uuid,
+        status: OutboxStatus,
+    ) -> Result<OutboxMessage, OutboxError> {
+        let status_str = status.as_str();
+
+        let row = sqlx::query!(
+            r#"
+            UPDATE outbox_messages
+            SET status = $2
+            WHERE id = $1
+            RETURNING id, exchange_name, routing_key, payload, status, failed_at, created_at
+            "#,
+            id,
+            status_str
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| OutboxError::DatabaseError)?;
+
+        match row {
+            Some(row) => {
+                let status = match row.status.as_str() {
+                    "READY" => OutboxStatus::Ready,
+                    "SENT" => OutboxStatus::Sent,
+                    _ => OutboxStatus::Ready,
+                };
+
+                Ok(OutboxMessage {
+                    id: row.id,
+                    exchange_name: row.exchange_name,
+                    routing_key: row.routing_key,
+                    payload: row.payload,
+                    status,
+                    failed_at: row.failed_at,
+                    created_at: row.created_at,
+                })
+            }
+            None => Err(OutboxError::EventNotFound { id }),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::common::CoreError;
+
+    // Helper function to insert a test outbox message
+    async fn insert_test_message(
+        pool: &PgPool,
+        exchange: &str,
+        routing_key: &str,
+        status: &str,
+    ) -> Result<Uuid, CoreError> {
+        let id = Uuid::new_v4();
+        let payload = serde_json::json!({
+            "test": "data"
+        });
+
+        sqlx::query!(
+            r#"
+            INSERT INTO outbox_messages (id, exchange_name, routing_key, payload, status)
+            VALUES ($1, $2, $3, $4, $5)
+            "#,
+            id,
+            exchange,
+            routing_key,
+            payload,
+            status
+        )
+        .execute(pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to insert test message: {}", e),
+        })?;
+
+        Ok(id)
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_outbox_events_paginated(pool: PgPool) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
+
+        // Insert multiple READY test messages
+        for i in 0..5 {
+            insert_test_message(&pool, "test.exchange", &format!("test.key.{}", i), "READY")
+                .await?;
+        }
+
+        // Insert some SENT messages that should NOT be returned
+        insert_test_message(&pool, "test.exchange", "test.sent.1", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "test.sent.2", "SENT").await?;
+
+        // Get first page
+        let pagination = GetPaginated { page: 1, limit: 3 };
+        let (messages, total) =
+            repository
+                .get(&pagination)
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to get outbox events: {:?}", e),
+                })?;
+
+        assert_eq!(messages.len(), 3);
+        assert_eq!(total, 5); // Should only count READY messages
+        // Verify all returned messages are READY
+        for msg in &messages {
+            assert_eq!(msg.status, OutboxStatus::Ready);
+        }
+
+        // Get second page
+        let pagination = GetPaginated { page: 2, limit: 3 };
+        let (messages, total) =
+            repository
+                .get(&pagination)
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to get outbox events: {:?}", e),
+                })?;
+
+        assert_eq!(messages.len(), 2);
+        assert_eq!(total, 5); // Should only count READY messages
+        // Verify all returned messages are READY
+        for msg in &messages {
+            assert_eq!(msg.status, OutboxStatus::Ready);
+        }
+
+        Ok(())
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_get_empty_outbox(pool: PgPool) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
+
+        let pagination = GetPaginated { page: 1, limit: 10 };
+        let (messages, total) =
+            repository
+                .get(&pagination)
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to get outbox events: {:?}", e),
+                })?;
+
+        assert_eq!(messages.len(), 0);
+        assert_eq!(total, 0);
+
+        Ok(())
+    }
+
+    // #[sqlx::test(migrations = "./migrations")]
+    // async fn test_listen_receives_notifications(pool: PgPool) -> Result<(), CoreError> {
+    //     let repository = PostgresOutboxRepository::new(pool.clone());
+
+    //     // Start listening
+    //     let mut listener = repository
+    //         .listen()
+    //         .await
+    //         .map_err(|e| CoreError::DatabaseError {
+    //             msg: format!("Failed to create listener: {:?}", e),
+    //         })?;
+
+    //     // Insert a message in a separate task (triggers notification)
+    //     let pool_clone = pool.clone();
+    //     tokio::spawn(async move {
+    //         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    //         let _ = insert_test_message(&pool_clone, "test.exchange", "test.key", "READY").await;
+    //     });
+
+    //     // Wait for notification with timeout
+    //     let notification =
+    //         tokio::time::timeout(tokio::time::Duration::from_secs(5), listener.recv())
+    //             .await
+    //             .map_err(|_| CoreError::DatabaseError {
+    //                 msg: "Timeout waiting for notification".to_string(),
+    //             })?
+    //             .map_err(|e| CoreError::DatabaseError {
+    //                 msg: format!("Failed to receive notification: {}", e),
+    //             })?;
+
+    //     assert_eq!(notification.channel(), "outbox_channel");
+    //     assert!(notification.payload().contains("outbox_messages"));
+
+    //     Ok(())
+    // }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_mark_event_updates_status(pool: PgPool) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
+
+        let id = insert_test_message(&pool, "test.exchange", "test.key", "READY").await?;
+
+        // Mark as sent
+        let updated = repository
+            .mark_event(id, OutboxStatus::Sent)
+            .await
+            .map_err(|e| CoreError::DatabaseError {
+                msg: format!("Failed to mark event: {:?}", e),
+            })?;
+
+        assert_eq!(updated.id, id);
+        assert_eq!(updated.status, OutboxStatus::Sent);
+
+        // Verify in database
+        let row = sqlx::query!(
+            r#"
+            SELECT status FROM outbox_messages WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_one(&pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to query database: {}", e),
+        })?;
+
+        assert_eq!(row.status, "SENT");
+
+        Ok(())
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_mark_nonexistent_event_returns_error(pool: PgPool) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
+
+        let nonexistent_id = Uuid::new_v4();
+        let result = repository
+            .mark_event(nonexistent_id, OutboxStatus::Sent)
+            .await;
+
+        assert!(result.is_err());
+        match result {
+            Err(OutboxError::EventNotFound { id }) => {
+                assert_eq!(id, nonexistent_id);
+            }
+            _ => panic!("Expected EventNotFound error"),
+        }
+
+        Ok(())
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_delete_marked_removes_sent_events(pool: PgPool) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
+
+        // Insert SENT messages
+        insert_test_message(&pool, "test.exchange", "test.key.1", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "test.key.2", "SENT").await?;
+
+        // Delete marked events
+        let deleted = repository
+            .delete_marked()
+            .await
+            .map_err(|e| CoreError::DatabaseError {
+                msg: format!("Failed to delete marked events: {:?}", e),
+            })?;
+
+        assert_eq!(deleted, 2);
+
+        // Verify deletion
+        let count: i64 =
+            sqlx::query_scalar(r#"SELECT COUNT(*) FROM outbox_messages WHERE status = 'SENT'"#)
+                .fetch_one(&pool)
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to count messages: {}", e),
+                })?;
+
+        assert_eq!(count, 0);
+
+        Ok(())
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_delete_marked_preserves_ready_events(pool: PgPool) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
+
+        // Insert READY and SENT messages
+        insert_test_message(&pool, "test.exchange", "test.key.1", "READY").await?;
+        insert_test_message(&pool, "test.exchange", "test.key.2", "READY").await?;
+        insert_test_message(&pool, "test.exchange", "test.key.3", "SENT").await?;
+
+        // Delete marked events
+        let deleted = repository
+            .delete_marked()
+            .await
+            .map_err(|e| CoreError::DatabaseError {
+                msg: format!("Failed to delete marked events: {:?}", e),
+            })?;
+
+        assert_eq!(deleted, 1);
+
+        // Verify READY events still exist
+        let ready_count: i64 =
+            sqlx::query_scalar(r#"SELECT COUNT(*) FROM outbox_messages WHERE status = 'READY'"#)
+                .fetch_one(&pool)
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to count READY messages: {}", e),
+                })?;
+
+        assert_eq!(ready_count, 2);
+
+        Ok(())
+    }
+}

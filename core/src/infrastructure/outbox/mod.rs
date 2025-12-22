@@ -10,3 +10,9 @@ mod writer;
 
 pub use event::{MessageRouter, MessageRoutingInfo, OutboxEventRecord};
 pub use writer::write_outbox_event;
+
+mod error;
+pub mod postgres;
+
+pub use error::OutboxError;
+pub use postgres::{OutboxMessage, OutboxStatus, PostgresOutboxRepository};

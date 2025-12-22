@@ -1,0 +1,185 @@
+
+<task>
+  <title>Implement Outbox Repository with PostgreSQL</title>
+
+  <context>
+    <issue_url>https://github.com/beep-industries/communities/issues/94</issue_url>
+    <workspace_location>core/src/infrastructure/outbox</workspace_location>
+    <reference_implementations>
+      <example>core/src/infrastructure/friend/repositories/postgres.rs</example>
+      <example>core/src/infrastructure/channel/repositories/postgres.rs</example>
+    </reference_implementations>
+  </context>
+
+  <requirements>
+    <requirement id="1">
+      <description>Create a PostgreSQL repository implementation for managing outbox events in the outbox table</description>
+      <location>core/src/infrastructure/outbox/repositories/postgres.rs</location>
+    </requirement>
+
+    <requirement id="2">
+      <description>Define error types for outbox operations</description>
+      <location>core/src/infrastructure/outbox/repositories/error.rs</location>
+      <details>
+        Follow the pattern from core/src/infrastructure/friend/repositories/error.rs
+        Use thiserror::Error derive macro
+        Include error_code() method for client-facing error codes
+      </details>
+    </requirement>
+
+    <requirement id="3">
+      <description>Create a module file to export repository components</description>
+      <location>core/src/infrastructure/outbox/repositories/mod.rs</location>
+      <details>Export error and postgres modules</details>
+    </requirement>
+
+    <requirement id="4">
+      <description>Implement PostgresOutboxRepository with required operations</description>
+      <operations>
+        <operation name="get">
+          <description>Retrieve outbox events with pagination support</description>
+          <signature>async fn get(&amp;self, pagination: &amp;GetPaginated) -> Result&lt;(Vec&lt;OutboxMessage&gt;, TotalPaginatedElements), OutboxError&gt;</signature>
+          <details>
+            - Must support pagination using GetPaginated from domain::common
+            - Return tuple of (events, total_count)
+            - Order by created_at DESC for consistent results
+          </details>
+        </operation>
+
+        <operation name="listen">
+          <description>Listen to real-time outbox event notifications using PostgreSQL LISTEN/NOTIFY</description>
+          <signature>async fn listen(&amp;self) -> Result&lt;PgListener, OutboxError&gt;</signature>
+          <details>
+            - Use sqlx::postgres::PgListener
+            - Listen on 'outbox_channel' (defined in migration trigger)
+            - Return the listener so caller can iterate over notifications
+            - The migration already creates a trigger that calls pg_notify on 'outbox_channel'
+          </details>
+        </operation>
+
+        <operation name="delete_marked">
+          <description>Delete all outbox events that have been marked as sent</description>
+          <signature>async fn delete_marked(&amp;self) -> Result&lt;u64, OutboxError&gt;</signature>
+          <details>
+            - Delete WHERE status = 'SENT'
+            - Return number of rows deleted
+          </details>
+        </operation>
+
+        <operation name="mark_event">
+          <description>Update the status of a specific outbox event</description>
+          <signature>async fn mark_event(&amp;self, id: Uuid, status: OutboxStatus) -> Result&lt;OutboxMessage, OutboxError&gt;</signature>
+          <details>
+            - Update status field for given event id
+            - Return updated OutboxMessage
+            - Handle case where event doesn't exist (return error)
+          </details>
+        </operation>
+      </operations>
+    </requirement>
+
+    <requirement id="5">
+      <description>Define OutboxMessage entity struct</description>
+      <location>Create in the postgres.rs file or separate entities file</location>
+      <fields>
+        <field name="id" type="Uuid">Primary key</field>
+        <field name="exchange_name" type="String">RabbitMQ exchange name</field>
+        <field name="routing_key" type="String">RabbitMQ routing key</field>
+        <field name="payload" type="serde_json::Value">Event payload as JSONB</field>
+        <field name="status" type="OutboxStatus">Event status (READY or SENT)</field>
+        <field name="failed_at" type="Option&lt;DateTime&lt;Utc&gt;&gt;">Timestamp if event failed</field>
+        <field name="created_at" type="DateTime&lt;Utc&gt;">When event was created</field>
+      </fields>
+    </requirement>
+
+    <requirement id="6">
+      <description>Define OutboxStatus enum</description>
+      <variants>
+        <variant name="READY">Default status for new events (currently named 'unsent' in issue, but migration uses 'READY')</variant>
+        <variant name="SENT">Event has been dispatched to RabbitMQ</variant>
+      </variants>
+      <details>Should map to VARCHAR(32) in database</details>
+    </requirement>
+
+    <requirement id="7">
+      <description>Update database migration to match implementation</description>
+      <location>core/migrations/20251117120000_create_outbox_table.up.sql</location>
+      <details>
+        - Current migration uses status VARCHAR(32) with default 'READY'
+        - Keep status as VARCHAR to allow for future states (FAILED, RETRY, etc.)
+        - Ensure index on (status, created_at) exists for efficient queries
+      </details>
+    </requirement>
+
+    <requirement id="8">
+      <description>Write comprehensive tests following project patterns</description>
+      <test_framework>sqlx::test with migrations</test_framework>
+      <test_cases>
+        <test>test_get_outbox_events_paginated - Verify pagination works correctly</test>
+        <test>test_get_empty_outbox - Test empty result set</test>
+        <test>test_listen_receives_notifications - Verify PgListener receives events</test>
+        <test>test_mark_event_updates_status - Test status update</test>
+        <test>test_mark_nonexistent_event_returns_error - Error handling</test>
+        <test>test_delete_marked_removes_sent_events - Verify deletion of SENT events</test>
+        <test>test_delete_marked_preserves_ready_events - Ensure READY events not deleted</test>
+      </test_cases>
+      <reference>See core/src/infrastructure/channel/repositories/postgres.rs mod tests section</reference>
+    </requirement>
+  </requirements>
+
+  <technical_details>
+    <database_schema>
+      <table name="outbox_messages">
+        <columns>
+          <column>id UUID PRIMARY KEY</column>
+          <column>exchange_name VARCHAR(255) NOT NULL</column>
+          <column>routing_key VARCHAR(255) NOT NULL</column>
+          <column>payload JSONB NOT NULL</column>
+          <column>status VARCHAR(32) NOT NULL DEFAULT 'READY'</column>
+          <column>failed_at TIMESTAMPTZ NULL</column>
+          <column>created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()</column>
+        </columns>
+        <indexes>
+          <index>idx_outbox_messages_status_created_at ON (status, created_at)</index>
+        </indexes>
+      </table>
+    </database_schema>
+
+    <dependencies>
+      <dependency>sqlx with postgres feature</dependency>
+      <dependency>uuid</dependency>
+      <dependency>chrono</dependency>
+      <dependency>serde_json</dependency>
+      <dependency>thiserror for error handling</dependency>
+    </dependencies>
+
+    <patterns>
+      <pattern name="Repository Pattern">
+        - Create struct PostgresOutboxRepository with PgPool field
+        - Implement Clone for the repository
+        - Use constructor pattern: pub fn new(pool: PgPool) -> Self
+      </pattern>
+
+      <pattern name="Error Handling">
+        - Map sqlx errors to custom OutboxError types
+        - Use meaningful error messages
+        - Distinguish between not found, database errors, etc.
+      </pattern>
+
+      <pattern name="Testing">
+        - Use #[sqlx::test(migrations = "./migrations")] attribute
+        - Tests run against real Postgres database
+        - Each test gets isolated database
+        - Helper functions for test data setup
+      </pattern>
+    </patterns>
+  </technical_details>
+
+  <notes>
+    <note>The existing outbox writer and event types should remain unchanged - this task only adds repository operations</note>
+    <note>The migration already exists and includes the NOTIFY trigger - no need to modify it unless adding new fields</note>
+    <note>Use query_as! macro for type-safe queries where possible</note>
+    <note>Follow the code style and structure from channel and friend repositories</note>
+    <note>The status field uses uppercase strings ('READY', 'SENT') in the database</note>
+  </notes>
+</task>

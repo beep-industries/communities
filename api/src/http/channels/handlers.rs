@@ -41,12 +41,6 @@ pub async fn create_server_channel(
     Extension(_user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateServerChannelRequest>,
 ) -> Result<Response<Channel>, ApiError> {
-    // Verify server exists
-    let _server = state
-        .service
-        .get_server(&ServerId::from(server_id))
-        .await?;
-
     // TODO: Check if user has permission to create channels in this server
     // For now, we'll just verify the server exists
     let input = request.into_input(ServerId::from(server_id));
@@ -162,9 +156,6 @@ pub async fn update_channel(
 ) -> Result<Response<Channel>, ApiError> {
     let channel_id = ChannelId::from(id);
 
-    // Verify channel existsrequest.into_input()
-    state.service.get_channel_by_id(channel_id).await?;
-
     // TODO: Check if user has permission to update this channel
 
     let input = request.into_input(channel_id);
@@ -193,9 +184,6 @@ pub async fn delete_channel(
     Extension(_user_identity): Extension<UserIdentity>,
 ) -> Result<Response<()>, ApiError> {
     let channel_id = ChannelId::from(id);
-
-    // Verify channel exists
-    state.service.get_channel_by_id(channel_id).await?;
 
     // TODO: Check if user has permission to delete this channel
 

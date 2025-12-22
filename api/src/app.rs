@@ -83,8 +83,6 @@ impl App {
             .allow_credentials(true)
             .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
-        println!("{:?}", cors);
-
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             .merge(server_routes())

@@ -13,6 +13,7 @@ use crate::{
         MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
+        outbox::postgres::PostgresOutboxRepository,
         server::repositories::postgres::PostgresServerRepository,
         server_member::repositories::PostgresMemberRepository,
     },
@@ -26,6 +27,7 @@ pub type CommunitiesService = Service<
     PostgresMemberRepository,
     PostgresChannelRepository,
     MockRoleRepository,
+    PostgresOutboxRepository,
 >;
 
 #[derive(Clone)]
@@ -38,6 +40,7 @@ pub struct CommunitiesRepositories {
     pub channel_repository: PostgresChannelRepository,
     pub role_repository: MockRoleRepository,
     pub keycloak_repository: KeycloakAuthRepository,
+    pub outbox_repository: PostgresOutboxRepository,
 }
 
 pub async fn create_repositories(
@@ -66,6 +69,7 @@ pub async fn create_repositories(
     );
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
     let role_repository = MockRoleRepository::new();
+    let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -75,6 +79,7 @@ pub async fn create_repositories(
         channel_repository,
         role_repository,
         keycloak_repository,
+        outbox_repository,
     })
 }
 
@@ -87,6 +92,7 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
             self.member_repository,
             self.channel_repository,
             self.role_repository,
+            self.outbox_repository,
         )
     }
 }

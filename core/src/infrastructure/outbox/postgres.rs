@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use futures_util::{Stream, StreamExt, TryStreamExt};
+use serde_json::Value;
 use sqlx::{PgPool, postgres::PgListener};
 use uuid::Uuid;
 
@@ -107,8 +108,7 @@ impl PostgresOutboxRepository {
     /// Listen to real-time outbox event notifications using PostgreSQL LISTEN/NOTIFY
     pub async fn listen(
         &self,
-    ) -> Result<impl Stream<Item = Result<String, CoreError>>, OutboxError> {
-        // impl Stream<Item = Result<str, ()>>
+    ) -> Result<impl Stream<Item = Result<Value, CoreError>>, OutboxError> {
         let mut listener = PgListener::connect_with(&self.pool)
             .await
             .map_err(|_| OutboxError::ListenerError)?;
@@ -118,22 +118,26 @@ impl PostgresOutboxRepository {
             .await
             .map_err(|_| OutboxError::ListenerError)?;
 
-        let test = listener
-            .into_stream()
-            .map(|pg_notification| -> Result<String, CoreError> {
-                let notification = match pg_notification {
-                    Ok(notification) => notification,
-                    Err(e) => {
-                        return Err(CoreError::Error {
-                            msg: format!("Error on mapping pg notification: {}", e),
-                        });
-                    }
-                };
-                let notif = notification.payload();
-                Ok(notif.to_string())
-            });
+        let outbox_event_stream =
+            listener
+                .into_stream()
+                .map(|pg_notification| -> Result<Value, CoreError> {
+                    let notification = match pg_notification {
+                        Ok(notification) => notification,
+                        Err(e) => {
+                            return Err(CoreError::Error {
+                                msg: format!("Error on mapping pg notification: {}", e),
+                            });
+                        }
+                    };
+                    let notif = notification.payload();
+                    let json = Value::try_from(notif).map_err(|e| CoreError::Error {
+                        msg: format!("Error while serializing data: {}", e),
+                    })?;
+                    Ok(json)
+                });
 
-        Ok(test)
+        Ok(outbox_event_stream)
     }
 
     /// Delete all outbox events that have been marked as sent

@@ -1,7 +1,9 @@
+use crate::http::server::{ApiError, AppState, Response, middleware::auth::entities::UserIdentity};
 use axum::{
     Extension, Json,
     extract::{Path, State},
 };
+use communities_core::domain::channel::entities::{ChannelName, CreateServerChannelInput};
 use communities_core::domain::{
     channel::{
         entities::{
@@ -13,10 +15,6 @@ use communities_core::domain::{
     server::{entities::ServerId, ports::ServerService},
 };
 use uuid::Uuid;
-use communities_core::domain::channel::entities::{ChannelName, CreateServerChannelInput};
-use crate::http::server::{
-    ApiError, AppState, Response, middleware::auth::entities::UserIdentity,
-};
 
 #[utoipa::path(
     post,
@@ -41,8 +39,10 @@ pub async fn create_server_channel(
     Extension(_user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateServerChannelRequest>,
 ) -> Result<Response<Channel>, ApiError> {
+    // Verify server exists
+    state.service.get_server(&ServerId::from(server_id)).await?;
+
     // TODO: Check if user has permission to create channels in this server
-    // For now, we'll just verify the server exists
     let input = request.into_input(ServerId::from(server_id));
 
     let channel = state.service.create_server_channel(input).await?;
@@ -91,10 +91,7 @@ pub async fn list_channels(
     Extension(_user_identity): Extension<UserIdentity>,
 ) -> Result<Response<Vec<Channel>>, ApiError> {
     // Verify server exists
-    state
-        .service
-        .get_server(&ServerId::from(server_id))
-        .await?;
+    state.service.get_server(&ServerId::from(server_id)).await?;
 
     let channels = state
         .service
@@ -190,4 +187,3 @@ pub async fn delete_channel(
     state.service.delete_channel(channel_id).await?;
     Ok(Response::deleted(()))
 }
-

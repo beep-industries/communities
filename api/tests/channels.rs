@@ -1,13 +1,12 @@
 use api::{ApiError, http::server::api_error::ErrorBody};
 use axum::http::StatusCode;
-use communities_core::domain::{
-    server::entities::{CreateServerRequest, ServerVisibility},
-};
+use communities_core::domain::server::entities::{CreateServerRequest, ServerVisibility};
 use serde_json::{Value, json};
 use test_context::test_context;
 use uuid::Uuid;
 
 pub mod context;
+pub mod helpers;
 
 // ============================================================================
 // CREATE CHANNEL TESTS
@@ -713,4 +712,3 @@ async fn test_delete_channel_not_found(ctx: &mut context::TestContext) {
 
     res.assert_status(StatusCode::NOT_FOUND);
 }
-

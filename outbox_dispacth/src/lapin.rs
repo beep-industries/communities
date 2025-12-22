@@ -11,9 +11,9 @@ pub struct RabbitClient {
     channel: Channel,
 }
 
-#[derive(Clone, Parser, Debug, Default)]
+// #[derive(Clone, Parser, Debug, Default)]
 pub struct RabbitClientConfig {
-    #[arg(long = "rabbit-uri", env = "RABBIT_URI", default_value = "localhost")]
+    // #[arg(long = "rabbit-uri", env = "RABBIT_URI", default_value = "localhost")]
     pub uri: String,
 }
 

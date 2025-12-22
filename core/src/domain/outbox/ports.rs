@@ -1,5 +1,4 @@
 use futures_util::Stream;
-use serde_json::Value;
 use uuid::Uuid;
 
 use crate::domain::{
@@ -20,7 +19,7 @@ pub trait OutboxRepository: Send + Sync {
     /// represente the modification inside the outbox table
     fn listen_outbox_event(
         &self,
-    ) -> impl Future<Output = Result<impl Stream<Item = Result<Value, OutboxError>>, OutboxError>>;
+    ) -> impl Future<Output = Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError>>;
 
     fn delete_marked(&self) -> impl Future<Output = Result<u64, OutboxError>>;
 
@@ -41,7 +40,7 @@ pub trait OutboxService {
     /// represente the modification inside the outbox table
     fn listen_outbox_event(
         &self,
-    ) -> impl Future<Output = Result<impl Stream<Item = Result<Value, OutboxError>>, OutboxError>>;
+    ) -> impl Future<Output = Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError>>;
 
     fn delete_marked(&self) -> impl Future<Output = Result<u64, OutboxError>>;
 

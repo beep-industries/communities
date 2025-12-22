@@ -1,5 +1,4 @@
 use futures_util::{Stream, StreamExt};
-use serde_json::Value;
 use sqlx::{PgPool, postgres::PgListener};
 use uuid::Uuid;
 
@@ -84,7 +83,7 @@ impl OutboxRepository for PostgresOutboxRepository {
     /// Listen to real-time outbox event notifications using PostgreSQL LISTEN/NOTIFY
     async fn listen_outbox_event(
         &self,
-    ) -> Result<impl Stream<Item = Result<Value, OutboxError>>, OutboxError> {
+    ) -> Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError> {
         let mut listener = PgListener::connect_with(&self.pool)
             .await
             .map_err(|_| OutboxError::ListenerError)?;
@@ -97,7 +96,7 @@ impl OutboxRepository for PostgresOutboxRepository {
         let outbox_event_stream =
             listener
                 .into_stream()
-                .map(|pg_notification| -> Result<Value, OutboxError> {
+                .map(|pg_notification| -> Result<OutboxMessage, OutboxError> {
                     let notification = match pg_notification {
                         Ok(notification) => notification,
                         Err(_) => {
@@ -105,7 +104,9 @@ impl OutboxRepository for PostgresOutboxRepository {
                         }
                     };
                     let notif = notification.payload();
-                    let json = Value::try_from(notif).map_err(|_| OutboxError::ListenerError)?;
+
+                    let json: OutboxMessage =
+                        serde_json::from_str(notif).map_err(|_| OutboxError::ListenerError)?;
                     Ok(json)
                 });
 

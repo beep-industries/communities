@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Represents an outbox message entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutboxMessage {
     pub id: Uuid,
     pub exchange_name: String,
@@ -14,7 +15,7 @@ pub struct OutboxMessage {
 }
 
 /// Status of an outbox message
-#[derive(Debug, Clone, sqlx::Type, PartialEq, Eq)]
+#[derive(Debug, Clone, sqlx::Type, PartialEq, Eq, Serialize, Deserialize)]
 #[sqlx(type_name = "VARCHAR", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum OutboxStatus {
     Ready,

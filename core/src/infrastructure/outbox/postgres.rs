@@ -105,9 +105,18 @@ impl OutboxRepository for PostgresOutboxRepository {
                     };
                     let notif = notification.payload();
 
-                    let json: OutboxMessage =
+                    // Parse the notification wrapper structure
+                    let wrapper: serde_json::Value =
                         serde_json::from_str(notif).map_err(|_| OutboxError::ListenerError)?;
-                    Ok(json)
+
+                    // Extract the "data" field which contains the OutboxMessage
+                    let data = wrapper.get("data").ok_or(OutboxError::ListenerError)?;
+
+                    // Deserialize the data field into OutboxMessage
+                    let message: OutboxMessage = serde_json::from_value(data.clone())
+                        .map_err(|_| OutboxError::ListenerError)?;
+
+                    Ok(message)
                 });
 
         Ok(outbox_event_stream)
@@ -280,41 +289,50 @@ mod tests {
         Ok(())
     }
 
-    // #[sqlx::test(migrations = "./migrations")]
-    // async fn test_listen_receives_notifications(pool: PgPool) -> Result<(), CoreError> {
-    //     let repository = PostgresOutboxRepository::new(pool.clone());
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_listen_outbox_event_receives_notifications(
+        pool: PgPool,
+    ) -> Result<(), CoreError> {
+        let repository = PostgresOutboxRepository::new(pool.clone());
 
-    //     // Start listening
-    //     let mut listener = repository
-    //         .listen()
-    //         .await
-    //         .map_err(|e| CoreError::DatabaseError {
-    //             msg: format!("Failed to create listener: {:?}", e),
-    //         })?;
+        // Start listening and get the stream
+        let mut stream =
+            repository
+                .listen_outbox_event()
+                .await
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to create listener: {:?}", e),
+                })?;
 
-    //     // Insert a message in a separate task (triggers notification)
-    //     let pool_clone = pool.clone();
-    //     tokio::spawn(async move {
-    //         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    //         let _ = insert_test_message(&pool_clone, "test.exchange", "test.key", "READY").await;
-    //     });
+        // Insert a message in a separate task (triggers notification)
+        let pool_clone = pool.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            let _ = insert_test_message(&pool_clone, "test.exchange", "test.key", "READY").await;
+        });
 
-    //     // Wait for notification with timeout
-    //     let notification =
-    //         tokio::time::timeout(tokio::time::Duration::from_secs(5), listener.recv())
-    //             .await
-    //             .map_err(|_| CoreError::DatabaseError {
-    //                 msg: "Timeout waiting for notification".to_string(),
-    //             })?
-    //             .map_err(|e| CoreError::DatabaseError {
-    //                 msg: format!("Failed to receive notification: {}", e),
-    //             })?;
+        // Wait for notification with timeout
+        let outbox_message =
+            tokio::time::timeout(tokio::time::Duration::from_secs(5), stream.next())
+                .await
+                .map_err(|_| CoreError::DatabaseError {
+                    msg: "Timeout waiting for notification".to_string(),
+                })?
+                .ok_or_else(|| CoreError::DatabaseError {
+                    msg: "Stream ended without notification".to_string(),
+                })?
+                .map_err(|e| CoreError::DatabaseError {
+                    msg: format!("Failed to receive notification: {:?}", e),
+                })?;
 
-    //     assert_eq!(notification.channel(), "outbox_channel");
-    //     assert!(notification.payload().contains("outbox_messages"));
+        // Verify the received message has the expected properties
+        assert_eq!(outbox_message.exchange_name, "test.exchange");
+        assert_eq!(outbox_message.routing_key, "test.key");
+        assert_eq!(outbox_message.status, OutboxStatus::Ready);
+        assert_eq!(outbox_message.payload["test"], "data");
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_mark_event_updates_status(pool: PgPool) -> Result<(), CoreError> {

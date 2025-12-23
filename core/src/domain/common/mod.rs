@@ -4,6 +4,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::domain::channel::entities::{ChannelError, ChannelId};
 use crate::domain::friend::entities::UserId;
+use crate::domain::role::entities::RoleId;
 use crate::domain::server::entities::ServerId;
 
 pub mod services;
@@ -67,6 +68,9 @@ pub enum CoreError {
 
     #[error("Channel fields provided are not correctly formatted: {msg}")]
     ChannelPayloadError { msg: String, err: ChannelError },
+
+    #[error("Role with id {id} not found")]
+    RoleNotFound { id: RoleId },
 }
 
 impl From<ChannelError> for CoreError {

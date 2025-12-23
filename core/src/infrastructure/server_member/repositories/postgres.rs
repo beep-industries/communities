@@ -11,10 +11,7 @@ use crate::{
             ports::MemberRepository,
         },
     },
-    infrastructure::{
-        MessageRoutingInfo,
-        outbox::{MessageRouter, OutboxEventRecord},
-    },
+    infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
 #[derive(Clone)]
@@ -217,6 +214,7 @@ mod tests {
     use super::*;
     use crate::domain::friend::entities::UserId;
     use crate::domain::server::entities::{ServerId, ServerVisibility};
+    use crate::infrastructure::outbox::MessageRouter;
     use sqlx::Row;
 
     // Helper function to create a test server

@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::outbox::error::OutboxError;
+
 /// Represents an outbox message entity
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutboxMessage {
@@ -12,6 +14,14 @@ pub struct OutboxMessage {
     pub status: OutboxStatus,
     pub failed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+}
+
+impl OutboxMessage {
+    pub fn payload<T: for<'de> Deserialize<'de>>(&self) -> Result<T, OutboxError> {
+        let payload: T = serde_json::from_value(self.payload.clone())
+            .map_err(|_e| OutboxError::SerializationError)?;
+        Ok(payload)
+    }
 }
 
 /// Status of an outbox message

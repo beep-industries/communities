@@ -1,4 +1,7 @@
-use communities_core::infrastructure::outbox::postgres::PostgresOutboxRepository;
+use communities_core::{
+    domain::outbox::ports::OutboxRepository,
+    infrastructure::outbox::postgres::PostgresOutboxRepository,
+};
 use futures_util::StreamExt;
 use sqlx::postgres::PgPoolOptions;
 
@@ -31,13 +34,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Waiting for messages on 'outbox_channel'...\n");
 
     // Listen to the outbox stream
-    let mut stream = outbox_repo.listen().await?;
+    let mut stream = outbox_repo.listen_outbox_event().await?;
 
     // Display strings from the stream
     while let Some(result) = stream.next().await {
         match result {
             Ok(notification_payload) => {
-                println!("{}", notification_payload);
+                println!("{:?}", notification_payload);
             }
             Err(e) => {
                 eprintln!("❌ Error receiving notification: {:?}", e);

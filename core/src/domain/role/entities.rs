@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use permission_translation::models::CapilityHexValue;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -8,8 +9,9 @@ use crate::domain::common::CoreError;
 pub type RoleId = Uuid;
 
 //
-#[derive(Clone)]
-pub struct Permissions(i32);
+#[derive(Clone, sqlx::Type, Serialize, Deserialize)]
+#[sqlx(transparent)]
+pub struct Permissions(pub i32);
 
 #[derive(Clone)]
 pub struct Role {
@@ -27,6 +29,7 @@ pub struct CreateRoleInput {
     pub permissions: i32,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CreateRoleRepoInput {
     pub server_id: Uuid,
     pub name: String,
@@ -65,6 +68,7 @@ pub struct UpdateRoleInput {
     pub permissions: Option<i32>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UpdateRoleRepoInput {
     pub id: RoleId,
     pub name: Option<String>,

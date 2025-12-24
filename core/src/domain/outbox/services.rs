@@ -1,5 +1,3 @@
-use futures_util::Stream;
-
 use crate::{
     Service,
     domain::{
@@ -9,7 +7,7 @@ use crate::{
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
         outbox::{
-            entities::{OutboxMessage, OutboxStatus},
+            entities::{OutboxMessage, OutboxMessageStream, OutboxStatus},
             error::OutboxError,
             ports::{OutboxRepository, OutboxService},
         },
@@ -47,9 +45,7 @@ where
             .await
     }
 
-    async fn listen_outbox_event(
-        &self,
-    ) -> Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError> {
+    async fn listen_outbox_event(&self) -> Result<OutboxMessageStream, OutboxError> {
         self.outbox_repository.listen_outbox_event().await
     }
 }

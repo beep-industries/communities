@@ -1,11 +1,13 @@
-use futures_util::{Stream, StreamExt};
 use sqlx::{PgPool, postgres::PgListener};
 use uuid::Uuid;
+
+#[cfg(test)]
+use futures_util::StreamExt;
 
 use crate::domain::{
     common::{GetPaginated, TotalPaginatedElements},
     outbox::{
-        entities::{OutboxMessage, OutboxStatus},
+        entities::{OutboxMessage, OutboxMessageStream, OutboxStatus},
         error::OutboxError,
         ports::OutboxRepository,
     },
@@ -81,9 +83,7 @@ impl OutboxRepository for PostgresOutboxRepository {
     }
 
     /// Listen to real-time outbox event notifications using PostgreSQL LISTEN/NOTIFY
-    async fn listen_outbox_event(
-        &self,
-    ) -> Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError> {
+    async fn listen_outbox_event(&self) -> Result<OutboxMessageStream, OutboxError> {
         let mut listener = PgListener::connect_with(&self.pool)
             .await
             .map_err(|_| OutboxError::ListenerError)?;
@@ -93,32 +93,7 @@ impl OutboxRepository for PostgresOutboxRepository {
             .await
             .map_err(|_| OutboxError::ListenerError)?;
 
-        let outbox_event_stream =
-            listener
-                .into_stream()
-                .map(|pg_notification| -> Result<OutboxMessage, OutboxError> {
-                    let notification = match pg_notification {
-                        Ok(notification) => notification,
-                        Err(_) => {
-                            return Err(OutboxError::ListenerError);
-                        }
-                    };
-                    let notif = notification.payload();
-
-                    // Parse the notification wrapper structure
-                    let wrapper: serde_json::Value =
-                        serde_json::from_str(notif).map_err(|_| OutboxError::ListenerError)?;
-
-                    // Extract the "data" field which contains the OutboxMessage
-                    let data = wrapper.get("data").ok_or(OutboxError::ListenerError)?;
-
-                    // Deserialize the data field into OutboxMessage
-                    let message: OutboxMessage = serde_json::from_value(data.clone())
-                        .map_err(|_| OutboxError::ListenerError)?;
-
-                    Ok(message)
-                });
-
+        let outbox_event_stream = OutboxMessageStream::from(listener);
         Ok(outbox_event_stream)
     }
 

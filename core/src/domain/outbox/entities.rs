@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use futures_util::Stream;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -39,5 +40,35 @@ impl OutboxStatus {
             OutboxStatus::Ready => "READY",
             OutboxStatus::Sent => "SENT",
         }
+    }
+}
+
+pub struct OutboxMessageStream {
+    stream: std::pin::Pin<Box<dyn Stream<Item = Result<OutboxMessage, OutboxError>> + Send>>,
+}
+
+
+impl OutboxMessageStream {
+    pub fn new(
+        stream: impl Stream<Item = Result<OutboxMessage, OutboxError>> + Send + 'static,
+    ) -> Self {
+        Self {
+            stream: Box::pin(stream),
+        }
+    }
+}
+
+impl Stream for OutboxMessageStream {
+    type Item = Result<OutboxMessage, OutboxError>;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        self.stream.as_mut().poll_next(cx)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.stream.size_hint()
     }
 }

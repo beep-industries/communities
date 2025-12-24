@@ -2,26 +2,20 @@ use crate::{
     Service,
     domain::{
         channel::ports::ChannelRepository,
+        channel_member::ports::ChannelMemberRepository,
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
         outbox::ports::OutboxRepository,
         role::{
-            channel::ports::ChannelRepository,
-            channel_member::ports::ChannelMemberRepository,
-            common::{CoreError, GetPaginated, TotalPaginatedElements},
-            friend::ports::FriendshipRepository,
-            health::port::HealthRepository,
-            role::{
-                entities::{
-                    CreateRoleInput, CreateRoleRepoInput, Role, RoleError, RoleId, UpdateRoleInput,
-                    UpdateRoleRepoInput,
-                },
-                ports::{RoleRepository, RoleService},
+            entities::{
+                CreateRoleInput, CreateRoleRepoInput, Role, RoleError, RoleId, UpdateRoleInput,
+                UpdateRoleRepoInput,
             },
-            server::ports::ServerRepository,
-            server_member::MemberRepository,
+            ports::{RoleRepository, RoleService},
         },
+        server::ports::ServerRepository,
+        server_member::MemberRepository,
     },
 };
 

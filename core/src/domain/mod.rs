@@ -5,7 +5,6 @@ pub mod friend;
 pub mod health;
 pub mod outbox;
 pub mod role;
-pub mod role;
 pub mod server;
 pub mod server_member;
 pub mod test;

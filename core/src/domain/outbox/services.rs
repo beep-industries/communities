@@ -4,6 +4,7 @@ use crate::{
     Service,
     domain::{
         channel::ports::ChannelRepository,
+        channel_member::ports::ChannelMemberRepository,
         common::{GetPaginated, TotalPaginatedElements},
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
@@ -18,7 +19,7 @@ use crate::{
     },
 };
 
-impl<S, F, H, M, C, R, O> OutboxService for Service<S, F, H, M, C, R, O>
+impl<S, F, H, M, C, R, O, CM> OutboxService for Service<S, F, H, M, C, R, O, CM>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -27,6 +28,7 @@ where
     C: ChannelRepository,
     R: RoleRepository,
     O: OutboxRepository,
+    CM: ChannelMemberRepository,
 {
     async fn get(
         &self,

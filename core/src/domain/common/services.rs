@@ -1,7 +1,8 @@
 use crate::domain::{
-    channel::ports::ChannelRepository, friend::ports::FriendshipRepository,
-    health::port::HealthRepository, outbox::ports::OutboxRepository, role::ports::RoleRepository,
-    server::ports::ServerRepository, server_member::ports::MemberRepository,
+    channel::ports::ChannelRepository, channel_member::ports::ChannelMemberRepository,
+    friend::ports::FriendshipRepository, health::port::HealthRepository,
+    outbox::ports::OutboxRepository, role::ports::RoleRepository, server::ports::ServerRepository,
+    server_member::ports::MemberRepository,
 };
 
 #[derive(Clone)]

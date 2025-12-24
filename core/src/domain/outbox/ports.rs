@@ -1,12 +1,11 @@
 use std::sync::{Arc, Mutex};
 
-use futures_util::Stream;
 use uuid::Uuid;
 
 use crate::domain::{
     common::{GetPaginated, TotalPaginatedElements},
     outbox::{
-        entities::{OutboxMessage, OutboxStatus},
+        entities::{OutboxMessage, OutboxMessageStream, OutboxStatus},
         error::OutboxError,
     },
 };
@@ -19,9 +18,8 @@ pub trait OutboxRepository: Send + Sync {
 
     /// Return a stream of serializable values that
     /// represente the modification inside the outbox table
-    fn listen_outbox_event(
-        &self,
-    ) -> impl Future<Output = Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError>>;
+    fn listen_outbox_event(&self)
+    -> impl Future<Output = Result<OutboxMessageStream, OutboxError>>;
 
     fn delete_marked(&self) -> impl Future<Output = Result<u64, OutboxError>>;
 
@@ -40,9 +38,8 @@ pub trait OutboxService {
 
     /// Return a stream of serializable values that
     /// represente the modification inside the outbox table
-    fn listen_outbox_event(
-        &self,
-    ) -> impl Future<Output = Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError>>;
+    fn listen_outbox_event(&self)
+    -> impl Future<Output = Result<OutboxMessageStream, OutboxError>>;
 
     fn delete_marked(&self) -> impl Future<Output = Result<u64, OutboxError>>;
 
@@ -79,13 +76,12 @@ impl OutboxRepository for MockOutboxRepository {
         Ok((paginated, total))
     }
 
-    async fn listen_outbox_event(
-        &self,
-    ) -> Result<impl Stream<Item = Result<OutboxMessage, OutboxError>>, OutboxError> {
+    async fn listen_outbox_event(&self) -> Result<OutboxMessageStream, OutboxError> {
         let events = self.outbox_events.lock().unwrap();
         let all_events: Vec<OutboxMessage> = events.clone();
         let stream = futures_util::stream::iter(all_events.into_iter().map(Ok));
-        Ok(stream)
+        let message_stream = OutboxMessageStream::new(stream);
+        Ok(message_stream)
     }
 
     async fn delete_marked(&self) -> Result<u64, OutboxError> {

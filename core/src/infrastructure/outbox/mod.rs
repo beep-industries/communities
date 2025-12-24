@@ -11,4 +11,5 @@ mod writer;
 pub use event::{MessageRouter, MessageRoutingInfo, OutboxEventRecord};
 pub use writer::write_outbox_event;
 
+pub mod entities;
 pub mod postgres;

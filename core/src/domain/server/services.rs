@@ -1,23 +1,16 @@
 use crate::domain::{
     channel::ports::ChannelRepository,
+    channel_member::ports::ChannelMemberRepository,
     common::{CoreError, GetPaginated, TotalPaginatedElements, services::Service},
     friend::ports::FriendshipRepository,
     health::port::HealthRepository,
     outbox::ports::OutboxRepository,
     role::ports::RoleRepository,
     server::{
-        channel::ports::ChannelRepository,
-        channel_member::ports::ChannelMemberRepository,
-        common::{CoreError, GetPaginated, TotalPaginatedElements, services::Service},
-        friend::ports::FriendshipRepository,
-        health::port::HealthRepository,
-        role::ports::RoleRepository,
-        server::{
-            entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
-            ports::{ServerRepository, ServerService},
-        },
-        server_member::ports::MemberRepository,
+        entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
+        ports::{ServerRepository, ServerService},
     },
+    server_member::MemberRepository,
 };
 
 impl<S, F, H, M, C, R, O, CM> ServerService for Service<S, F, H, M, C, R, O, CM>

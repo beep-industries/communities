@@ -2,7 +2,7 @@
 # This file defines the exchange names and routing keys for outbox events
 
 create_server:
-  - "beep.community" # Exchange name
+  - "created_server" # Exchange name (fanout)
   - "server.created" # Routing key
 
 delete_server:

@@ -6,6 +6,7 @@ use communities_core::{
     },
 };
 use events_protobuf::communities_events::CreateServer;
+use futures_util::StreamExt;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -68,8 +69,18 @@ impl Dispatcher {
     }
 }
 
+impl Dispatch for Dispatcher {
+    async fn dispatch(&mut self) {
+        while let Some(stream_message) = self.outbox_message_stream.next().await
+            && let Ok(outbox_message) = stream_message
+        {
+            let res = self.handler(outbox_message).await;
+            dbg!(res);
+        }
+    }
+}
 pub trait Dispatch {
-    fn dispatch() -> impl Future<Output = ()>;
+    fn dispatch(&mut self) -> impl Future<Output = ()>;
 }
 
 pub enum ExchangePayload {

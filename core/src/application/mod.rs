@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use beep_auth::KeycloakAuthRepository;
 use sqlx::{
     PgPool,
@@ -11,10 +13,11 @@ use crate::{
         role::ports::MockRoleRepository,
     },
     infrastructure::{
-        MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
+        MessageRoutingInfo,
+        channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
-        outbox::postgres::PostgresOutboxRepository,
+        outbox::{MessageRouter, postgres::PostgresOutboxRepository},
         server::repositories::postgres::PostgresServerRepository,
         server_member::repositories::PostgresMemberRepository,
     },
@@ -48,7 +51,7 @@ pub struct CommunitiesRepositories {
 
 pub async fn create_repositories(
     pg_connection_options: PgConnectOptions,
-    message_routing_infos: MessageRoutingInfos,
+    message_routing_config: MessageRoutingConfig,
     keycloak_issuer: String,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
@@ -58,8 +61,8 @@ pub async fn create_repositories(
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
     let server_repository = PostgresServerRepository::new(
         pool.clone(),
-        message_routing_infos.delete_server,
-        message_routing_infos.create_server,
+        message_routing_config.delete_server,
+        message_routing_config.create_server,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
@@ -67,8 +70,8 @@ pub async fn create_repositories(
         PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
     let channel_repository = PostgresChannelRepository::new(
         pool.clone(),
-        message_routing_infos.create_channel,
-        message_routing_infos.delete_channel,
+        message_routing_config.create_channel,
+        message_routing_config.delete_channel,
     );
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
     let role_repository = MockRoleRepository::new();
@@ -122,7 +125,7 @@ impl CommunitiesService {
 /// the routing information (exchange name and routing key) for a specific
 /// type of domain event.
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
-pub struct MessageRoutingInfos {
+pub struct MessageRoutingConfig {
     /// Routing information for server creation events
     pub create_server: MessageRoutingInfo,
     /// Routing information for server deletion events
@@ -131,4 +134,27 @@ pub struct MessageRoutingInfos {
     pub create_channel: MessageRoutingInfo,
     /// Routing information for channel deletion events
     pub delete_channel: MessageRoutingInfo,
+}
+
+impl MessageRoutingConfig {
+    pub fn from_string_to_routing(&self, value: String) -> Option<Routing> {
+        self.to_raw().get(&value).cloned()
+    }
+
+    fn to_raw(&self) -> HashMap<String, Routing> {
+        let mut config = HashMap::<String, Routing>::new();
+        // config.insert(self.create_channel.exchange_name(), Routing::CreateChannel);
+        // config.insert(self.delete_channel.exchange_name(), Routing::DeleteChannel);
+        config.insert(self.create_server.exchange_name(), Routing::CreateServer);
+        // config.insert(self.delete_server.exchange_name(), Routing::DeleteServer);
+        config
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub enum Routing {
+    CreateServer,
+    // DeleteServer,
+    // CreateChannel,
+    // DeleteChannel,
 }

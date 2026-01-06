@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use events_protobuf::communities_events::CreateServer;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -51,6 +52,15 @@ pub struct Server {
 impl Server {
     pub fn is_public(&self) -> bool {
         self.visibility == ServerVisibility::Public
+    }
+}
+
+impl Into<CreateServer> for Server {
+    fn into(self) -> CreateServer {
+        CreateServer {
+            server_id: self.id.0.to_string(),
+            owner_id: self.owner_id.0.to_string(),
+        }
     }
 }
 

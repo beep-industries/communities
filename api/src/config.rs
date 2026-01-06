@@ -1,6 +1,6 @@
 use clap::Parser;
 use clap::ValueEnum;
-use communities_core::application::MessageRoutingInfos;
+use communities_core::application::MessageRoutingConfig;
 use sqlx::postgres::PgConnectOptions;
 use std::path::PathBuf;
 
@@ -33,7 +33,7 @@ pub struct Config {
     pub routing_config_path: PathBuf,
 
     #[arg(skip)]
-    pub routing: MessageRoutingInfos,
+    pub routing: MessageRoutingConfig,
 
     #[arg(
         long = "environment",

@@ -1,8 +1,8 @@
 use communities_core::{
-    domain::{outbox::ports::OutboxRepository, server::entities::InsertServerInput},
-    infrastructure::outbox::postgres::PostgresOutboxRepository,
+    application::MessageRoutingConfig, domain::{outbox::ports::OutboxRepository, server::entities::InsertServerInput}, infrastructure::outbox::postgres::PostgresOutboxRepository
 };
 use futures_util::StreamExt;
+use outbox_dispacth::dispatch::Dispatcher;
 use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Listen to the outbox stream
     let mut stream = outbox_repo.listen_outbox_event().await?;
-
+    let dispatcher = Dispatcher::new(stream,MessageRoutingConfig::default(),)
     // Display strings from the stream
     while let Some(result) = stream.next().await {
         let notif = match result {

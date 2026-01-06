@@ -56,8 +56,45 @@ services:
       keycloak-communities-db:
         condition: service_healthy
 
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: communities_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ Init Container
+  rabbitmq-init:
+    image: rabbitmq:3-management
+    container_name: communities_rabbitmq_init
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./compose/rabbitmq-init.sh:/rabbitmq-init.sh
+    entrypoint: ["/bin/bash", "/rabbitmq-init.sh"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+    restart: "no"
+
 volumes:
   postgres_data:
     driver: local
   keycloak_postgres_data:
+    driver: local
+  rabbitmq_data:
     driver: local

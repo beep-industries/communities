@@ -2,7 +2,7 @@ use api::config::{Environment, KeycloakConfig};
 use api::{App, Config, app::AppBuilder, config::DatabaseConfig};
 use axum_test::TestServer;
 use base64::{Engine as _, engine::general_purpose};
-use communities_core::application::MessageRoutingInfos;
+use communities_core::application::MessageRoutingConfig;
 use communities_core::{application::CommunitiesRepositories, create_repositories};
 use serde_json::Value;
 use test_context::AsyncTestContext;
@@ -104,7 +104,7 @@ impl AsyncTestContext for TestContext {
             server,
             origins: cors_origins,
             routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
-            routing: MessageRoutingInfos::default(),
+            routing: MessageRoutingConfig::default(),
             environment: Environment::Test,
             keycloak: KeycloakConfig {
                 internal_url: keycloak_url.to_string(),

@@ -141,7 +141,7 @@ impl ServerRepository for PostgresServerRepository {
         })?;
         // Write the create event to the outbox table for eventual processing
         let create_server_event =
-            OutboxEventRecord::new(self.create_server_router.clone(), input.clone());
+            OutboxEventRecord::new(self.create_server_router.clone(), server.clone());
         create_server_event.write(&mut *tx).await?;
 
         tx.commit()

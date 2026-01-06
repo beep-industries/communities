@@ -47,7 +47,6 @@ pub struct OutboxMessageStream {
     stream: std::pin::Pin<Box<dyn Stream<Item = Result<OutboxMessage, OutboxError>> + Send>>,
 }
 
-
 impl OutboxMessageStream {
     pub fn new(
         stream: impl Stream<Item = Result<OutboxMessage, OutboxError>> + Send + 'static,

@@ -102,7 +102,6 @@ impl AsyncTestContext for TestContext {
         let rabbit = RabbitClientConfig {
             uri: "amqp://localhost:5672".to_string(),
         };
-        dbg!(rabbit.clone());
         let mut config = Config {
             rabbit,
             database,

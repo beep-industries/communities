@@ -1,6 +1,7 @@
 use clap::Parser;
 use clap::ValueEnum;
 use communities_core::application::MessageRoutingConfig;
+use outbox_dispatch::lapin::RabbitClientConfig;
 use sqlx::postgres::PgConnectOptions;
 use std::path::PathBuf;
 
@@ -16,6 +17,9 @@ pub struct Config {
 
     #[command(flatten)]
     pub server: ServerConfig,
+
+    #[command(flatten)]
+    pub rabbit: RabbitClientConfig,
 
     #[arg(
         long = "cors-origins",

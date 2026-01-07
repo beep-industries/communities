@@ -4,6 +4,7 @@ use axum_test::TestServer;
 use base64::{Engine as _, engine::general_purpose};
 use communities_core::application::MessageRoutingConfig;
 use communities_core::{application::CommunitiesRepositories, create_repositories};
+use outbox_dispatch::lapin::RabbitClientConfig;
 use serde_json::Value;
 use test_context::AsyncTestContext;
 use uuid::Uuid;
@@ -98,12 +99,16 @@ impl AsyncTestContext for TestContext {
 
         let keycloak_url = "http://localhost:8080";
         let keycloak_realm = "myrealm";
-
-        let config = Config {
+        let rabbit = RabbitClientConfig {
+            uri: "amqp://localhost:5672".to_string(),
+        };
+        dbg!(rabbit.clone());
+        let mut config = Config {
+            rabbit,
             database,
             server,
             origins: cors_origins,
-            routing_config_path: "tests/config/routing_config.yaml".to_string().into(),
+            routing_config_path: "../config/routing.yaml".to_string().into(),
             routing: MessageRoutingConfig::default(),
             environment: Environment::Test,
             keycloak: KeycloakConfig {
@@ -112,6 +117,9 @@ impl AsyncTestContext for TestContext {
             },
         };
 
+        config
+            .load_routing()
+            .expect("Could not load the routing config");
         let repositories = create_repositories(
             config.clone().database.into(),
             config.clone().routing,

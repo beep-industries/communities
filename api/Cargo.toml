@@ -13,6 +13,7 @@ serde_json = "1.0"
 serde_yaml = "0.9"
 tower-http = { version = "0.6.6", features = ["cors"] }
 communities-core = { path = "../core", package = "communities_core" }
+outbox_dispatch = { path = "../outbox_dispatch", package = "outbox_dispatch" }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.18", features = ["serde", "v4"] }

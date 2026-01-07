@@ -7,7 +7,13 @@ use axum::{
 };
 use beep_auth::KeycloakAuthRepository;
 use communities_core::{
-    application::CommunitiesRepositories, create_repositories, domain::common::CoreError,
+    application::CommunitiesRepositories,
+    create_repositories,
+    domain::{common::CoreError, outbox::ports::OutboxService},
+};
+use outbox_dispatch::{
+    dispatch::{Dispatch, Dispatcher},
+    lapin::RabbitClient,
 };
 use sqlx::postgres::PgConnectOptions;
 use tower_http::cors::CorsLayer;
@@ -37,6 +43,7 @@ pub struct App {
     pub state: AppState,
     app_router: axum::Router,
     health_router: axum::Router,
+    dispatcher: Dispatcher,
 }
 
 impl App {
@@ -104,6 +111,10 @@ impl App {
             msg: format!("Failed to generate OpenAPI spec: {}", e),
         })?;
         let state: AppState = repositories.into();
+
+        let outbox_stream = state.service.listen_outbox_event().await.unwrap();
+        let rabbit_client = RabbitClient::new(config.clone().rabbit).await.unwrap();
+        let dispatch = Dispatcher::new(outbox_stream, config.clone().routing, rabbit_client);
         let app_router = app_router
             .with_state(state.clone())
             .merge(Scalar::with_url("/scalar", api));
@@ -122,6 +133,7 @@ impl App {
             state,
             app_router,
             health_router,
+            dispatcher: dispatch,
         })
     }
 
@@ -129,7 +141,7 @@ impl App {
         self.app_router.clone()
     }
 
-    pub async fn start(&self) -> Result<(), ApiError> {
+    pub async fn start(mut self) -> Result<(), ApiError> {
         let health_addr = format!("0.0.0.0:{}", self.config.clone().server.health_port);
         let api_addr = format!("0.0.0.0:{}", self.config.clone().server.api_port);
         // Create TCP listeners for both servers
@@ -147,9 +159,11 @@ impl App {
         // Run both servers concurrently
         tokio::try_join!(
             axum::serve(health_listener, self.health_router.clone()),
-            axum::serve(api_listener, self.app_router.clone())
+            axum::serve(api_listener, self.app_router.clone()),
+            self.dispatcher.dispatch()
         )
         .expect("Failed to start servers");
+
         Ok(())
     }
 

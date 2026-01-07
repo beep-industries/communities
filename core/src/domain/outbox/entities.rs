@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use chrono::{DateTime, Utc};
 use futures_util::Stream;
 use serde::{Deserialize, Serialize};
@@ -44,7 +46,7 @@ impl OutboxStatus {
 }
 
 pub struct OutboxMessageStream {
-    stream: std::pin::Pin<Box<dyn Stream<Item = Result<OutboxMessage, OutboxError>> + Send>>,
+    stream: Mutex<std::pin::Pin<Box<dyn Stream<Item = Result<OutboxMessage, OutboxError>> + Send>>>,
 }
 
 impl OutboxMessageStream {
@@ -52,7 +54,7 @@ impl OutboxMessageStream {
         stream: impl Stream<Item = Result<OutboxMessage, OutboxError>> + Send + 'static,
     ) -> Self {
         Self {
-            stream: Box::pin(stream),
+            stream: Mutex::new(Box::pin(stream)),
         }
     }
 }
@@ -64,10 +66,10 @@ impl Stream for OutboxMessageStream {
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Option<Self::Item>> {
-        self.stream.as_mut().poll_next(cx)
+        self.stream.lock().unwrap().as_mut().poll_next(cx)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.stream.size_hint()
+        self.stream.lock().unwrap().size_hint()
     }
 }

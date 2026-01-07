@@ -11,9 +11,13 @@ pub struct RabbitClient {
     channel: Channel,
 }
 
-// #[derive(Clone, Parser, Debug, Default)]
+#[derive(Clone, Parser, Debug, Default)]
 pub struct RabbitClientConfig {
-    // #[arg(long = "rabbit-uri", env = "RABBIT_URI", default_value = "localhost")]
+    #[arg(
+        long = "rabbit-uri",
+        env = "RABBIT_URI",
+        default_value = "amqp://localhost:5672"
+    )]
     pub uri: String,
 }
 
@@ -63,7 +67,7 @@ impl RabbitClient {
         info!("RabbitMQ connection closed");
         Ok(())
     }
-    
+
     pub async fn produce<T>(
         &self,
         exchange: &ExchangeName,

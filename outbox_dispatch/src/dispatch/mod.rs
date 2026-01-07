@@ -1,3 +1,5 @@
+use std::{convert::Infallible, error::Error};
+
 use communities_core::{
     application::{MessageRoutingConfig, Routing},
     domain::{
@@ -70,17 +72,19 @@ impl Dispatcher {
 }
 
 impl Dispatch for Dispatcher {
-    async fn dispatch(&mut self) {
+    async fn dispatch(&mut self) -> Result<(), std::io::Error> {
         while let Some(stream_message) = self.outbox_message_stream.next().await
             && let Ok(outbox_message) = stream_message
         {
             let res = self.handler(outbox_message).await;
             dbg!(res);
         }
+        Ok(())
     }
 }
-pub trait Dispatch {
-    fn dispatch(&mut self) -> impl Future<Output = ()>;
+
+pub trait Dispatch: Send + Sync {
+    fn dispatch(&mut self) -> impl Future<Output = Result<(), std::io::Error>>;
 }
 
 pub enum ExchangePayload {

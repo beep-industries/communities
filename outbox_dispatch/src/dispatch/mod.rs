@@ -77,7 +77,6 @@ impl Dispatch for Dispatcher {
             && let Ok(outbox_message) = stream_message
         {
             let res = self.handler(outbox_message).await;
-            dbg!(res);
         }
         Ok(())
     }

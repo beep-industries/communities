@@ -4,8 +4,10 @@ use uuid::Uuid;
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
-        role::entities::{CreateRoleRepoInput, Role, RoleId, UpdateRoleRepoInput},
-        role::ports::RoleRepository,
+        role::{
+            entities::{CreateRoleInput, Role, RoleId, UpdateRoleRepoInput},
+            ports::RoleRepository,
+        },
     },
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
@@ -35,7 +37,7 @@ impl PostgresRoleRepository {
 }
 
 impl RoleRepository for PostgresRoleRepository {
-    async fn create(&self, input: CreateRoleRepoInput) -> Result<Role, CoreError> {
+    async fn create(&self, input: CreateRoleInput) -> Result<Role, CoreError> {
         let mut tx = self
             .pool
             .begin()
@@ -76,7 +78,7 @@ impl RoleRepository for PostgresRoleRepository {
             FROM roles
             WHERE id = $1
             "#,
-            id
+            id.0
         )
         .fetch_optional(&self.pool)
         .await
@@ -139,7 +141,7 @@ impl RoleRepository for PostgresRoleRepository {
             FROM roles
             WHERE id = $1
             "#,
-            input.id
+            input.id.0
         )
         .fetch_optional(&mut *tx)
         .await
@@ -161,7 +163,7 @@ impl RoleRepository for PostgresRoleRepository {
             "#,
             new_name,
             new_permissions.0,
-            input.id
+            input.id.0
         )
         .fetch_one(&mut *tx)
         .await
@@ -186,7 +188,7 @@ impl RoleRepository for PostgresRoleRepository {
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         let result = sqlx::query(r#"DELETE FROM roles WHERE id = $1"#)
-            .bind(id)
+            .bind(id.0)
             .execute(&mut *tx)
             .await
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;

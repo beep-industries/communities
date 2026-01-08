@@ -5,15 +5,13 @@ use uuid::Uuid;
 
 use crate::domain::{
     common::{CoreError, GetPaginated, TotalPaginatedElements},
-    role::entities::{
-        CreateRoleInput, CreateRoleRepoInput, Role, RoleId, UpdateRoleInput, UpdateRoleRepoInput,
-    },
+    role::entities::{CreateRoleInput, Role, RoleId, UpdateRoleInput, UpdateRoleRepoInput},
 };
 
 pub trait RoleRepository: Send + Sync {
     fn create(
         &self,
-        create_role_input: CreateRoleRepoInput,
+        create_role_input: CreateRoleInput,
     ) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn find_by_id(&self, id: &RoleId) -> impl Future<Output = Result<Role, CoreError>> + Send;
     fn list_by_server(
@@ -61,11 +59,11 @@ impl MockRoleRepository {
 }
 
 impl RoleRepository for MockRoleRepository {
-    async fn create(&self, create_role_input: CreateRoleRepoInput) -> Result<Role, CoreError> {
+    async fn create(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
         let mut roles = self.roles.lock().unwrap();
 
         let new_role = Role {
-            id: Uuid::new_v4(),
+            id: Uuid::new_v4().into(),
             server_id: create_role_input.server_id,
             name: create_role_input.name,
             permissions: create_role_input.permissions,

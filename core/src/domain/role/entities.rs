@@ -1,19 +1,43 @@
+use std::{fmt::Display, ops::Deref};
+
 use chrono::{DateTime, Utc};
 use permission_translation::models::CapilityHexValue;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::domain::common::CoreError;
 
-pub type RoleId = Uuid;
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
+pub struct RoleId(pub Uuid);
+
+impl Display for RoleId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<Uuid> for RoleId {
+    fn from(value: Uuid) -> Self {
+        Self(value)
+    }
+}
+
+impl Deref for RoleId {
+    type Target = Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 //
-#[derive(Clone, sqlx::Type, Serialize, Deserialize)]
+#[derive(Clone, sqlx::Type, Serialize, Deserialize, ToSchema)]
 #[sqlx(transparent)]
 pub struct Permissions(pub i32);
 
-#[derive(Clone)]
+#[derive(Clone, ToSchema, Serialize)]
 pub struct Role {
     pub id: RoleId,
     pub server_id: Uuid,
@@ -23,14 +47,14 @@ pub struct Role {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-pub struct CreateRoleInput {
-    pub server_id: Uuid,
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct CreateRoleRequest {
     pub name: String,
     pub permissions: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct CreateRoleRepoInput {
+pub struct CreateRoleInput {
     pub server_id: Uuid,
     pub name: String,
     pub permissions: Permissions,
@@ -47,18 +71,6 @@ impl Into<CoreError> for RoleError {
         match self {
             RoleError::BadRolePayload { msg } => CoreError::Error { msg },
         }
-    }
-}
-
-impl TryFrom<CreateRoleInput> for CreateRoleRepoInput {
-    type Error = PermissionError;
-
-    fn try_from(value: CreateRoleInput) -> Result<Self, Self::Error> {
-        Ok(Self {
-            server_id: value.server_id,
-            name: value.name,
-            permissions: Permissions::try_from(value.permissions)?,
-        })
     }
 }
 

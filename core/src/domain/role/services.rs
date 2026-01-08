@@ -9,8 +9,7 @@ use crate::{
         outbox::ports::OutboxRepository,
         role::{
             entities::{
-                CreateRoleInput, CreateRoleRepoInput, Role, RoleError, RoleId, UpdateRoleInput,
-                UpdateRoleRepoInput,
+                CreateRoleInput, Role, RoleError, RoleId, UpdateRoleInput, UpdateRoleRepoInput,
             },
             ports::{RoleRepository, RoleService},
         },
@@ -31,7 +30,7 @@ where
     CM: ChannelMemberRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
-        let repo_input = CreateRoleRepoInput::try_from(create_role_input).map_err(|e| {
+        let repo_input = CreateRoleInput::try_from(create_role_input).map_err(|e| {
             Into::<CoreError>::into(RoleError::BadRolePayload { msg: e.to_string() })
         })?;
         self.role_repository.create(repo_input).await

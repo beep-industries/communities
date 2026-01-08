@@ -86,12 +86,12 @@ impl OutboxRepository for PostgresOutboxRepository {
     async fn listen_outbox_event(&self) -> Result<OutboxMessageStream, OutboxError> {
         let mut listener = PgListener::connect_with(&self.pool)
             .await
-            .map_err(|_| OutboxError::ListenerError)?;
+            .map_err(|e| OutboxError::ListenerError { msg: e.to_string() })?;
 
         listener
             .listen("outbox_channel")
             .await
-            .map_err(|_| OutboxError::ListenerError)?;
+            .map_err(|e| OutboxError::ListenerError { msg: e.to_string() })?;
 
         let outbox_event_stream = OutboxMessageStream::from(listener);
         Ok(outbox_event_stream)

@@ -41,7 +41,8 @@ impl Dispatcher {
         TInput: Into<TPayload> + Serialize + for<'a> Deserialize<'a>,
         TPayload: Message,
     {
-        let raw_payload: TInput = serde_json::from_value(input).unwrap();
+        let raw_payload: TInput = serde_json::from_value(input)
+            .map_err(|e| DispatcherError::WrongPayloadError { msg: e.to_string() })?;
         let payload: TPayload = raw_payload.into();
         self.rabbit_client
             .produce(&exchange, payload)
@@ -95,4 +96,7 @@ pub enum DispatcherError {
 
     #[error("Could not send messsage: {reason}")]
     SendMessageError { reason: String },
+
+    #[error("The return payload can be handled: {msg}")]
+    WrongPayloadError { msg: String },
 }

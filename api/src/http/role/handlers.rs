@@ -1,16 +1,21 @@
 use axum::{
     Extension, Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
 };
-use communities_core::domain::role::{
-    entities::{CreateRoleInput, CreateRoleRequest, Permissions, Role, RoleId},
-    ports::RoleService,
+use communities_core::domain::{
+    common::GetPaginated,
+    role::{
+        entities::{CreateRoleInput, CreateRoleRequest, Permissions, Role, RoleId},
+        ports::RoleService,
+    },
 };
 use uuid::Uuid;
 
 use crate::{
     ApiError, AppState,
-    http::server::{Response, middleware::auth::entities::UserIdentity},
+    http::server::{
+        Response, middleware::auth::entities::UserIdentity, response::PaginatedResponse,
+    },
 };
 
 #[utoipa::path(
@@ -48,7 +53,7 @@ pub async fn create_role(
 #[utoipa::path(
     get,
     path = "/servers/{server_id}/roles/{role_id}",
-    tag = "servers",
+    tag = "roles",
     params(
         ("server_id" = String, Path, description = "Server ID"),
         ("role_id" = String, Path, description = "Role ID")
@@ -72,4 +77,38 @@ pub async fn get_role(
         .await
         .map_err(Into::<ApiError>::into)?;
     Ok(Response::ok(role))
+}
+
+#[utoipa::path(
+    get,
+    path = "/servers/{server_id}",
+    tag = "roles",
+    params(
+        ("server_id" = String, Path, description = "Server ID"),
+    ),
+    responses(
+        (status = 200, description = "Role retrieved successfully", body = PaginatedResponse<Vec<Role>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Server is private"),
+        (status = 404, description = "Server not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn list_roles_by_server(
+    Path(server_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+    Query(pagination): Query<GetPaginated>,
+) -> Result<Response<PaginatedResponse<Role>>, ApiError> {
+    let (data, total) = state
+        .service
+        .list_roles_by_server(&pagination, server_id)
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    let paginated: PaginatedResponse<Role> = PaginatedResponse {
+        data,
+        total,
+        page: pagination.page,
+    };
+    Ok(paginated.into())
 }

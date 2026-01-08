@@ -1,5 +1,3 @@
-use std::{convert::Infallible, error::Error};
-
 use communities_core::{
     application::{MessageRoutingConfig, Routing},
     domain::{
@@ -76,7 +74,7 @@ impl Dispatch for Dispatcher {
         while let Some(stream_message) = self.outbox_message_stream.next().await
             && let Ok(outbox_message) = stream_message
         {
-            let res = self.handler(outbox_message).await;
+            let _ = self.handler(outbox_message).await;
         }
         Ok(())
     }

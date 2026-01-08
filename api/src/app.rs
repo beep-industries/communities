@@ -112,8 +112,15 @@ impl App {
         })?;
         let state: AppState = repositories.into();
 
-        let outbox_stream = state.service.listen_outbox_event().await.unwrap();
-        let rabbit_client = RabbitClient::new(config.clone().rabbit).await.unwrap();
+        let outbox_stream = state
+            .service
+            .listen_outbox_event()
+            .await
+            .map_err(|e| ApiError::StartupError { msg: e.to_string() })?;
+
+        let rabbit_client = RabbitClient::new(config.clone().rabbit)
+            .await
+            .map_err(|e| ApiError::StartupError { msg: e.to_string() })?;
         let dispatch = Dispatcher::new(outbox_stream, config.clone().routing, rabbit_client);
         let app_router = app_router
             .with_state(state.clone())

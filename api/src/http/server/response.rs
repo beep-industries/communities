@@ -59,8 +59,14 @@ where
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct PaginatedResponse<T> {
+pub struct PaginatedResponse<T: Serialize> {
     pub data: Vec<T>,
     pub total: TotalPaginatedElements,
     pub page: u32,
+}
+
+impl<T: Serialize> Into<Response<PaginatedResponse<T>>> for PaginatedResponse<T> {
+    fn into(self) -> Response<PaginatedResponse<T>> {
+        Response::ok(self)
+    }
 }

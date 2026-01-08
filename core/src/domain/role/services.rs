@@ -57,7 +57,7 @@ where
         self.role_repository.update(repo_input).await
     }
 
-    async fn delete_role(&self, server_id: &RoleId) -> Result<(), CoreError> {
-        self.role_repository.delete(server_id).await
+    async fn delete_role(&self, role_id: &RoleId) -> Result<(), CoreError> {
+        self.role_repository.delete(role_id).await
     }
 }

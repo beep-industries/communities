@@ -41,8 +41,7 @@ pub trait RoleService: Send + Sync {
         &self,
         update_role_input: UpdateRoleInput,
     ) -> impl Future<Output = Result<Role, CoreError>> + Send;
-    fn delete_role(&self, server_id: &RoleId)
-    -> impl Future<Output = Result<(), CoreError>> + Send;
+    fn delete_role(&self, role_id: &RoleId) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
 #[derive(Clone)]

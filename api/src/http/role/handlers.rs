@@ -2,12 +2,9 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use communities_core::domain::{
-    role::{
-        entities::{CreateRoleInput, CreateRoleRequest, Permissions, Role},
-        ports::RoleService,
-    },
-    server::entities::{CreateServerRequest, Server},
+use communities_core::domain::role::{
+    entities::{CreateRoleInput, CreateRoleRequest, Permissions, Role},
+    ports::RoleService,
 };
 use uuid::Uuid;
 
@@ -31,10 +28,10 @@ use crate::{
         (status = 500, description = "Internal server error")
     )
 )]
-pub async fn create_server(
+pub async fn create_role(
     State(state): State<AppState>,
     Path(server_id): Path<Uuid>,
-    Extension(user_identity): Extension<UserIdentity>,
+    Extension(_user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateRoleRequest>,
 ) -> Result<Response<Role>, ApiError> {
     let permissions = Permissions::try_from(request.permissions)

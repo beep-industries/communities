@@ -247,7 +247,7 @@ mod tests {
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
 
-        let input = CreateRoleRepoInput {
+        let input = CreateRoleInput {
             server_id,
             name: "Admin".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
@@ -283,7 +283,7 @@ mod tests {
         );
         let server_id = create_test_server(&pool, "Test Server").await;
 
-        let input = CreateRoleRepoInput {
+        let input = CreateRoleInput {
             server_id,
             name: "Admin".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
@@ -334,7 +334,7 @@ mod tests {
         let delete_router =
             MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
         let repo = PostgresRoleRepository::new(pool, create_router, update_router, delete_router);
-        let nonexistent_id = Uuid::new_v4();
+        let nonexistent_id = RoleId(Uuid::new_v4());
 
         let result = repo.find_by_id(&nonexistent_id).await;
 
@@ -359,7 +359,7 @@ mod tests {
 
         // Create 5 roles
         for i in 1..=5 {
-            let input = CreateRoleRepoInput {
+            let input = CreateRoleInput {
                 server_id,
                 name: format!("Role {}", i),
                 permissions: Permissions::try_from(0x1).unwrap(),
@@ -395,7 +395,7 @@ mod tests {
 
         // Create roles for server 1
         for i in 1..=3 {
-            let input = CreateRoleRepoInput {
+            let input = CreateRoleInput {
                 server_id: server1_id,
                 name: format!("Server1 Role {}", i),
                 permissions: Permissions::try_from(0x1).unwrap(),
@@ -405,7 +405,7 @@ mod tests {
 
         // Create roles for server 2
         for i in 1..=2 {
-            let input = CreateRoleRepoInput {
+            let input = CreateRoleInput {
                 server_id: server2_id,
                 name: format!("Server2 Role {}", i),
                 permissions: Permissions::try_from(0x2).unwrap(),
@@ -439,7 +439,7 @@ mod tests {
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
 
-        let input = CreateRoleRepoInput {
+        let input = CreateRoleInput {
             server_id,
             name: "Original Name".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
@@ -481,7 +481,7 @@ mod tests {
         );
         let server_id = create_test_server(&pool, "Test Server").await;
 
-        let input = CreateRoleRepoInput {
+        let input = CreateRoleInput {
             server_id,
             name: "Original Name".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
@@ -542,7 +542,7 @@ mod tests {
         let delete_router =
             MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
         let repo = PostgresRoleRepository::new(pool, create_router, update_router, delete_router);
-        let nonexistent_id = Uuid::new_v4();
+        let nonexistent_id = RoleId(Uuid::new_v4());
 
         let update_input = UpdateRoleRepoInput {
             id: nonexistent_id,
@@ -571,7 +571,7 @@ mod tests {
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
 
-        let input = CreateRoleRepoInput {
+        let input = CreateRoleInput {
             server_id,
             name: "To Delete".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
@@ -606,7 +606,7 @@ mod tests {
         );
         let server_id = create_test_server(&pool, "Test Server").await;
 
-        let input = CreateRoleRepoInput {
+        let input = CreateRoleInput {
             server_id,
             name: "To Delete".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
@@ -653,7 +653,7 @@ mod tests {
         let delete_router =
             MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
         let repo = PostgresRoleRepository::new(pool, create_router, update_router, delete_router);
-        let nonexistent_id = Uuid::new_v4();
+        let nonexistent_id = RoleId(Uuid::new_v4());
 
         let result = repo.delete(&nonexistent_id).await;
 
@@ -677,14 +677,14 @@ mod tests {
         let server_id = create_test_server(&pool, "Test Server").await;
 
         // Create roles for the server
-        let input1 = CreateRoleRepoInput {
+        let input1 = CreateRoleInput {
             server_id,
             name: "Role 1".to_string(),
             permissions: Permissions::try_from(0x1).unwrap(),
         };
         let role1 = repo.create(input1).await.unwrap();
 
-        let input2 = CreateRoleRepoInput {
+        let input2 = CreateRoleInput {
             server_id,
             name: "Role 2".to_string(),
             permissions: Permissions::try_from(0x2).unwrap(),

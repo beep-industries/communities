@@ -74,6 +74,13 @@ impl Into<CoreError> for RoleError {
     }
 }
 
+#[derive(Clone, ToSchema, Serialize)]
+pub struct UpdateRoleRequest {
+    pub name: Option<String>,
+    pub permissions: Option<i32>,
+}
+
+#[derive(Clone, ToSchema, Serialize)]
 pub struct UpdateRoleInput {
     pub id: RoleId,
     pub name: Option<String>,

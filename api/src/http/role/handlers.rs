@@ -5,7 +5,10 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     role::{
-        entities::{CreateRoleInput, CreateRoleRequest, Permissions, Role, RoleId},
+        entities::{
+            CreateRoleInput, CreateRoleRequest, Permissions, Role, RoleId, UpdateRoleInput,
+            UpdateRoleRequest,
+        },
         ports::RoleService,
     },
 };
@@ -111,4 +114,41 @@ pub async fn list_roles_by_server(
         page: pagination.page,
     };
     Ok(paginated.into())
+}
+
+#[utoipa::path(
+    put,
+    path = "/servers/{server_id}/roles/{role_id}",
+    tag = "roles",
+    params(
+        ("server_id" = String, Path, description = "Server ID"),
+        ("role_id" = String, Path, description = "Role ID")
+    ),
+    request_body = UpdateRoleInput,
+    responses(
+        (status = 200, description = "Role updated successfully", body = Role),
+        (status = 400, description = "Bad request - Invalid permissions"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Not the server owner"),
+        (status = 404, description = "Server not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn update_role(
+    Path((_server_id, role_id)): Path<(Uuid, Uuid)>,
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+    Json(request): Json<UpdateRoleRequest>,
+) -> Result<Response<Role>, ApiError> {
+    let update_role = UpdateRoleInput {
+        id: RoleId(role_id),
+        name: request.name,
+        permissions: request.permissions,
+    };
+    let role = state
+        .service
+        .update_role(update_role)
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    Ok(Response::ok(role))
 }

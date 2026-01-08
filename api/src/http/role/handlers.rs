@@ -152,3 +152,32 @@ pub async fn update_role(
         .map_err(Into::<ApiError>::into)?;
     Ok(Response::ok(role))
 }
+
+#[utoipa::path(
+    delete,
+    path = "/servers/{server_id}/roles/{role_id}",
+    tag = "role",
+    params(
+        ("role_id" = String, Path, description = "Role ID"),
+        ("server_id" = String, Path, description = "Server ID")
+    ),
+    responses(
+        (status = 200, description = "Role deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Not the server owner"),
+        (status = 404, description = "Server or role not found"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn delete_server(
+    Path((_server_id, role_id)): Path<(Uuid, Uuid)>,
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+) -> Result<Response<()>, ApiError> {
+    state
+        .service
+        .delete_role(&RoleId(role_id))
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    Ok(Response::deleted(()))
+}

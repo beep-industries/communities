@@ -5,7 +5,7 @@ mod tests {
     use crate::domain::{
         common::GetPaginated,
         role::{
-            entities::{CreateRoleInput, RoleId, UpdateRoleInput},
+            entities::{CreateRoleInput, Permissions, RoleId, UpdateRoleInput},
             ports::{RoleRepository, RoleService},
         },
         test::create_mock_service,
@@ -20,7 +20,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Admin".to_string(),
-            permissions: 0x1, // Administrator permission
+            permissions: Permissions::try_from(0x1).unwrap(), // Administrator permission
         };
 
         let role = service
@@ -43,7 +43,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Moderator".to_string(),
-            permissions: 0x4 | 0x10 | 0x400, // ManageRoles | ManageChannels | ManageMessages
+            permissions: Permissions::try_from(0x4 | 0x10 | 0x400).unwrap(), // ManageRoles | ManageChannels | ManageMessages
         };
 
         let role = service
@@ -65,7 +65,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Guest".to_string(),
-            permissions: 0x0, // No permissions
+            permissions: Permissions::try_from(0x0).unwrap(), // No permissions
         };
 
         let role = service
@@ -86,7 +86,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Invalid Role".to_string(),
-            permissions: 0x1000, // Invalid permission bit
+            permissions: Permissions::try_from(0x1000).unwrap(), // Invalid permission bit
         };
 
         let result = service.create_role(input).await;
@@ -120,7 +120,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Test Role".to_string(),
-            permissions: 0x2, // ManageServer
+            permissions: Permissions::try_from(0x2).unwrap(), // ManageServer
         };
         let created_role = service.create_role(input).await?;
 
@@ -172,7 +172,7 @@ mod tests {
             let input = CreateRoleInput {
                 server_id,
                 name: format!("Test Role {}", i),
-                permissions: 0x1,
+                permissions: Permissions::try_from(0x1).unwrap(),
             };
             service.create_role(input).await?;
         }
@@ -201,7 +201,7 @@ mod tests {
             let input = CreateRoleInput {
                 server_id: server_id_1,
                 name: format!("Server1 Role {}", i),
-                permissions: 0x1,
+                permissions: Permissions::try_from(0x1).unwrap(),
             };
             service.create_role(input).await?;
         }
@@ -211,7 +211,7 @@ mod tests {
             let input = CreateRoleInput {
                 server_id: server_id_2,
                 name: format!("Server2 Role {}", i),
-                permissions: 0x1,
+                permissions: Permissions::try_from(0x1).unwrap(),
             };
             service.create_role(input).await?;
         }
@@ -248,7 +248,7 @@ mod tests {
             let input = CreateRoleInput {
                 server_id,
                 name: format!("Test Role {}", i),
-                permissions: 0x1,
+                permissions: Permissions::try_from(0x1).unwrap(),
             };
             service.create_role(input).await?;
         }
@@ -314,7 +314,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Original Role".to_string(),
-            permissions: 0x1,
+            permissions: Permissions::try_from(0x1).unwrap(),
         };
         let created_role = service.create_role(input).await?;
 
@@ -348,7 +348,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Original Role".to_string(),
-            permissions: 0x1,
+            permissions: Permissions::try_from(0x1).unwrap(),
         };
         let created_role = service.create_role(input).await?;
 
@@ -382,7 +382,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Original Role".to_string(),
-            permissions: 0x1,
+            permissions: Permissions::try_from(0x1).unwrap(),
         };
         let created_role = service.create_role(input).await?;
 
@@ -442,7 +442,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Original Role".to_string(),
-            permissions: 0x1,
+            permissions: Permissions::try_from(0x1).unwrap(),
         };
         let created_role = service.create_role(input).await?;
 
@@ -483,7 +483,7 @@ mod tests {
         let input = CreateRoleInput {
             server_id,
             name: "Test Role".to_string(),
-            permissions: 0x1,
+            permissions: Permissions::try_from(0x1).unwrap(),
         };
         let created_role = service.create_role(input).await?;
 
@@ -543,14 +543,14 @@ mod tests {
         let input1 = CreateRoleInput {
             server_id,
             name: "Role 1".to_string(),
-            permissions: 0x1,
+            permissions: Permissions::try_from(0x1).unwrap(),
         };
         let role1 = service.create_role(input1).await?;
 
         let input2 = CreateRoleInput {
             server_id,
             name: "Role 2".to_string(),
-            permissions: 0x2,
+            permissions: Permissions::try_from(0x2).unwrap(),
         };
         let role2 = service.create_role(input2).await?;
 

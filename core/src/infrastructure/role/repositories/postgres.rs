@@ -60,7 +60,8 @@ impl RoleRepository for PostgresRoleRepository {
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         // Write the create event to the outbox table for eventual processing
-        let create_role_event = OutboxEventRecord::new(self.create_role_router.clone(), input);
+        let create_role_event =
+            OutboxEventRecord::new(self.create_role_router.clone(), role.clone());
         create_role_event.write(&mut *tx).await?;
 
         tx.commit()

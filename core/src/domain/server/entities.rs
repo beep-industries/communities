@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use chrono::{DateTime, Utc};
 use events_protobuf::communities_events::CreateServer;
 use serde::{Deserialize, Serialize};
@@ -12,6 +14,14 @@ pub struct ServerId(pub Uuid);
 impl std::fmt::Display for ServerId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for ServerId {
+    type Target = Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

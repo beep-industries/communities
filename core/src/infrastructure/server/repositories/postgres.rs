@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
+        role::entities::{Permission, Permissions, Role},
         server::{
             entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
             ports::ServerRepository,
@@ -18,6 +19,7 @@ pub struct PostgresServerRepository {
     pub(crate) pool: PgPool,
     delete_server_router: MessageRoutingInfo,
     create_server_router: MessageRoutingInfo,
+    create_role_router: MessageRoutingInfo,
 }
 
 impl PostgresServerRepository {
@@ -25,11 +27,13 @@ impl PostgresServerRepository {
         pool: PgPool,
         delete_server_router: MessageRoutingInfo,
         create_server_router: MessageRoutingInfo,
+        create_role_router: MessageRoutingInfo,
     ) -> Self {
         Self {
             pool,
             delete_server_router,
             create_server_router,
+            create_role_router,
         }
     }
 }
@@ -143,6 +147,30 @@ impl ServerRepository for PostgresServerRepository {
         let create_server_event =
             OutboxEventRecord::new(self.create_server_router.clone(), server.clone());
         create_server_event.write(&mut *tx).await?;
+
+        let base_permission = Permissions::from(vec![
+            Permission::SendMessages,
+            Permission::AttachFiles,
+            Permission::ViewChannels,
+        ]);
+
+        let role = query_as!(
+            Role,
+            r#"
+            INSERT INTO roles (server_id, name, permissions)
+            VALUES ($1, $2, $3)
+            RETURNING id, server_id, name, permissions as "permissions: _", created_at, updated_at
+            "#,
+            *server.id,
+            "BasicUser",
+            *base_permission
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+        let create_role_event = OutboxEventRecord::new(self.create_role_router.clone(), role);
+
+        create_role_event.write(&mut *tx).await?;
 
         tx.commit()
             .await

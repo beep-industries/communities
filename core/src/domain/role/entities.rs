@@ -37,6 +37,14 @@ impl Deref for RoleId {
 #[sqlx(transparent)]
 pub struct Permissions(pub i32);
 
+impl Deref for Permissions {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Clone, ToSchema, Serialize)]
 pub struct Role {
     pub id: RoleId,
@@ -182,6 +190,16 @@ impl TryFrom<i32> for Permissions {
         }
 
         Ok(Permissions(value))
+    }
+}
+
+impl From<Vec<Permission>> for Permissions {
+    fn from(value: Vec<Permission>) -> Self {
+        let mut all_permissions: CapilityHexValue = 0x0;
+        for permission in value {
+            all_permissions = all_permissions | Into::<CapilityHexValue>::into(permission);
+        }
+        Permissions(all_permissions)
     }
 }
 

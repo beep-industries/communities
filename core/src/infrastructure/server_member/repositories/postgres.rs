@@ -7,6 +7,7 @@ use crate::{
         friend::entities::UserId,
         server::entities::ServerId,
         server_member::{
+            MemberId,
             entities::{CreateMemberInput, DeleteMemberEvent, ServerMember, UpdateMemberInput},
             ports::MemberRepository,
         },
@@ -206,6 +207,27 @@ impl MemberRepository for PostgresMemberRepository {
         })?;
 
         Ok(())
+    }
+
+    async fn find_by_id(&self, member_id: MemberId) -> Result<ServerMember, CoreError> {
+        let row = sqlx::query_as!(
+            ServerMember,
+            r#"
+            SELECT id, server_id, user_id, nickname, joined_at, updated_at
+            FROM server_members
+            WHERE id = $1 
+            "#,
+            *member_id
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to find member: {}", e),
+        })?;
+        match row {
+            Some(member) => Ok(member),
+            None => Err(CoreError::MemberNotFoundById { member_id }),
+        }
     }
 }
 

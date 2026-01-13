@@ -7,7 +7,7 @@ use thiserror::Error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::domain::common::CoreError;
+use crate::domain::{common::CoreError, server::entities::ServerId};
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub struct RoleId(pub Uuid);
@@ -48,7 +48,7 @@ impl Deref for Permissions {
 #[derive(Clone, ToSchema, Serialize)]
 pub struct Role {
     pub id: RoleId,
-    pub server_id: Uuid,
+    pub server_id: ServerId,
     pub name: String,
     pub permissions: Permissions,
     pub created_at: DateTime<Utc>,

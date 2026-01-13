@@ -9,6 +9,7 @@ use crate::{
         common::CoreError,
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
+        member_role::ports::MemberRoleRepository,
         outbox::ports::OutboxRepository,
         role::ports::RoleRepository,
         server::ports::ServerRepository,
@@ -16,7 +17,7 @@ use crate::{
     },
 };
 
-impl<S, F, H, M, C, R, O, CM> ChannelMemberService for Service<S, F, H, M, C, R, O, CM>
+impl<S, F, H, M, C, R, O, CM, MR> ChannelMemberService for Service<S, F, H, M, C, R, O, CM, MR>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -26,6 +27,7 @@ where
     R: RoleRepository,
     O: OutboxRepository,
     CM: ChannelMemberRepository,
+    MR: MemberRoleRepository,
 {
     async fn create_channel_member(
         &self,

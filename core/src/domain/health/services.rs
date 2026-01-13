@@ -7,13 +7,14 @@ use crate::domain::{
         entities::IsHealthy,
         port::{HealthRepository, HealthService},
     },
+    member_role::ports::MemberRoleRepository,
     outbox::ports::OutboxRepository,
     role::ports::RoleRepository,
     server::ports::ServerRepository,
     server_member::ports::MemberRepository,
 };
 
-impl<S, F, H, M, C, R, O, CM> HealthService for Service<S, F, H, M, C, R, O, CM>
+impl<S, F, H, M, C, R, O, CM, MR> HealthService for Service<S, F, H, M, C, R, O, CM, MR>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -23,6 +24,7 @@ where
     R: RoleRepository,
     O: OutboxRepository,
     CM: ChannelMemberRepository,
+    MR: MemberRoleRepository,
 {
     async fn check_health(&self) -> Result<IsHealthy, CoreError> {
         self.health_repository.ping().await.to_result()

@@ -6,6 +6,7 @@ use crate::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
+        member_role::ports::MemberRoleRepository,
         outbox::ports::OutboxRepository,
         role::{
             entities::{
@@ -18,7 +19,7 @@ use crate::{
     },
 };
 
-impl<S, F, H, M, C, R, O, CM> RoleService for Service<S, F, H, M, C, R, O, CM>
+impl<S, F, H, M, C, R, O, CM, MR> RoleService for Service<S, F, H, M, C, R, O, CM, MR>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -28,6 +29,7 @@ where
     R: RoleRepository,
     O: OutboxRepository,
     CM: ChannelMemberRepository,
+    MR: MemberRoleRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
         let repo_input = CreateRoleInput::try_from(create_role_input).map_err(|e| {

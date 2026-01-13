@@ -291,6 +291,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router.clone(),
+        MessageRoutingInfo::default(),
     );
 
     let owner_id = UserId(Uuid::new_v4());
@@ -403,7 +404,7 @@ async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<()
     let delete_router =
         MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
 
-    let repository = PostgresServerRepository::new(pool.clone(), delete_router, create_router);
+    let repository = PostgresServerRepository::new(pool.clone(), delete_router, create_router, MessageRoutingInfo::default());
 
     // Try to find a server with a random UUID that doesn't exist
     let nonexistent_id = ServerId(Uuid::new_v4());
@@ -428,7 +429,7 @@ async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreE
     let delete_router =
         MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
 
-    let repository = PostgresServerRepository::new(pool.clone(), delete_router, create_router);
+    let repository = PostgresServerRepository::new(pool.clone(), delete_router, create_router, MessageRoutingInfo::default());
 
     // Try to delete a server with a random UUID that doesn't exist
     let nonexistent_id = ServerId(Uuid::new_v4());
@@ -462,7 +463,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
         MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
 
     let repository =
-        PostgresServerRepository::new(pool.clone(), delete_router.clone(), create_router);
+        PostgresServerRepository::new(pool.clone(), delete_router.clone(), create_router, MessageRoutingInfo::default());
 
     // Arrange: insert a server first
     let owner_id = UserId(Uuid::new_v4());
@@ -537,7 +538,7 @@ async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError
         MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
 
     let repository =
-        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router, MessageRoutingInfo::default());
 
     // Arrange: insert a server first
     let owner_id = UserId(Uuid::new_v4());
@@ -597,7 +598,7 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
         MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
 
     let repository =
-        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router, MessageRoutingInfo::default());
 
     // Try to update a server with a random UUID that doesn't exist
     let nonexistent_id = ServerId(Uuid::new_v4());
@@ -634,7 +635,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
 
     let repository =
-        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router, MessageRoutingInfo::default());
 
     // Arrange: insert a server first
     let owner_id = crate::domain::friend::entities::UserId(Uuid::new_v4());
@@ -680,7 +681,7 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
         MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
 
     let repository =
-        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router, MessageRoutingInfo::default());
 
     // Arrange: insert multiple servers
     let owner_id = UserId(Uuid::new_v4());
@@ -741,7 +742,7 @@ async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreE
         MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
 
     let repository =
-        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router);
+        PostgresServerRepository::new(pool.clone(), MessageRoutingInfo::default(), create_router, MessageRoutingInfo::default());
 
     // Arrange: insert servers with mixed visibility
     let owner_id = UserId(Uuid::new_v4());

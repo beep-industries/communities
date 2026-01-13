@@ -10,6 +10,7 @@ use crate::domain::outbox::ports::OutboxRepository;
 use crate::domain::role::ports::RoleRepository;
 use crate::domain::server::entities::ServerId;
 use crate::domain::server::ports::ServerRepository;
+use crate::domain::server_member::MemberId;
 
 use super::entities::{CreateMemberInput, ServerMember, UpdateMemberInput};
 use super::ports::{MemberRepository, MemberService};
@@ -110,5 +111,9 @@ where
         self.member_repository
             .find_by_server_and_user(&server_id, &user_id)
             .await
+    }
+
+    async fn get_member_by_id(&self, member_id: MemberId) -> Result<ServerMember, CoreError> {
+        self.member_repository.find_by_id(member_id).await
     }
 }

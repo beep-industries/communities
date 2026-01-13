@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -9,6 +11,14 @@ use crate::domain::server::entities::ServerId;
 /// Unique identifier for a server member
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, ToSchema)]
 pub struct MemberId(pub Uuid);
+
+impl Deref for MemberId {
+    type Target = Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl From<Uuid> for MemberId {
     fn from(uuid: Uuid) -> Self {

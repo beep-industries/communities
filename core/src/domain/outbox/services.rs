@@ -6,6 +6,7 @@ use crate::{
         common::{GetPaginated, TotalPaginatedElements},
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
+        member_role::ports::MemberRoleRepository,
         outbox::{
             entities::{OutboxMessage, OutboxMessageStream, OutboxStatus},
             error::OutboxError,
@@ -17,7 +18,7 @@ use crate::{
     },
 };
 
-impl<S, F, H, M, C, R, O, CM> OutboxService for Service<S, F, H, M, C, R, O, CM>
+impl<S, F, H, M, C, R, O, CM, MR> OutboxService for Service<S, F, H, M, C, R, O, CM, MR>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -27,6 +28,7 @@ where
     R: RoleRepository,
     O: OutboxRepository,
     CM: ChannelMemberRepository,
+    MR: MemberRoleRepository,
 {
     async fn get(
         &self,

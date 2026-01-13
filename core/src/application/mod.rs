@@ -13,11 +13,11 @@ use crate::{
         role::ports::MockRoleRepository,
     },
     infrastructure::{
-        MessageRoutingInfo,
-        channel::repositories::PostgresChannelRepository,
+        MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
-        health::repositories::postgres::PostgresHealthRepository,
-        outbox::{MessageRouter, postgres::PostgresOutboxRepository},
+        health::repositories::postgres::PostgresHealthRepository, outbox::MessageRouter,
+        outbox::postgres::PostgresOutboxRepository,
+        role::repositories::postgres::PostgresRoleRepository,
         server::repositories::postgres::PostgresServerRepository,
         server_member::repositories::PostgresMemberRepository,
     },
@@ -30,9 +30,9 @@ pub type CommunitiesService = Service<
     PostgresHealthRepository,
     PostgresMemberRepository,
     PostgresChannelRepository,
-    MockRoleRepository,
+    PostgresRoleRepository,
     PostgresOutboxRepository,
-    MockChannelMemberRepository,
+    PostgresMemberRepository,
 >;
 
 #[derive(Clone)]
@@ -43,10 +43,10 @@ pub struct CommunitiesRepositories {
     pub health_repository: PostgresHealthRepository,
     pub member_repository: PostgresMemberRepository,
     pub channel_repository: PostgresChannelRepository,
-    pub role_repository: MockRoleRepository,
     pub keycloak_repository: KeycloakAuthRepository,
+    pub role_repository: PostgresRoleRepository,
     pub outbox_repository: PostgresOutboxRepository,
-    pub channel_member_repository: MockChannelMemberRepository,
+    pub channel_member_repository: PostgresMemberRepository,
 }
 
 pub async fn create_repositories(
@@ -63,6 +63,7 @@ pub async fn create_repositories(
         pool.clone(),
         message_routing_config.delete_server,
         message_routing_config.create_server,
+        message_routing_config.create_role,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
@@ -102,6 +103,7 @@ impl Into<CommunitiesService> for CommunitiesRepositories {
             self.role_repository,
             self.outbox_repository,
             self.channel_member_repository,
+            self.member_role_repository,
         )
     }
 }
@@ -128,12 +130,10 @@ impl CommunitiesService {
 pub struct MessageRoutingConfig {
     /// Routing information for server creation events
     pub create_server: MessageRoutingInfo,
-    /// Routing information for server deletion events
     pub delete_server: MessageRoutingInfo,
-    /// Routing information for channel creation events
     pub create_channel: MessageRoutingInfo,
-    /// Routing information for channel deletion events
     pub delete_channel: MessageRoutingInfo,
+    pub create_role: MessageRoutingInfo,
 }
 
 impl MessageRoutingConfig {

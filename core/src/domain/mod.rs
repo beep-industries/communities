@@ -3,6 +3,7 @@ pub mod channel_member;
 pub mod common;
 pub mod friend;
 pub mod health;
+pub mod member_role;
 pub mod outbox;
 pub mod role;
 pub mod server;

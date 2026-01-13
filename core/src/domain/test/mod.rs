@@ -3,6 +3,7 @@ use crate::{
     domain::{
         channel::ports::MockChannelRepository, channel_member::ports::MockChannelMemberRepository,
         friend::ports::MockFriendshipRepository, health::port::MockHealthRepository,
+        member_role::ports::MockMemberRoleRepository,
         outbox::ports::MockOutboxRepository, role::ports::MockRoleRepository,
         server::ports::MockServerRepository, server_member::MockMemberRepository,
     },
@@ -23,6 +24,7 @@ pub type MockService = Service<
     MockRoleRepository,
     MockOutboxRepository,
     MockChannelMemberRepository,
+    MockMemberRoleRepository,
 >;
 
 pub fn create_mock_service() -> MockService {
@@ -34,6 +36,7 @@ pub fn create_mock_service() -> MockService {
     let role_repository = MockRoleRepository::new();
     let outbox_repository = MockOutboxRepository::new();
     let channel_member_repository = MockChannelMemberRepository::new();
+    let member_role_repository = MockMemberRoleRepository;
     MockService::new(
         server_repository,
         friendship_repository,
@@ -43,5 +46,6 @@ pub fn create_mock_service() -> MockService {
         role_repository,
         outbox_repository,
         channel_member_repository,
+        member_role_repository,
     )
 }

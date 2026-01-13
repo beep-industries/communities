@@ -10,7 +10,7 @@ use crate::{
     domain::{
         channel_member::ports::MockChannelMemberRepository,
         common::{CoreError, services::Service},
-        role::ports::MockRoleRepository,
+        member_role::ports::MockMemberRoleRepository,
     },
     infrastructure::{
         MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
@@ -32,7 +32,8 @@ pub type CommunitiesService = Service<
     PostgresChannelRepository,
     PostgresRoleRepository,
     PostgresOutboxRepository,
-    PostgresMemberRepository,
+    MockChannelMemberRepository,
+    MockMemberRoleRepository,
 >;
 
 #[derive(Clone)]
@@ -46,7 +47,8 @@ pub struct CommunitiesRepositories {
     pub keycloak_repository: KeycloakAuthRepository,
     pub role_repository: PostgresRoleRepository,
     pub outbox_repository: PostgresOutboxRepository,
-    pub channel_member_repository: PostgresMemberRepository,
+    pub channel_member_repository: MockChannelMemberRepository,
+    pub member_role_repository: MockMemberRoleRepository,
 }
 
 pub async fn create_repositories(
@@ -75,35 +77,42 @@ pub async fn create_repositories(
         message_routing_config.delete_channel,
     );
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
-    let role_repository = MockRoleRepository::new();
+    let role_repository = PostgresRoleRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();
+    let member_role_repository = MockMemberRoleRepository;
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
-        friendship_repository,
         health_repository,
+        friendship_repository,
         member_repository,
         channel_repository,
         role_repository,
         keycloak_repository,
         outbox_repository,
         channel_member_repository,
+        member_role_repository,
     })
 }
 
-impl Into<CommunitiesService> for CommunitiesRepositories {
-    fn into(self) -> CommunitiesService {
+impl From<CommunitiesRepositories> for CommunitiesService {
+    fn from(repos: CommunitiesRepositories) -> Self {
         Service::new(
-            self.server_repository,
-            self.friendship_repository,
-            self.health_repository,
-            self.member_repository,
-            self.channel_repository,
-            self.role_repository,
-            self.outbox_repository,
-            self.channel_member_repository,
-            self.member_role_repository,
+            repos.server_repository,
+            repos.friendship_repository,
+            repos.health_repository,
+            repos.member_repository,
+            repos.channel_repository,
+            repos.role_repository,
+            repos.outbox_repository,
+            repos.channel_member_repository,
+            repos.member_role_repository,
         )
     }
 }

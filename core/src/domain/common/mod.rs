@@ -75,6 +75,9 @@ pub enum CoreError {
 
     #[error("Role with id {id} not found")]
     RoleNotFound { id: RoleId },
+
+    #[error("Role and member are not in the same server")]
+    WrongSever,
 }
 
 impl From<ChannelError> for CoreError {

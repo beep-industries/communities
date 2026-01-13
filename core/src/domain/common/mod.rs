@@ -6,6 +6,7 @@ use crate::domain::channel::entities::{ChannelError, ChannelId};
 use crate::domain::friend::entities::UserId;
 use crate::domain::role::entities::RoleId;
 use crate::domain::server::entities::ServerId;
+use crate::domain::server_member::MemberId;
 
 pub mod services;
 
@@ -53,6 +54,9 @@ pub enum CoreError {
         server_id: ServerId,
         user_id: UserId,
     },
+
+    #[error("Member not found id = {member_id}")]
+    MemberNotFoundById { member_id: MemberId },
 
     #[error("Invalid member nickname: cannot be empty or whitespace")]
     InvalidMemberNickname,

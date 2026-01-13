@@ -44,6 +44,11 @@ pub trait MemberRepository: Send + Sync {
         server_id: &ServerId,
         user_id: &UserId,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
+
+    fn find_by_id(
+        &self,
+        member_id: MemberId,
+    ) -> impl Future<Output = Result<ServerMember, CoreError>> + Send;
 }
 
 /// Service trait for server member business logic
@@ -118,6 +123,11 @@ pub trait MemberService: Send + Sync {
         &self,
         server_id: ServerId,
         user_id: UserId,
+    ) -> impl Future<Output = Result<ServerMember, CoreError>> + Send;
+
+    fn get_member_by_id(
+        &self,
+        member_id: MemberId,
     ) -> impl Future<Output = Result<ServerMember, CoreError>> + Send;
 }
 
@@ -228,5 +238,16 @@ impl MemberRepository for MockMemberRepository {
         } else {
             Ok(())
         }
+    }
+
+    async fn find_by_id(&self, member_id: MemberId) -> Result<ServerMember, CoreError> {
+        let members = self.members.lock().unwrap();
+
+        let member = members
+            .iter()
+            .find(|member| *member.id == *member_id)
+            .ok_or(CoreError::MemberNotFoundById { member_id })?;
+
+        Ok(member.to_owned())
     }
 }

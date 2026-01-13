@@ -256,7 +256,7 @@ mod tests {
 
         let role = repo.create(input).await.unwrap();
 
-        assert_eq!(role.server_id, server_id);
+        assert_eq!(*role.server_id, server_id);
         assert_eq!(role.name, "Admin");
         assert_eq!(role.permissions.0, 0x1);
         assert!(role.created_at.timestamp() > 0);
@@ -419,13 +419,13 @@ mod tests {
         let (roles1, total1) = repo.list_by_server(&pagination, server1_id).await.unwrap();
         assert_eq!(roles1.len(), 3);
         assert_eq!(total1, 3);
-        assert!(roles1.iter().all(|r| r.server_id == server1_id));
+        assert!(roles1.iter().all(|r| *r.server_id == server1_id));
 
         // List roles for server 2
         let (roles2, total2) = repo.list_by_server(&pagination, server2_id).await.unwrap();
         assert_eq!(roles2.len(), 2);
         assert_eq!(total2, 2);
-        assert!(roles2.iter().all(|r| r.server_id == server2_id));
+        assert!(roles2.iter().all(|r| *r.server_id == server2_id));
     }
 
     #[sqlx::test(migrations = "./migrations")]

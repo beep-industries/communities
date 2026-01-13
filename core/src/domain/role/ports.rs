@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::domain::{
     common::{CoreError, GetPaginated, TotalPaginatedElements},
     role::entities::{CreateRoleInput, Role, RoleId, UpdateRoleInput, UpdateRoleRepoInput},
+    server::entities::ServerId,
 };
 
 pub trait RoleRepository: Send + Sync {
@@ -63,7 +64,7 @@ impl RoleRepository for MockRoleRepository {
 
         let new_role = Role {
             id: Uuid::new_v4().into(),
-            server_id: create_role_input.server_id,
+            server_id: ServerId(create_role_input.server_id),
             name: create_role_input.name,
             permissions: create_role_input.permissions,
             created_at: Utc::now(),
@@ -95,7 +96,7 @@ impl RoleRepository for MockRoleRepository {
 
         let filtered_roles: Vec<Role> = roles
             .iter()
-            .filter(|role| role.server_id == server_id)
+            .filter(|role| *role.server_id == server_id)
             .cloned()
             .collect();
 

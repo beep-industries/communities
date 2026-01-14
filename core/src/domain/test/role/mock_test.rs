@@ -29,7 +29,7 @@ mod tests {
             .expect("create_role returned an error");
 
         assert_eq!(role.name, "Admin", "Expected correct role name");
-        assert_eq!(role.server_id, server_id, "Expected correct server ID");
+        assert_eq!(*role.server_id, server_id, "Expected correct server ID");
 
         Ok(())
     }
@@ -52,7 +52,7 @@ mod tests {
             .expect("create_role returned an error");
 
         assert_eq!(role.name, "Moderator", "Expected correct role name");
-        assert_eq!(role.server_id, server_id, "Expected correct server ID");
+        assert_eq!(*role.server_id, server_id, "Expected correct server ID");
 
         Ok(())
     }
@@ -99,7 +99,7 @@ mod tests {
 
         assert_eq!(role.id, created_role.id, "Expected same role ID");
         assert_eq!(role.name, "Test Role", "Expected correct role name");
-        assert_eq!(role.server_id, server_id, "Expected correct server ID");
+        assert_eq!(*role.server_id, server_id, "Expected correct server ID");
 
         Ok(())
     }

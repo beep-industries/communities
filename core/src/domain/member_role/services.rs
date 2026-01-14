@@ -6,7 +6,10 @@ use crate::{
         common::CoreError,
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
-        member_role::ports::{MemberRoleRepository, MemberRoleService},
+        member_role::{
+            entities::{AssignMemberRole, MemberRole, UnassignMemberRole},
+            ports::{MemberRoleRepository, MemberRoleService},
+        },
         outbox::ports::OutboxRepository,
         role::{
             entities::{Role, RoleId},
@@ -41,7 +44,7 @@ where
         }
         let _ = self
             .member_role_repository
-            .assign(role_id, member_id)
+            .assign(AssignMemberRole { role_id, member_id })
             .await?;
         Ok(())
     }
@@ -53,7 +56,7 @@ where
     ) -> Result<(), CoreError> {
         Ok(self
             .member_role_repository
-            .unassign(role_id, member_id)
+            .unassign(UnassignMemberRole { role_id, member_id })
             .await?)
     }
 }

@@ -85,7 +85,7 @@ pub async fn create_repositories(
     );
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();
-    let member_role_repository = MockMemberRoleRepository;
+    let member_role_repository = MockMemberRoleRepository::new();
     Ok(CommunitiesRepositories {
         pool,
         server_repository,

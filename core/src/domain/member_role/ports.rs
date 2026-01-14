@@ -1,14 +1,22 @@
-use crate::domain::{common::CoreError, role::entities::RoleId, server_member::MemberId};
+use std::sync::{Arc, Mutex};
+
+use chrono::DateTime;
+use sqlx::Database;
+
+use crate::domain::{
+    common::CoreError,
+    member_role::entities::{AssignMemberRole, MemberRole, UnassignMemberRole},
+    role::entities::RoleId,
+    server_member::MemberId,
+};
 pub trait MemberRoleRepository: Send + Sync {
     fn assign(
         &self,
-        role_id: RoleId,
-        member_id: MemberId,
-    ) -> impl Future<Output = Result<(), CoreError>>;
+        member_role: AssignMemberRole,
+    ) -> impl Future<Output = Result<MemberRole, CoreError>>;
     fn unassign(
         &self,
-        role_id: RoleId,
-        member_id: MemberId,
+        member_role: UnassignMemberRole,
     ) -> impl Future<Output = Result<(), CoreError>>;
 }
 
@@ -27,14 +35,34 @@ pub trait MemberRoleService: Send + Sync {
 
 /// Mock implementation of MemberRoleRepository for testing
 #[derive(Clone)]
-pub struct MockMemberRoleRepository;
+pub struct MockMemberRoleRepository {
+    member_role: Arc<Mutex<Vec<MemberRole>>>,
+}
 
-impl MemberRoleRepository for MockMemberRoleRepository {
-    async fn assign(&self, _role_id: RoleId, _member_id: MemberId) -> Result<(), CoreError> {
-        Ok(())
+impl MockMemberRoleRepository {
+    pub fn new() -> Self {
+        Self {
+            member_role: Arc::new(Mutex::new(Vec::new())),
+        }
     }
-
-    async fn unassign(&self, _role_id: RoleId, _member_id: MemberId) -> Result<(), CoreError> {
+}
+impl MemberRoleRepository for MockMemberRoleRepository {
+    async fn assign(&self, member_role: AssignMemberRole) -> Result<MemberRole, CoreError> {
+        let mut member_roles = self.member_role.lock().unwrap();
+        let member_role = MemberRole {
+            member_id: member_role.member_id,
+            role_id: member_role.role_id,
+            created_at: chrono::Utc::now(),
+            updated_at: None,
+        };
+        member_roles.push(member_role.clone());
+        Ok(member_role)
+    }
+    async fn unassign(&self, member_role: UnassignMemberRole) -> Result<(), CoreError> {
+        let mut member_roles = self.member_role.lock().unwrap();
+        member_roles.retain(|mr| {
+            !(mr.member_id == member_role.member_id && mr.role_id == member_role.role_id)
+        });
         Ok(())
     }
 }

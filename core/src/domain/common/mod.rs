@@ -78,6 +78,12 @@ pub enum CoreError {
 
     #[error("Role and member are not in the same server")]
     WrongSever,
+
+    #[error("Could not assign role {role_id} to member {member_id}")]
+    AssignMemberRoleError {
+        member_id: MemberId,
+        role_id: RoleId,
+    },
 }
 
 impl From<ChannelError> for CoreError {

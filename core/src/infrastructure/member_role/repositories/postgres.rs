@@ -63,7 +63,13 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
     }
 
     async fn unassign(&self, member_role: UnassignMemberRole) -> Result<(), CoreError> {
-        todo!()
+        sqlx::query(r#"DELETE FROM member_roles WHERE member_id = $1 AND role_id = $2"#)
+            .bind(*member_role.member_id)
+            .bind(member_role.role_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+        Ok(())
     }
 }
 
@@ -75,7 +81,10 @@ mod tests {
     use crate::{
         domain::{
             common::CoreError,
-            member_role::{entities::AssignMemberRole, ports::MemberRoleRepository},
+            member_role::{
+                entities::{AssignMemberRole, UnassignMemberRole},
+                ports::MemberRoleRepository,
+            },
             role::entities::{Permissions, Role},
             server::entities::ServerVisibility,
             server_member::{MemberId, ServerMember},
@@ -124,8 +133,7 @@ mod tests {
     }
 
     async fn create_test_server(pool: &PgPool, name: &str) -> Uuid {
-        let owner_id = Uuid::new_v4();
-        let server_id = sqlx::query_scalar::<_, Uuid>(
+        sqlx::query_scalar::<_, Uuid>(
             r#"
             INSERT INTO servers (name, owner_id, visibility)
             VALUES ($1, $2, $3)
@@ -133,12 +141,11 @@ mod tests {
             "#,
         )
         .bind(name)
-        .bind(owner_id)
+        .bind(Uuid::new_v4())
         .bind(ServerVisibility::Private)
         .fetch_one(pool)
         .await
-        .unwrap();
-        server_id
+        .unwrap()
     }
 
     #[sqlx::test(migrations = "./migrations")]
@@ -148,7 +155,7 @@ mod tests {
         let repository = PostgresMemberRoleRepository::new(pool.clone(), assign_role_routing);
         let server_id = create_test_server(&pool.clone(), "test_server").await;
         let role_id = create_test_role(&pool.clone(), server_id).await;
-        let member_id = create_test_member(&pool.clone(), server_id.clone()).await;
+        let member_id = create_test_member(&pool.clone(), server_id).await;
         let assign_member_role = AssignMemberRole {
             member_id: MemberId(member_id),
             role_id,
@@ -157,6 +164,27 @@ mod tests {
 
         assert_eq!(*assigned.member_id, member_id);
         assert_eq!(assigned.role_id, role_id);
+        Ok(())
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    async fn test_unassign_member_from_role(pool: PgPool) -> Result<(), CoreError> {
+        let assign_role_routing =
+            MessageRoutingInfo::new("test".to_string(), "test_routing".to_string());
+        let repository = PostgresMemberRoleRepository::new(pool.clone(), assign_role_routing);
+        let server_id = create_test_server(&pool.clone(), "test_server").await;
+        let role_id = create_test_role(&pool.clone(), server_id).await;
+        let member_id = create_test_member(&pool.clone(), server_id).await;
+        let assign_member_role = AssignMemberRole {
+            member_id: MemberId(member_id),
+            role_id,
+        };
+        let _ = repository.assign(assign_member_role).await.unwrap();
+        let unassign = UnassignMemberRole {
+            member_id: MemberId(member_id),
+            role_id,
+        };
+        repository.unassign(unassign).await.unwrap();
         Ok(())
     }
 }

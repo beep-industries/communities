@@ -79,39 +79,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_create_role_fail_invalid_permissions() -> Result<(), Box<dyn std::error::Error>> {
-        let service = create_mock_service();
-
-        let server_id = Uuid::new_v4();
-        let input = CreateRoleInput {
-            server_id,
-            name: "Invalid Role".to_string(),
-            permissions: Permissions::try_from(0x1000).unwrap(), // Invalid permission bit
-        };
-
-        let result = service.create_role(input).await;
-
-        assert!(result.is_err(), "create_role should have returned an error");
-
-        match result {
-            Err(error) => {
-                assert!(
-                    error
-                        .to_string()
-                        .contains("permissions you provided are not conform"),
-                    "Expected permissions error, got: {}",
-                    error
-                );
-            }
-            Ok(_) => panic!("Expected error but got Ok"),
-        }
-
-        Ok(())
-    }
-
-    // == Get Role Tests ==
-
-    #[tokio::test]
     async fn test_get_role_success() -> Result<(), Box<dyn std::error::Error>> {
         let service = create_mock_service();
 

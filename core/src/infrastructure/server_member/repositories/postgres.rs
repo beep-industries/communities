@@ -261,8 +261,7 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_insert_member_writes_row(pool: PgPool) -> Result<(), CoreError> {
-        let delete_router =
-            MessageRoutingInfo::new("member.exchange".to_string(), "member.deleted".to_string());
+        let delete_router = MessageRoutingInfo::new("member.exchange");
 
         let repository = PostgresMemberRepository::new(pool.clone(), delete_router);
 
@@ -453,8 +452,7 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_member_removes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
-        let delete_router =
-            MessageRoutingInfo::new("member.exchange".to_string(), "member.deleted".to_string());
+        let delete_router = MessageRoutingInfo::new("member.exchange");
         let repository = PostgresMemberRepository::new(pool.clone(), delete_router.clone());
 
         let server_id = ServerId(Uuid::new_v4());
@@ -483,27 +481,21 @@ mod tests {
         // Assert: an outbox message for delete was written
         let row = sqlx::query(
             r#"
-            SELECT exchange_name, routing_key, payload
+            SELECT exchange_name, payload
             FROM outbox_messages
-            WHERE routing_key = $1
+            WHERE exchange_name = $1
             ORDER BY created_at DESC
             LIMIT 1
             "#,
         )
-        .bind(delete_router.routing_key())
+        .bind(delete_router.exchange_name())
         .fetch_one(&pool)
         .await
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
-        let exchange_name: String = row
+        let _exchange_name: String = row
             .try_get("exchange_name")
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
-        let routing_key: String = row
-            .try_get("routing_key")
-            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
-        assert_eq!(exchange_name, delete_router.exchange_name());
-        assert_eq!(routing_key, delete_router.routing_key());
-
         let payload: serde_json::Value = row
             .try_get("payload")
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;

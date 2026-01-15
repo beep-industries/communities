@@ -12,7 +12,6 @@ use crate::domain::outbox::error::OutboxError;
 pub struct OutboxMessage {
     pub id: Uuid,
     pub exchange_name: String,
-    pub routing_key: String,
     pub payload: serde_json::Value,
     pub status: OutboxStatus,
     pub failed_at: Option<DateTime<Utc>>,

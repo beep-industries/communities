@@ -166,8 +166,7 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_assign_member_to_role(pool: PgPool) -> Result<(), CoreError> {
-        let assign_role_routing =
-            MessageRoutingInfo::new("test".to_string(), "test_routing".to_string());
+        let assign_role_routing = MessageRoutingInfo::new("test");
         let repository = PostgresMemberRoleRepository::new(pool.clone(), assign_role_routing);
         let server_id = create_test_server(&pool.clone(), "test_server").await;
         let role_id = create_test_role(&pool.clone(), server_id).await;
@@ -185,8 +184,7 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_unassign_member_from_role(pool: PgPool) -> Result<(), CoreError> {
-        let assign_role_routing =
-            MessageRoutingInfo::new("test".to_string(), "test_routing".to_string());
+        let assign_role_routing = MessageRoutingInfo::new("test");
         let repository = PostgresMemberRoleRepository::new(pool.clone(), assign_role_routing);
         let server_id = create_test_server(&pool.clone(), "test_server").await;
         let role_id = create_test_role(&pool.clone(), server_id).await;

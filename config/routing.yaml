@@ -1,26 +1,9 @@
 # Message Routing Configuration
 # This file defines the exchange names and routing keys for outbox events
 
-create_server:
-  - "created_server" # Exchange name (fanout)
-  - "server.created" # Routing key
-
-delete_server:
-  - "beep.community" # Exchange name
-  - "server.deleted" # Routing key
-
-create_channel:
-  - "beep.community" # Exchange name
-  - "channel.created" # Routing key
-
-delete_channel:
-  - "beep.community" # Exchange name
-  - "channel.deleted" # Routing key
-
-update_channel:
-  - "beep.community" # Exchange name
-  - "channel.updated" # Routing key
-
-create_role:
-  - "role.create"
-  - ""
+create_server: "create.server"
+delete_server: "delete.server"
+create_channel: "create.channel"
+delete_channel: "delete.channel"
+update_channel: "update.channel"
+create_role: "role.create"

@@ -39,7 +39,7 @@ use uuid::Uuid;
 ///     let mut tx = pool.begin().await?;
 ///
 ///     // Define routing and event payload
-///     let router = MessageRoutingInfo::new("my.exchange".to_string(), "my.key".to_string());
+///     let router = MessageRoutingInfo::new("my.exchange");
 ///     let event = OutboxEventRecord::new(router, MyEvent { data: "test".to_string() });
 ///
 ///     // Write event to outbox within the transaction
@@ -58,7 +58,7 @@ where
     TRouter: MessageRouter,
 {
     let exchange_name = event.router.exchange_name();
-    let routing_key = event.router.routing_key();
+    dbg!(exchange_name.clone());
     let created_at = Utc::now();
 
     // Serialize event to JSON
@@ -67,15 +67,14 @@ where
 
     // Insert into outbox_messages table
     let query = r#"
-        INSERT INTO outbox_messages (id, exchange_name, routing_key, payload, status, failed_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO outbox_messages (id, exchange_name, payload, status, failed_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (id) DO NOTHING
     "#;
 
     sqlx::query(query)
         .bind(event.id)
         .bind(exchange_name)
-        .bind(routing_key)
         .bind(payload)
         .bind("READY")
         .bind(None::<chrono::DateTime<Utc>>)

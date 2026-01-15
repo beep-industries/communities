@@ -368,14 +368,8 @@ mod tests {
     async fn test_create_server_channel_writes_row_and_outbox(
         pool: PgPool,
     ) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.created");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository =
             PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
@@ -407,11 +401,14 @@ mod tests {
         // Assert: outbox event was written
         let outbox_row = sqlx::query(
             r#"
-                SELECT exchange_name, routing_key, payload, status
+                SELECT exchange_name, payload, status
                 FROM outbox_messages
-                WHERE routing_key = 'channel.created'
+                WHERE exchange_name = $1
+                ORDER BY created_at DESC
+                LIMIT 1
                 "#,
         )
+        .bind("channel.created")
         .fetch_optional(&pool)
         .await
         .map_err(|e| CoreError::DatabaseError {
@@ -428,14 +425,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_create_private_channel_no_outbox(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository = PostgresChannelRepository::new(pool.clone(), create_router, delete_router);
 
@@ -456,7 +447,7 @@ mod tests {
 
         // Assert: no outbox event for private channels
         let outbox_count: i64 = sqlx::query_scalar(
-            r#"SELECT COUNT(*) FROM outbox_messages WHERE routing_key = 'channel.created'"#,
+            r#"SELECT COUNT(*) FROM outbox_messages"#,
         )
         .fetch_one(&pool)
         .await
@@ -471,14 +462,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_list_channels_in_server(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository =
             PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
@@ -517,14 +502,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_channel(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository =
             PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
@@ -563,14 +542,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_server_channel_writes_outbox(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository =
             PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
@@ -601,11 +574,14 @@ mod tests {
         // Assert: outbox event was written for delete
         let outbox_row = sqlx::query(
             r#"
-            SELECT exchange_name, routing_key, payload, status
+            SELECT exchange_name, payload, status
             FROM outbox_messages
-            WHERE routing_key = 'channel.deleted'
+            WHERE exchange_name = $1
+            ORDER BY created_at DESC
+            LIMIT 1
             "#,
         )
+        .bind("channel.exchange")
         .fetch_optional(&pool)
         .await
         .map_err(|e| CoreError::DatabaseError {
@@ -622,14 +598,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_nonexistent_channel_returns_error(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository = PostgresChannelRepository::new(pool.clone(), create_router, delete_router);
 
@@ -650,14 +620,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_channel_parent_child_relationship(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository =
             PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
@@ -699,14 +663,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_channel_parent(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository =
             PostgresChannelRepository::new(pool.clone(), create_router.clone(), delete_router);
@@ -759,14 +717,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_find_by_id_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository = PostgresChannelRepository::new(pool.clone(), create_router, delete_router);
 
@@ -787,14 +739,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_nonexistent_channel_returns_error(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository = PostgresChannelRepository::new(pool.clone(), create_router, delete_router);
 
@@ -821,14 +767,8 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_list_channels_in_empty_server(pool: PgPool) -> Result<(), CoreError> {
-        let create_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.created".to_string(),
-        );
-        let delete_router = MessageRoutingInfo::new(
-            "channel.exchange".to_string(),
-            "channel.deleted".to_string(),
-        );
+        let create_router = MessageRoutingInfo::new("channel.exchange");
+        let delete_router = MessageRoutingInfo::new("channel.exchange");
 
         let repository = PostgresChannelRepository::new(pool.clone(), create_router, delete_router);
 

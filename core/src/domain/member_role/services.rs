@@ -40,7 +40,7 @@ where
         let role: Role = self.role_repository.find_by_id(&role_id).await?;
         let member: ServerMember = self.member_repository.find_by_id(member_id).await?;
         if member.server_id != role.server_id {
-            return Err(CoreError::WrongSever);
+            return Err(CoreError::BadRoleMemberAssignation);
         }
         let member_role = self
             .member_role_repository

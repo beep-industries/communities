@@ -18,5 +18,9 @@ delete_channel:
   - "channel.deleted" # Routing key
 
 update_channel:
-  - "beep.community"      # Exchange name
-  - "channel.updated"     # Routing key
+  - "beep.community" # Exchange name
+  - "channel.updated" # Routing key
+
+create_role:
+  - "role.create"
+  - ""

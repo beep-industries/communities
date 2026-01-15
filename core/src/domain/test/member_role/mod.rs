@@ -6,7 +6,7 @@ mod tests {
         friend::entities::UserId,
         member_role::ports::MemberRoleService,
         role::{
-            entities::{CreateRoleRepoInput, Permissions},
+            entities::{CreateRoleInput, Permissions},
             ports::RoleRepository,
         },
         server::{
@@ -35,7 +35,7 @@ mod tests {
             .await
             .expect("create_server returned an error");
 
-        let create_role_input = CreateRoleRepoInput {
+        let create_role_input = CreateRoleInput {
             server_id: *server.id,
             name: "test".to_string(),
             permissions: Permissions(0x1),
@@ -84,7 +84,7 @@ mod tests {
             .await
             .expect("create_server returned an error");
 
-        let create_role_input = CreateRoleRepoInput {
+        let create_role_input = CreateRoleInput {
             server_id: *server.id,
             name: "test".to_string(),
             permissions: Permissions(0x1),

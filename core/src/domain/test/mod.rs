@@ -11,6 +11,7 @@ use crate::{
 pub mod channel;
 pub mod channel_member;
 pub mod friend;
+pub mod member_role;
 pub mod role;
 pub mod server;
 pub mod server_member;

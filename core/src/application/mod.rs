@@ -13,10 +13,12 @@ use crate::{
         member_role::ports::MockMemberRoleRepository,
     },
     infrastructure::{
-        MessageRoutingInfo, channel::repositories::PostgresChannelRepository,
+        MessageRoutingInfo,
+        channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
-        health::repositories::postgres::PostgresHealthRepository, outbox::MessageRouter,
-        outbox::postgres::PostgresOutboxRepository,
+        health::repositories::postgres::PostgresHealthRepository,
+        member_role::repositories::postgres::PostgresMemberRoleRepository,
+        outbox::{MessageRouter, postgres::PostgresOutboxRepository},
         role::repositories::postgres::PostgresRoleRepository,
         server::repositories::postgres::PostgresServerRepository,
         server_member::repositories::PostgresMemberRepository,
@@ -33,7 +35,7 @@ pub type CommunitiesService = Service<
     PostgresRoleRepository,
     PostgresOutboxRepository,
     MockChannelMemberRepository,
-    MockMemberRoleRepository,
+    PostgresMemberRoleRepository,
 >;
 
 #[derive(Clone)]
@@ -48,7 +50,7 @@ pub struct CommunitiesRepositories {
     pub role_repository: PostgresRoleRepository,
     pub outbox_repository: PostgresOutboxRepository,
     pub channel_member_repository: MockChannelMemberRepository,
-    pub member_role_repository: MockMemberRoleRepository,
+    pub member_role_repository: PostgresMemberRoleRepository,
 }
 
 pub async fn create_repositories(
@@ -63,9 +65,9 @@ pub async fn create_repositories(
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
     let server_repository = PostgresServerRepository::new(
         pool.clone(),
-        message_routing_config.delete_server,
-        message_routing_config.create_server,
-        message_routing_config.create_role,
+        message_routing_config.clone().delete_server,
+        message_routing_config.clone().create_server,
+        message_routing_config.clone().create_role,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
@@ -73,8 +75,8 @@ pub async fn create_repositories(
         PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
     let channel_repository = PostgresChannelRepository::new(
         pool.clone(),
-        message_routing_config.create_channel,
-        message_routing_config.delete_channel,
+        message_routing_config.clone().create_channel,
+        message_routing_config.clone().delete_channel,
     );
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
     let role_repository = PostgresRoleRepository::new(
@@ -85,7 +87,8 @@ pub async fn create_repositories(
     );
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();
-    let member_role_repository = MockMemberRoleRepository::new();
+    let member_role_repository =
+        PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().create_role);
     Ok(CommunitiesRepositories {
         pool,
         server_repository,

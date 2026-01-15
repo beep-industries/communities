@@ -77,7 +77,7 @@ pub enum CoreError {
     RoleNotFound { id: RoleId },
 
     #[error("Role and member are not in the same server")]
-    WrongSever,
+    BadRoleMemberAssignation,
 
     #[error("Could not assign role {role_id} to member {member_id}")]
     AssignMemberRoleError {

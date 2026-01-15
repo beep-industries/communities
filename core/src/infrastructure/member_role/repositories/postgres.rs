@@ -63,12 +63,27 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
     }
 
     async fn unassign(&self, member_role: UnassignMemberRole) -> Result<(), CoreError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| CoreError::Error { msg: e.to_string() })?;
+
         sqlx::query(r#"DELETE FROM member_roles WHERE member_id = $1 AND role_id = $2"#)
             .bind(*member_role.member_id)
             .bind(member_role.role_id)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+        let unassign_member_from_role_event =
+            OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
+
+        unassign_member_from_role_event.write(&mut *tx).await?;
+
+        tx.commit()
+            .await
+            .map_err(|e| CoreError::Error { msg: e.to_string() })?;
         Ok(())
     }
 }

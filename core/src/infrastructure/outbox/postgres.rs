@@ -44,7 +44,7 @@ impl OutboxRepository for PostgresOutboxRepository {
         // Fetch paginated results - only READY messages
         let rows = sqlx::query!(
             r#"
-            SELECT id, exchange_name, routing_key, payload, status, failed_at, created_at
+            SELECT id, exchange_name, payload, status, failed_at, created_at
             FROM outbox_messages
             WHERE status = 'READY'
             ORDER BY created_at DESC
@@ -70,7 +70,6 @@ impl OutboxRepository for PostgresOutboxRepository {
                 OutboxMessage {
                     id: row.id,
                     exchange_name: row.exchange_name,
-                    routing_key: row.routing_key,
                     payload: row.payload,
                     status,
                     failed_at: row.failed_at,
@@ -125,7 +124,7 @@ impl OutboxRepository for PostgresOutboxRepository {
             UPDATE outbox_messages
             SET status = $2
             WHERE id = $1
-            RETURNING id, exchange_name, routing_key, payload, status, failed_at, created_at
+            RETURNING id, exchange_name, payload, status, failed_at, created_at
             "#,
             id,
             status_str
@@ -145,7 +144,6 @@ impl OutboxRepository for PostgresOutboxRepository {
                 Ok(OutboxMessage {
                     id: row.id,
                     exchange_name: row.exchange_name,
-                    routing_key: row.routing_key,
                     payload: row.payload,
                     status,
                     failed_at: row.failed_at,
@@ -166,7 +164,6 @@ mod tests {
     async fn insert_test_message(
         pool: &PgPool,
         exchange: &str,
-        routing_key: &str,
         status: &str,
     ) -> Result<Uuid, CoreError> {
         let id = Uuid::new_v4();
@@ -176,12 +173,11 @@ mod tests {
 
         sqlx::query!(
             r#"
-            INSERT INTO outbox_messages (id, exchange_name, routing_key, payload, status)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO outbox_messages (id, exchange_name, payload, status)
+            VALUES ($1, $2, $3, $4)
             "#,
             id,
             exchange,
-            routing_key,
             payload,
             status
         )
@@ -199,14 +195,14 @@ mod tests {
         let repository = PostgresOutboxRepository::new(pool.clone());
 
         // Insert multiple READY test messages
-        for i in 0..5 {
-            insert_test_message(&pool, "test.exchange", &format!("test.key.{}", i), "READY")
+        for _ in 0..5 {
+            insert_test_message(&pool, "test.exchange", "READY")
                 .await?;
         }
 
         // Insert some SENT messages that should NOT be returned
-        insert_test_message(&pool, "test.exchange", "test.sent.1", "SENT").await?;
-        insert_test_message(&pool, "test.exchange", "test.sent.2", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "SENT").await?;
 
         // Get first page
         let pagination = GetPaginated { page: 1, limit: 3 };
@@ -283,7 +279,7 @@ mod tests {
         let pool_clone = pool.clone();
         tokio::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-            let _ = insert_test_message(&pool_clone, "test.exchange", "test.key", "READY").await;
+            let _ = insert_test_message(&pool_clone, "test.exchange", "READY").await;
         });
 
         // Wait for notification with timeout
@@ -302,7 +298,6 @@ mod tests {
 
         // Verify the received message has the expected properties
         assert_eq!(outbox_message.exchange_name, "test.exchange");
-        assert_eq!(outbox_message.routing_key, "test.key");
         assert_eq!(outbox_message.status, OutboxStatus::Ready);
         assert_eq!(outbox_message.payload["test"], "data");
 
@@ -313,7 +308,7 @@ mod tests {
     async fn test_mark_event_updates_status(pool: PgPool) -> Result<(), CoreError> {
         let repository = PostgresOutboxRepository::new(pool.clone());
 
-        let id = insert_test_message(&pool, "test.exchange", "test.key", "READY").await?;
+        let id = insert_test_message(&pool, "test.exchange", "READY").await?;
 
         // Mark as sent
         let updated = repository
@@ -369,8 +364,8 @@ mod tests {
         let repository = PostgresOutboxRepository::new(pool.clone());
 
         // Insert SENT messages
-        insert_test_message(&pool, "test.exchange", "test.key.1", "SENT").await?;
-        insert_test_message(&pool, "test.exchange", "test.key.2", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "SENT").await?;
 
         // Delete marked events
         let deleted = repository
@@ -401,9 +396,9 @@ mod tests {
         let repository = PostgresOutboxRepository::new(pool.clone());
 
         // Insert READY and SENT messages
-        insert_test_message(&pool, "test.exchange", "test.key.1", "READY").await?;
-        insert_test_message(&pool, "test.exchange", "test.key.2", "READY").await?;
-        insert_test_message(&pool, "test.exchange", "test.key.3", "SENT").await?;
+        insert_test_message(&pool, "test.exchange", "READY").await?;
+        insert_test_message(&pool, "test.exchange", "READY").await?;
+        insert_test_message(&pool, "test.exchange", "SENT").await?;
 
         // Delete marked events
         let deleted = repository

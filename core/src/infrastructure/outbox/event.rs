@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use serde::Serialize;
 use sqlx::PgExecutor;
 use uuid::Uuid;
@@ -65,7 +67,15 @@ impl<TPayload: Serialize + Clone, TRouter: MessageRouter> OutboxEventRecord<TPay
 /// This struct encapsulates the routing metadata required to publish
 /// a message to the correct destination in a message broker.
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
-pub struct MessageRoutingInfo(ExchangeName, RoutingKey);
+pub struct MessageRoutingInfo(ExchangeName);
+
+impl Deref for MessageRoutingInfo {
+    type Target = ExchangeName;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl MessageRoutingInfo {
     /// Creates a new `MessageRoutingInfo` instance.
@@ -74,8 +84,8 @@ impl MessageRoutingInfo {
     ///
     /// * `exchange_name` - The name of the message broker exchange
     /// * `routing_key` - The routing key for message delivery
-    pub fn new(exchange_name: ExchangeName, routing_key: RoutingKey) -> Self {
-        Self(exchange_name, routing_key)
+    pub fn new(exchange_name: &str) -> Self {
+        Self(exchange_name.to_string())
     }
 }
 
@@ -85,15 +95,11 @@ impl MessageRoutingInfo {
 /// for publishing messages to a message broker.
 pub trait MessageRouter {
     fn exchange_name(&self) -> String;
-    fn routing_key(&self) -> String;
 }
 
 impl MessageRouter for MessageRoutingInfo {
     fn exchange_name(&self) -> String {
         self.0.clone()
-    }
-    fn routing_key(&self) -> String {
-        self.1.clone()
     }
 }
 impl<TPayload: Serialize, TRouter: MessageRouter> Serialize
@@ -108,4 +114,3 @@ impl<TPayload: Serialize, TRouter: MessageRouter> Serialize
 }
 
 pub type ExchangeName = String;
-pub type RoutingKey = String;

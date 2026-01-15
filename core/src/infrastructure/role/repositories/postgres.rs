@@ -238,12 +238,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_create_role_writes_row(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo =
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
@@ -270,12 +267,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_create_role_writes_outbox(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test.exchange".to_string(), "test.role.created".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test.exchange");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo = PostgresRoleRepository::new(
             pool.clone(),
             create_router.clone(),
@@ -295,23 +289,20 @@ mod tests {
         // Assert: an outbox message was written with expected routing and payload
         let row = sqlx::query(
             r#"
-            SELECT exchange_name, routing_key, payload
+            SELECT exchange_name, payload
             FROM outbox_messages
-            WHERE exchange_name = $1 AND routing_key = $2
+            WHERE exchange_name = $1
             ORDER BY created_at DESC
             LIMIT 1
             "#,
         )
         .bind(create_router.exchange_name())
-        .bind(create_router.routing_key())
         .fetch_one(&pool)
         .await
         .unwrap();
 
         let exchange_name: String = row.try_get("exchange_name").unwrap();
-        let routing_key: String = row.try_get("routing_key").unwrap();
         assert_eq!(exchange_name, create_router.exchange_name());
-        assert_eq!(routing_key, create_router.routing_key());
 
         // Validate the payload JSON contains the role data
         let payload: serde_json::Value = row.try_get("payload").unwrap();
@@ -328,12 +319,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_find_by_id_returns_error_for_nonexistent(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo = PostgresRoleRepository::new(pool, create_router, update_router, delete_router);
         let nonexistent_id = RoleId(Uuid::new_v4());
 
@@ -348,12 +336,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_list_by_server_with_pagination(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo =
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
@@ -383,12 +368,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_list_by_server_filters_by_server_id(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo =
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server1_id = create_test_server(&pool, "Server 1").await;
@@ -430,12 +412,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_role_updates_fields(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo =
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
@@ -468,12 +447,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_role_writes_outbox(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test.exchange".to_string(), "test.role.updated".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test.exchange");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo = PostgresRoleRepository::new(
             pool.clone(),
             create_router,
@@ -500,23 +476,20 @@ mod tests {
         // Assert: an outbox message was written with expected routing and payload
         let row = sqlx::query(
             r#"
-            SELECT exchange_name, routing_key, payload
+            SELECT exchange_name, payload
             FROM outbox_messages
-            WHERE exchange_name = $1 AND routing_key = $2
+            WHERE exchange_name = $1 
             ORDER BY created_at DESC
             LIMIT 1
             "#,
         )
         .bind(update_router.exchange_name())
-        .bind(update_router.routing_key())
         .fetch_one(&pool)
         .await
         .unwrap();
 
         let exchange_name: String = row.try_get("exchange_name").unwrap();
-        let routing_key: String = row.try_get("routing_key").unwrap();
         assert_eq!(exchange_name, update_router.exchange_name());
-        assert_eq!(routing_key, update_router.routing_key());
 
         // Validate the payload JSON contains the update data
         let payload: serde_json::Value = row.try_get("payload").unwrap();
@@ -536,12 +509,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_nonexistent_role_returns_error(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo = PostgresRoleRepository::new(pool, create_router, update_router, delete_router);
         let nonexistent_id = RoleId(Uuid::new_v4());
 
@@ -562,12 +532,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_role_removes_row(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo =
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;
@@ -593,12 +560,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_role_writes_outbox(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test.exchange".to_string(), "test.role.deleted".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test.exchange");
         let repo = PostgresRoleRepository::new(
             pool.clone(),
             create_router,
@@ -621,23 +585,20 @@ mod tests {
         // Assert: an outbox message was written with expected routing and payload
         let row = sqlx::query(
             r#"
-            SELECT exchange_name, routing_key, payload
+            SELECT exchange_name, payload
             FROM outbox_messages
-            WHERE exchange_name = $1 AND routing_key = $2
+            WHERE exchange_name = $1 
             ORDER BY created_at DESC
             LIMIT 1
             "#,
         )
         .bind(delete_router.exchange_name())
-        .bind(delete_router.routing_key())
         .fetch_one(&pool)
         .await
         .unwrap();
 
         let exchange_name: String = row.try_get("exchange_name").unwrap();
-        let routing_key: String = row.try_get("routing_key").unwrap();
         assert_eq!(exchange_name, delete_router.exchange_name());
-        assert_eq!(routing_key, delete_router.routing_key());
 
         // Validate the payload JSON contains the role id
         let payload: serde_json::Value = row.try_get("payload").unwrap();
@@ -647,12 +608,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_nonexistent_returns_error(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo = PostgresRoleRepository::new(pool, create_router, update_router, delete_router);
         let nonexistent_id = RoleId(Uuid::new_v4());
 
@@ -667,12 +625,9 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_cascade_delete_when_server_deleted(pool: PgPool) {
-        let create_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.create".to_string());
-        let update_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.update".to_string());
-        let delete_router =
-            MessageRoutingInfo::new("test".to_string(), "test.role.delete".to_string());
+        let create_router = MessageRoutingInfo::new("test");
+        let update_router = MessageRoutingInfo::new("test");
+        let delete_router = MessageRoutingInfo::new("test");
         let repo =
             PostgresRoleRepository::new(pool.clone(), create_router, update_router, delete_router);
         let server_id = create_test_server(&pool, "Test Server").await;

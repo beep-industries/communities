@@ -140,8 +140,8 @@ impl ServerRepository for PostgresServerRepository {
         .fetch_one(&mut *tx)
         .await
         .map_err(|_| CoreError::FailedToInsertMember {
-            server_id: server.id.clone(),
-            user_id: input.owner_id.clone(),
+            server_id: server.id,
+            user_id: input.owner_id,
         })?;
         // Write the create event to the outbox table for eventual processing
         let create_server_event =
@@ -284,8 +284,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
     use crate::infrastructure::outbox::MessageRouter;
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -355,15 +354,14 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
     // Note: payload is the serialized InsertServerInput
     let row = sqlx::query(
         r#"
-        SELECT exchange_name, routing_key, payload
+        SELECT exchange_name, payload
         FROM outbox_messages
-        WHERE exchange_name = $1 AND routing_key = $2
+        WHERE exchange_name = $1 
         ORDER BY created_at DESC
         LIMIT 1
         "#,
     )
     .bind(create_router.exchange_name())
-    .bind(create_router.routing_key())
     .fetch_one(&pool)
     .await
     .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
@@ -371,11 +369,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
     let exchange_name: String = row
         .try_get("exchange_name")
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
-    let routing_key: String = row
-        .try_get("routing_key")
-        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
     assert_eq!(exchange_name, create_router.exchange_name());
-    assert_eq!(routing_key, create_router.routing_key());
 
     // Validate the payload JSON contains the server name and owner_id
     let payload: serde_json::Value = row
@@ -399,10 +393,8 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
 async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<(), CoreError> {
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
-    let delete_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
+    let delete_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -429,10 +421,8 @@ async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<()
 async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreError> {
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
-    let delete_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
+    let delete_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -467,10 +457,8 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
     use sqlx::Row;
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
-    let delete_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.deleted".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
+    let delete_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -505,14 +493,14 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
     // Assert: an outbox message for delete was written
     let row = sqlx::query(
         r#"
-        SELECT exchange_name, routing_key, payload
+        SELECT exchange_name, payload
         FROM outbox_messages
-        WHERE routing_key = $1
+        WHERE exchange_name = $1
         ORDER BY created_at DESC
         LIMIT 1
         "#,
     )
-    .bind(delete_router.routing_key())
+    .bind(delete_router.exchange_name())
     .fetch_one(&pool)
     .await
     .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
@@ -520,11 +508,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
     let exchange_name: String = row
         .try_get("exchange_name")
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
-    let routing_key: String = row
-        .try_get("routing_key")
-        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
     assert_eq!(exchange_name, delete_router.exchange_name());
-    assert_eq!(routing_key, delete_router.routing_key());
 
     let payload: serde_json::Value = row
         .try_get("payload")
@@ -548,8 +532,7 @@ async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError
     };
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -612,8 +595,7 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
     use crate::domain::server::entities::UpdateServerInput;
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -653,8 +635,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
     use crate::domain::server::entities::{InsertServerInput, ServerVisibility, UpdateServerInput};
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -703,8 +684,7 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
     };
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),
@@ -768,8 +748,7 @@ async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreE
     };
     use uuid::Uuid;
 
-    let create_router =
-        MessageRoutingInfo::new("server.exchange".to_string(), "server.created".to_string());
+    let create_router = MessageRoutingInfo::new("server.exchange");
 
     let repository = PostgresServerRepository::new(
         pool.clone(),

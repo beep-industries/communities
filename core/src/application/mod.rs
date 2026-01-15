@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use beep_auth::KeycloakAuthRepository;
 use sqlx::{
@@ -10,7 +10,6 @@ use crate::{
     domain::{
         channel_member::ports::MockChannelMemberRepository,
         common::{CoreError, services::Service},
-        member_role::ports::MockMemberRoleRepository,
     },
     infrastructure::{
         MessageRoutingInfo,

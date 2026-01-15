@@ -1,8 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-use chrono::DateTime;
-use sqlx::Database;
-
 use crate::domain::{
     common::CoreError,
     member_role::entities::{AssignMemberRole, MemberRole, UnassignMemberRole},
@@ -25,7 +22,7 @@ pub trait MemberRoleService: Send + Sync {
         &self,
         role_id: RoleId,
         member_id: MemberId,
-    ) -> impl Future<Output = Result<(), CoreError>>;
+    ) -> impl Future<Output = Result<MemberRole, CoreError>>;
     fn unassign_member_from_role(
         &self,
         role_id: RoleId,
@@ -44,6 +41,12 @@ impl MockMemberRoleRepository {
         Self {
             member_role: Arc::new(Mutex::new(Vec::new())),
         }
+    }
+}
+
+impl Default for MockMemberRoleRepository {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl MemberRoleRepository for MockMemberRoleRepository {

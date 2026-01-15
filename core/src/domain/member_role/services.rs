@@ -36,17 +36,17 @@ where
         &self,
         role_id: RoleId,
         member_id: MemberId,
-    ) -> Result<(), CoreError> {
+    ) -> Result<MemberRole, CoreError> {
         let role: Role = self.role_repository.find_by_id(&role_id).await?;
         let member: ServerMember = self.member_repository.find_by_id(member_id).await?;
         if member.server_id != role.server_id {
             return Err(CoreError::WrongSever);
         }
-        let _ = self
+        let member_role = self
             .member_role_repository
             .assign(AssignMemberRole { role_id, member_id })
             .await?;
-        Ok(())
+        Ok(member_role)
     }
 
     async fn unassign_member_from_role(
@@ -54,9 +54,9 @@ where
         role_id: crate::domain::role::entities::RoleId,
         member_id: crate::domain::server_member::MemberId,
     ) -> Result<(), CoreError> {
-        Ok(self
-            .member_role_repository
+        self.member_role_repository
             .unassign(UnassignMemberRole { role_id, member_id })
-            .await?)
+            .await?;
+        Ok(())
     }
 }

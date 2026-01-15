@@ -40,7 +40,7 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
             VALUES ($1, $2)
             RETURNING role_id, member_id, created_at, updated_at
             "#,
-            member_role.role_id,
+            *member_role.role_id,
             *member_role.member_id
         )
         .fetch_one(&mut *tx)
@@ -71,7 +71,7 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
 
         sqlx::query(r#"DELETE FROM member_roles WHERE member_id = $1 AND role_id = $2"#)
             .bind(*member_role.member_id)
-            .bind(member_role.role_id)
+            .bind(*member_role.role_id)
             .execute(&mut *tx)
             .await
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
@@ -100,7 +100,7 @@ mod tests {
                 entities::{AssignMemberRole, UnassignMemberRole},
                 ports::MemberRoleRepository,
             },
-            role::entities::{Permissions, Role},
+            role::entities::{Permissions, Role, RoleId},
             server::entities::ServerVisibility,
             server_member::{MemberId, ServerMember},
         },
@@ -144,7 +144,7 @@ mod tests {
         .fetch_one(pool)
         .await
         .unwrap();
-        role.id
+        *role.id
     }
 
     async fn create_test_server(pool: &PgPool, name: &str) -> Uuid {
@@ -173,12 +173,12 @@ mod tests {
         let member_id = create_test_member(&pool.clone(), server_id).await;
         let assign_member_role = AssignMemberRole {
             member_id: MemberId(member_id),
-            role_id,
+            role_id: RoleId(role_id),
         };
         let assigned = repository.assign(assign_member_role).await.unwrap();
 
         assert_eq!(*assigned.member_id, member_id);
-        assert_eq!(assigned.role_id, role_id);
+        assert_eq!(assigned.role_id, RoleId(role_id));
         Ok(())
     }
 
@@ -192,12 +192,12 @@ mod tests {
         let member_id = create_test_member(&pool.clone(), server_id).await;
         let assign_member_role = AssignMemberRole {
             member_id: MemberId(member_id),
-            role_id,
+            role_id: RoleId(role_id),
         };
         let _ = repository.assign(assign_member_role).await.unwrap();
         let unassign = UnassignMemberRole {
             member_id: MemberId(member_id),
-            role_id,
+            role_id: RoleId(role_id),
         };
         repository.unassign(unassign).await.unwrap();
         Ok(())

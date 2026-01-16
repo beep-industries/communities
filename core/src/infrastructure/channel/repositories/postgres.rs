@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
@@ -55,45 +55,13 @@ impl PostgresChannelRepository {
     }
 }
 
-/// SQL representation of ChannelType for database queries
-#[derive(Debug, Clone, Copy, sqlx::Type, PartialEq)]
-#[sqlx(type_name = "channel_type", rename_all = "camelCase")]
-enum SqlChannelType {
-    ServerText,
-    ServerVoice,
-    ServerFolder,
-    Private,
-}
-
-impl From<ChannelType> for SqlChannelType {
-    fn from(ct: ChannelType) -> Self {
-        match ct {
-            ChannelType::ServerText => SqlChannelType::ServerText,
-            ChannelType::ServerVoice => SqlChannelType::ServerVoice,
-            ChannelType::ServerFolder => SqlChannelType::ServerFolder,
-            ChannelType::Private => SqlChannelType::Private,
-        }
-    }
-}
-
-impl From<SqlChannelType> for ChannelType {
-    fn from(ct: SqlChannelType) -> Self {
-        match ct {
-            SqlChannelType::ServerText => ChannelType::ServerText,
-            SqlChannelType::ServerVoice => ChannelType::ServerVoice,
-            SqlChannelType::ServerFolder => ChannelType::ServerFolder,
-            SqlChannelType::Private => ChannelType::Private,
-        }
-    }
-}
-
 /// Internal struct for mapping database rows to Channel entities
 struct ChannelRow {
     id: Uuid,
     name: String,
     server_id: Option<Uuid>,
     parent_id: Option<Uuid>,
-    channel_type: SqlChannelType,
+    channel_type: ChannelType,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -122,7 +90,6 @@ impl ChannelRepository for PostgresChannelRepository {
                 msg: format!("Failed to begin transaction: {}", e),
             })?;
 
-        let sql_channel_type: SqlChannelType = input.channel_type.into();
         let server_id = input.server_id.map(|s| s.0);
         let parent_id = input.parent_id.map(|p| p.0);
 
@@ -131,12 +98,12 @@ impl ChannelRepository for PostgresChannelRepository {
             r#"
             INSERT INTO channels (name, server_id, parent_id, channel_type)
             VALUES ($1, $2, $3, $4)
-            RETURNING id, name, server_id, parent_id, channel_type as "channel_type: SqlChannelType", created_at, updated_at
+            RETURNING id, name, server_id, parent_id, channel_type as "channel_type: ChannelType", created_at, updated_at
             "#,
             input.name,
             server_id,
             parent_id,
-            sql_channel_type as SqlChannelType
+            input.channel_type as ChannelType 
         )
         .fetch_one(&mut *tx)
         .await
@@ -171,7 +138,7 @@ impl ChannelRepository for PostgresChannelRepository {
         let rows = sqlx::query_as!(
             ChannelRow,
             r#"
-            SELECT id, name, server_id, parent_id, channel_type as "channel_type: SqlChannelType", created_at, updated_at
+            SELECT id, name, server_id, parent_id, channel_type as "channel_type: ChannelType", created_at, updated_at
             FROM channels
             WHERE server_id = $1
             ORDER BY created_at ASC
@@ -200,7 +167,7 @@ impl ChannelRepository for PostgresChannelRepository {
         let current = sqlx::query_as!(
             ChannelRow,
             r#"
-            SELECT id, name, server_id, parent_id, channel_type as "channel_type: SqlChannelType", created_at, updated_at
+            SELECT id, name, server_id, parent_id, channel_type as "channel_type: ChannelType", created_at, updated_at
             FROM channels
             WHERE id = $1
             "#,
@@ -227,7 +194,7 @@ impl ChannelRepository for PostgresChannelRepository {
             UPDATE channels
             SET name = $1, parent_id = $2
             WHERE id = $3
-            RETURNING id, name, server_id, parent_id, channel_type as "channel_type: SqlChannelType", created_at, updated_at
+            RETURNING id, name, server_id, parent_id, channel_type as "channel_type: ChannelType", created_at, updated_at
             "#,
             new_name,
             new_parent_id,
@@ -259,11 +226,11 @@ impl ChannelRepository for PostgresChannelRepository {
         let channel = sqlx::query_as!(
             ChannelRow,
             r#"
-            SELECT id, name, server_id, parent_id, channel_type as "channel_type: SqlChannelType", created_at, updated_at
+            SELECT id, name, server_id, parent_id, channel_type as "channel_type: ChannelType", created_at, updated_at
             FROM channels
             WHERE id = $1
             "#,
-            channel_id.0
+            *channel_id
         )
         .fetch_optional(&mut *tx)
         .await
@@ -273,7 +240,7 @@ impl ChannelRepository for PostgresChannelRepository {
         .ok_or_else(|| CoreError::ChannelNotFound { id: channel_id })?;
 
         // If the channel is a folder, update its children to have no parent
-        if channel.channel_type == SqlChannelType::ServerFolder {
+        if channel.channel_type == ChannelType::ServerFolder {
             sqlx::query(r#"UPDATE channels SET parent_id = NULL WHERE parent_id = $1"#)
                 .bind(channel_id.0)
                 .execute(&mut *tx)
@@ -318,7 +285,7 @@ impl ChannelRepository for PostgresChannelRepository {
         let row = sqlx::query_as!(
             ChannelRow,
             r#"
-            SELECT id, name, server_id, parent_id, channel_type as "channel_type: SqlChannelType", created_at, updated_at
+            SELECT id, name, server_id, parent_id, channel_type as "channel_type: ChannelType", created_at, updated_at
             FROM channels
             WHERE id = $1
             "#,
@@ -340,6 +307,7 @@ impl ChannelRepository for PostgresChannelRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sqlx::Row;
     use uuid::Uuid;
 
     // Helper function to create a test server
@@ -446,14 +414,12 @@ mod tests {
         assert_eq!(created.channel_type, ChannelType::Private);
 
         // Assert: no outbox event for private channels
-        let outbox_count: i64 = sqlx::query_scalar(
-            r#"SELECT COUNT(*) FROM outbox_messages"#,
-        )
-        .fetch_one(&pool)
-        .await
-        .map_err(|e| CoreError::DatabaseError {
-            msg: format!("Failed to query outbox: {}", e),
-        })?;
+        let outbox_count: i64 = sqlx::query_scalar(r#"SELECT COUNT(*) FROM outbox_messages"#)
+            .fetch_one(&pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError {
+                msg: format!("Failed to query outbox: {}", e),
+            })?;
 
         assert_eq!(outbox_count, 0, "No outbox event for private channels");
 

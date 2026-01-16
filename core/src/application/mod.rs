@@ -166,6 +166,6 @@ impl MessageRoutingConfig {
 pub enum Routing {
     CreateServer,
     // DeleteServer,
-    // CreateChannel,
+    CreateChannel,
     // DeleteChannel,
 }

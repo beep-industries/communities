@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -33,6 +35,14 @@ pub enum ChannelError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, ToSchema)]
 pub struct ChannelId(pub Uuid);
+
+impl Deref for ChannelId {
+    type Target = Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// The string is the value of the name
 /// The Option<bool> represent if the state of the validation
@@ -103,7 +113,8 @@ pub struct Channel {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema, Copy, sqlx::Type)]
+#[sqlx(type_name = "channel_type", rename_all = "camelCase")]
 pub enum ChannelType {
     ServerText,
     ServerVoice,

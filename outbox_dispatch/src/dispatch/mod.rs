@@ -1,21 +1,25 @@
 use communities_core::{
-    application::{MessageRoutingConfig, Routing},
-    domain::{
-        outbox::entities::{OutboxMessage, OutboxMessageStream},
-        server::entities::Server,
-    },
+    application::MessageRoutingConfig,
+    domain::outbox::entities::{OutboxMessage, OutboxMessageStream},
 };
-use events_protobuf::communities_events::CreateServer;
-use futures_util::StreamExt;
-use prost::Message;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use futures_util::{Stream, StreamExt, TryStreamExt};
+use std::future::Future;
+pub mod payload;
+use crate::{dispatch::payload::ExchangePayload, lapin::RabbitClient};
 
-use crate::lapin::RabbitClient;
+pub trait PayloadStream:
+    Stream<Item = Result<ExchangePayload, DispatcherError>> + Send + Sync + Unpin + 'static
+{
+}
+
+impl<S> PayloadStream for S where
+    S: Stream<Item = Result<ExchangePayload, DispatcherError>> + Send + Sync + Unpin + 'static
+{
+}
 
 pub struct Dispatcher {
     rabbit_client: RabbitClient,
-    outbox_message_stream: OutboxMessageStream,
+    outbox_message_stream: Box<dyn PayloadStream>,
     routing: MessageRoutingConfig,
 }
 
@@ -25,47 +29,37 @@ impl Dispatcher {
         routing: MessageRoutingConfig,
         rabbit_client: RabbitClient,
     ) -> Self {
+        let routing_clone = routing.clone();
+        let outbox_message_stream = outbox_message_stream
+            .map(move |message| -> Result<ExchangePayload, DispatcherError> {
+                let message =
+                    message.map_err(|e| DispatcherError::MessageError { msg: e.to_string() })?;
+                let exchange_name = message.exchange_name.clone();
+                let routing = routing_clone
+                    .from_string_to_routing(exchange_name.clone())
+                    .ok_or_else(|| DispatcherError::WrongExchangeError { exchange_name })?;
+                let payload = ExchangePayload::try_from((message, routing))?;
+                Ok(payload)
+            })
+            .into_stream();
+
         Self {
             rabbit_client,
-            outbox_message_stream,
+            outbox_message_stream: Box::new(outbox_message_stream),
             routing,
         }
     }
 
-    async fn send_message<TInput, TPayload>(
-        &self,
-        input: Value,
-        exchange: String,
-    ) -> Result<(), DispatcherError>
-    where
-        TInput: Into<TPayload> + Serialize + for<'a> Deserialize<'a>,
-        TPayload: Message,
-    {
-        let raw_payload: TInput = serde_json::from_value(input)
-            .map_err(|e| DispatcherError::WrongPayloadError { msg: e.to_string() })?;
-        let payload: TPayload = raw_payload.into();
+    async fn send_message(&self, exchange_payload: ExchangePayload) -> Result<(), DispatcherError> {
         self.rabbit_client
-            .produce(&exchange, payload)
+            .produce(
+                exchange_payload.exchange_name(),
+                exchange_payload.encode_proto(),
+            )
             .await
             .map_err(|e| DispatcherError::SendMessageError {
                 reason: e.to_string(),
             })?;
-        Ok(())
-    }
-
-    pub async fn handler(&self, payload: OutboxMessage) -> Result<(), DispatcherError> {
-        let routing = self
-            .routing
-            .from_string_to_routing(payload.exchange_name.clone())
-            .ok_or_else(|| DispatcherError::WrongExchangeError {
-                exchange_name: payload.exchange_name.clone(),
-            })?;
-        match routing {
-            Routing::CreateServer => {
-                self.send_message::<Server, CreateServer>(payload.payload, payload.exchange_name)
-                    .await?;
-            }
-        };
         Ok(())
     }
 }
@@ -73,9 +67,9 @@ impl Dispatcher {
 impl Dispatch for Dispatcher {
     async fn dispatch(&mut self) -> Result<(), std::io::Error> {
         while let Some(stream_message) = self.outbox_message_stream.next().await
-            && let Ok(outbox_message) = stream_message
+            && let Ok(exchange_payload) = stream_message
         {
-            let _ = self.handler(outbox_message).await;
+            let _ = self.send_message(exchange_payload).await;
         }
         Ok(())
     }
@@ -83,10 +77,6 @@ impl Dispatch for Dispatcher {
 
 pub trait Dispatch: Send + Sync {
     fn dispatch(&mut self) -> impl Future<Output = Result<(), std::io::Error>>;
-}
-
-pub enum ExchangePayload {
-    CreateServer(Server),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -97,6 +87,9 @@ pub enum DispatcherError {
     #[error("Could not send messsage: {reason}")]
     SendMessageError { reason: String },
 
-    #[error("The return payload can be handled: {msg}")]
+    #[error("The return payload cannot be handled: {msg}")]
     WrongPayloadError { msg: String },
+
+    #[error("The message can't be processed: {msg}")]
+    MessageError { msg: String },
 }

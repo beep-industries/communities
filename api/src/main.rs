@@ -4,7 +4,6 @@ use dotenv::dotenv;
 
 use api::config::Config;
 use clap::Parser;
-use outbox_dispatch::dispatch::Dispatcher;
 
 #[tokio::main]
 async fn main() -> Result<(), ApiError> {

@@ -3,7 +3,6 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use communities_core::domain::channel::entities::{ChannelName, CreateServerChannelInput};
 use communities_core::domain::{
     channel::{
         entities::{

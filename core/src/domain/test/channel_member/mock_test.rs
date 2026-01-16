@@ -1,5 +1,4 @@
 mod tests {
-    use crate::domain::channel_member::entities::ChannelMember;
     use crate::domain::channel_member::ports::{
         ChannelMemberRepository, MockChannelMemberRepository,
     };

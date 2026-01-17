@@ -1,6 +1,7 @@
 use communities_core::{
     application::Routing,
     domain::{
+        member_role::entities::{AssignUserRole, MemberRole, UnassignUserRole},
         outbox::entities::OutboxMessage,
         role::entities::{DeleteRole, Role},
         server::entities::{DeleteServerEvent, Server},
@@ -8,7 +9,8 @@ use communities_core::{
     },
 };
 use events_protobuf::communities_events::{
-    self, CreateServer, DeleteServer, UpsertRole, UserJoinServer, UserLeaveServer,
+    self, CreateServer, DeleteServer, MemberAssignedToRole, MemberRemovedFromRole, UpsertRole,
+    UserJoinServer, UserLeaveServer,
 };
 use prost::Message;
 use serde::{Deserialize, Serialize};
@@ -22,6 +24,8 @@ pub enum ExchangePayload {
     UserLeaveServer(ProcessedEvent<UserLeaveServer, ServerMember>),
     UpsertRole(ProcessedEvent<UpsertRole, Role>),
     DeleteRole(ProcessedEvent<communities_events::DeleteRole, DeleteRole>),
+    MemberAssignToRole(ProcessedEvent<MemberAssignedToRole, AssignUserRole>),
+    MemberUnassignFromRole(ProcessedEvent<MemberRemovedFromRole, UnassignUserRole>),
 }
 
 impl TryFrom<(OutboxMessage, Routing)> for ExchangePayload {
@@ -40,6 +44,12 @@ impl TryFrom<(OutboxMessage, Routing)> for ExchangePayload {
             }
             Routing::UpsertRole => ExchangePayload::UpsertRole(ProcessedEvent::new(outbox)?),
             Routing::DeleteRole => ExchangePayload::DeleteRole(ProcessedEvent::new(outbox)?),
+            Routing::MemberAssignToRole => {
+                ExchangePayload::MemberAssignToRole(ProcessedEvent::new(outbox)?)
+            }
+            Routing::MemberUnassignFromRole => {
+                ExchangePayload::MemberUnassignFromRole(ProcessedEvent::new(outbox)?)
+            }
         };
         Ok(payload)
     }
@@ -54,6 +64,8 @@ impl ExchangePayload {
             ExchangePayload::UserLeaveServer(event) => &event.2,
             ExchangePayload::UpsertRole(event) => &event.2,
             ExchangePayload::DeleteRole(event) => &event.2,
+            ExchangePayload::MemberAssignToRole(event) => &event.2,
+            ExchangePayload::MemberUnassignFromRole(event) => &event.2,
         }
     }
 
@@ -65,7 +77,17 @@ impl ExchangePayload {
             ExchangePayload::UserLeaveServer(event) => event.0.encode_to_vec(),
             ExchangePayload::UpsertRole(event) => event.0.encode_to_vec(),
             ExchangePayload::DeleteRole(event) => event.0.encode_to_vec(),
+            ExchangePayload::MemberAssignToRole(event) => event.0.encode_to_vec(),
+            ExchangePayload::MemberUnassignFromRole(event) => event.0.encode_to_vec(),
         }
+    }
+
+    /// Returns `true` if the exchange payload is [`MemberAssignToRole`].
+    ///
+    /// [`MemberAssignToRole`]: ExchangePayload::MemberAssignToRole
+    #[must_use]
+    pub fn is_member_assign_to_role(&self) -> bool {
+        matches!(self, Self::MemberAssignToRole(..))
     }
 }
 

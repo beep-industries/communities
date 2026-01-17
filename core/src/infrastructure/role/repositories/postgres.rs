@@ -602,10 +602,11 @@ mod tests {
         let exchange_name: String = row.try_get("exchange_name").unwrap();
         assert_eq!(exchange_name, delete_router.exchange_name());
 
+        dbg!(&row);
         // Validate the payload JSON contains the role id
-        let payload: serde_json::Value = row.try_get("payload").unwrap();
+        let payload: DeleteRole = serde_json::from_value(row.try_get("payload").unwrap()).unwrap();
         // The payload is the RoleId (Uuid) serialized directly as a string
-        assert_eq!(payload.as_str(), Some(role_id.to_string().as_str()));
+        assert_eq!(payload.role_id, role_id);
     }
 
     #[sqlx::test(migrations = "./migrations")]

@@ -494,6 +494,7 @@ async fn test_delete_member_ok(ctx: &mut context::TestContext) {
 
     let user_id = "550e8400-e29b-41d4-a716-446655440000";
 
+    dbg!(server_id);
     // Add a member
     ctx.authenticated_router
         .post(&format!("/servers/{}/members", server_id))
@@ -501,15 +502,13 @@ async fn test_delete_member_ok(ctx: &mut context::TestContext) {
             "user_id": user_id,
             "nickname": "TestNickname"
         }))
-        .await;
-
+        .await
+        .assert_status(StatusCode::CREATED);
     // Delete the member
-    let res = ctx
-        .authenticated_router
+    ctx.authenticated_router
         .delete(&format!("/servers/{}/members/{}", server_id, user_id))
-        .await;
-
-    res.assert_status(StatusCode::OK);
+        .await
+        .assert_status(StatusCode::OK);
 }
 
 #[test_context(context::TestContext)]

@@ -169,7 +169,7 @@ pub async fn update_role(
         (status = 500, description = "Internal server error")
     )
 )]
-pub async fn delete_server(
+pub async fn delete_role(
     Path((_server_id, role_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,

@@ -1,17 +1,24 @@
 use communities_core::{
     application::Routing,
-    domain::{outbox::entities::OutboxMessage, server::entities::Server},
+    domain::{
+        outbox::entities::OutboxMessage,
+        server::entities::{DeleteServerEvent, Server},
+        server_member::ServerMember,
+    },
 };
-use events_protobuf::communities_events::CreateServer;
+use events_protobuf::communities_events::{
+    CreateServer, DeleteServer, UserJoinServer, UserLeaveServer,
+};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use crate::{dispatch::DispatcherError, lapin::ExchangeName};
 
-impl OutboxPayload<CreateServer> for Server {}
-
 pub enum ExchangePayload {
     CreateServer(ProcessedEvent<CreateServer, Server>),
+    DeleteServer(ProcessedEvent<DeleteServer, DeleteServerEvent>),
+    UserJoinServer(ProcessedEvent<UserJoinServer, ServerMember>),
+    UserLeaveServer(ProcessedEvent<UserLeaveServer, ServerMember>),
 }
 
 impl TryFrom<(OutboxMessage, Routing)> for ExchangePayload {
@@ -21,6 +28,13 @@ impl TryFrom<(OutboxMessage, Routing)> for ExchangePayload {
         let payload = match routing {
             Routing::CreateServer => ExchangePayload::CreateServer(ProcessedEvent::new(outbox)?),
             Routing::CreateChannel => ExchangePayload::CreateServer(ProcessedEvent::new(outbox)?),
+            Routing::DeleteServer => ExchangePayload::DeleteServer(ProcessedEvent::new(outbox)?),
+            Routing::UserJoinServer => {
+                ExchangePayload::UserJoinServer(ProcessedEvent::new(outbox)?)
+            }
+            Routing::UserLeaveServer => {
+                ExchangePayload::UserLeaveServer(ProcessedEvent::new(outbox)?)
+            }
         };
         Ok(payload)
     }
@@ -30,30 +44,30 @@ impl ExchangePayload {
     pub fn exchange_name(&self) -> &ExchangeName {
         match self {
             ExchangePayload::CreateServer(event) => &event.2,
+            ExchangePayload::DeleteServer(event) => &event.2,
+            ExchangePayload::UserJoinServer(event) => &event.2,
+            ExchangePayload::UserLeaveServer(event) => &event.2,
         }
     }
 
     pub fn encode_proto(&self) -> Vec<u8> {
         match self {
             ExchangePayload::CreateServer(event) => event.0.encode_to_vec(),
+            ExchangePayload::DeleteServer(event) => event.0.encode_to_vec(),
+            ExchangePayload::UserJoinServer(event) => event.0.encode_to_vec(),
+            ExchangePayload::UserLeaveServer(event) => event.0.encode_to_vec(),
         }
     }
 }
 
-pub trait OutboxPayload<TProtoMessage>:
-    Into<TProtoMessage> + Serialize + for<'a> Deserialize<'a> + Clone
-{
-}
-
-pub struct ProcessedEvent<TProtoMessage: Message, TOutboxPayload: OutboxPayload<TProtoMessage>>(
-    TProtoMessage,
-    TOutboxPayload,
-    ExchangeName,
-);
+pub struct ProcessedEvent<
+    TProtoMessage: Message,
+    TOutboxPayload: Into<TProtoMessage> + for<'a> Deserialize<'a> + Clone,
+>(TProtoMessage, TOutboxPayload, ExchangeName);
 
 impl<TProtoMessage, TOutboxPayload> ProcessedEvent<TProtoMessage, TOutboxPayload>
 where
-    TOutboxPayload: OutboxPayload<TProtoMessage>,
+    TOutboxPayload: Into<TProtoMessage> + for<'a> Deserialize<'a> + Clone,
     TProtoMessage: Message,
 {
     pub fn new(outbox_event: OutboxMessage) -> Result<Self, DispatcherError> {

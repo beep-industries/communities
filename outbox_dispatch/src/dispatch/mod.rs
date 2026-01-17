@@ -4,6 +4,7 @@ use communities_core::{
 };
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use std::future::Future;
+pub mod convert_payload;
 pub mod payload;
 use crate::{dispatch::payload::ExchangePayload, lapin::RabbitClient};
 

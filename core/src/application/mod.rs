@@ -165,7 +165,9 @@ impl MessageRoutingConfig {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub enum Routing {
     CreateServer,
-    // DeleteServer,
+    DeleteServer,
     CreateChannel,
     // DeleteChannel,
+    UserJoinServer,
+    UserLeaveServer,
 }

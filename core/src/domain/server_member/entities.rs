@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use chrono::{DateTime, Utc};
+use events_protobuf::communities_events::{UserJoinServer, UserLeaveServer};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -55,6 +56,15 @@ pub struct ServerMember {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+impl Into<UserJoinServer> for ServerMember {
+    fn into(self) -> UserJoinServer {
+        UserJoinServer {
+            user_id: self.user_id.to_string(),
+            server_id: self.server_id.to_string(),
+        }
+    }
+}
+
 #[cfg(feature = "postgres")]
 impl From<&sqlx::postgres::PgRow> for ServerMember {
     fn from(row: &sqlx::postgres::PgRow) -> Self {
@@ -107,4 +117,13 @@ pub struct UpdateMemberEvent {
 pub struct DeleteMemberEvent {
     pub server_id: ServerId,
     pub user_id: UserId,
+}
+
+impl Into<UserLeaveServer> for DeleteMemberEvent {
+    fn into(self) -> UserLeaveServer {
+        UserLeaveServer {
+            user_id: self.user_id.to_string(),
+            server_id: self.server_id.to_string(),
+        }
+    }
 }

@@ -148,6 +148,8 @@ pub struct MessageRoutingConfig {
     pub user_leave_server: MessageRoutingInfo,
     pub upsert_role: MessageRoutingInfo,
     pub delete_role: MessageRoutingInfo,
+    pub member_assign_to_role: MessageRoutingInfo,
+    pub member_unassign_from_role: MessageRoutingInfo,
 }
 
 impl MessageRoutingConfig {
@@ -172,6 +174,14 @@ impl MessageRoutingConfig {
             Routing::UserLeaveServer,
         );
 
+        config.insert(
+            self.member_assign_to_role.exchange_name(),
+            Routing::MemberAssignToRole,
+        );
+        config.insert(
+            self.member_unassign_from_role.exchange_name(),
+            Routing::MemberUnassignFromRole,
+        );
         config
     }
 }
@@ -186,4 +196,6 @@ pub enum Routing {
     UserLeaveServer,
     UpsertRole,
     DeleteRole,
+    MemberAssignToRole,
+    MemberUnassignFromRole,
 }

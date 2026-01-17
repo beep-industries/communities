@@ -4,9 +4,12 @@ use crate::{
     domain::{
         common::CoreError,
         member_role::{
-            entities::{AssignMemberRole, MemberRole, UnassignMemberRole},
+            entities::{
+                AssignMemberRole, AssignUserRole, MemberRole, UnassignMemberRole, UnassignUserRole,
+            },
             ports::MemberRoleRepository,
         },
+        server_member::{self, ServerMember},
     },
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
@@ -34,6 +37,26 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
             .await
             .map_err(|e| CoreError::Error { msg: e.to_string() })?;
 
+        let server_member = sqlx::query_as!(
+            ServerMember,
+            r#"
+            SELECT id, server_id, user_id, nickname, joined_at, updated_at
+            FROM server_members
+            WHERE id = $1 
+            "#,
+            *member_role.member_id
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to find member: {}", e),
+        })?;
+
+        let assign_user = AssignUserRole {
+            role_id: member_role.role_id,
+            user_id: server_member.user_id,
+        };
+
         let member_role = query_as!(
             MemberRole,
             r#"
@@ -52,7 +75,7 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
         })?;
 
         let assign_member_to_role_event =
-            OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
+            OutboxEventRecord::new(self.assign_role_routing.clone(), assign_user.clone());
 
         assign_member_to_role_event.write(&mut *tx).await?;
 
@@ -70,6 +93,26 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
             .await
             .map_err(|e| CoreError::Error { msg: e.to_string() })?;
 
+        let server_member = sqlx::query_as!(
+            ServerMember,
+            r#"
+            SELECT id, server_id, user_id, nickname, joined_at, updated_at
+            FROM server_members
+            WHERE id = $1 
+            "#,
+            *member_role.member_id
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to find member: {}", e),
+        })?;
+
+        let unassign_user = UnassignUserRole {
+            role_id: member_role.role_id,
+            user_id: server_member.user_id,
+        };
+
         sqlx::query(r#"DELETE FROM member_roles WHERE member_id = $1 AND role_id = $2"#)
             .bind(*member_role.member_id)
             .bind(*member_role.role_id)
@@ -78,10 +121,9 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         let unassign_member_from_role_event =
-            OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
+            OutboxEventRecord::new(self.assign_role_routing.clone(), unassign_user);
 
         unassign_member_from_role_event.write(&mut *tx).await?;
-
         tx.commit()
             .await
             .map_err(|e| CoreError::Error { msg: e.to_string() })?;

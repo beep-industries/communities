@@ -71,6 +71,10 @@ impl MemberRepository for PostgresMemberRepository {
 
         member_join_server.write(&mut *tx).await?;
 
+        tx.commit().await.map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to commit transaction: {}", e),
+        })?;
+
         Ok(server_member)
     }
 
@@ -79,6 +83,8 @@ impl MemberRepository for PostgresMemberRepository {
         server_id: &ServerId,
         user_id: &UserId,
     ) -> Result<ServerMember, CoreError> {
+        dbg!(**server_id);
+        dbg!(**user_id);
         let row = sqlx::query_as!(
             ServerMember,
             r#"
@@ -86,14 +92,15 @@ impl MemberRepository for PostgresMemberRepository {
             FROM server_members
             WHERE server_id = $1 AND user_id = $2
             "#,
-            server_id.0,
-            user_id.0,
+            **server_id,
+            **user_id,
         )
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to find member: {}", e),
         })?;
+        dbg!("Finding members failed");
         match row {
             Some(member) => Ok(member),
             None => Err(CoreError::MemberNotFound {

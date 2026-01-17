@@ -7,7 +7,7 @@ use crate::{
     domain::{
         channel::{
             entities::{
-                Channel, ChannelId, ChannelType, CreateChannelRepoInput, ServerChannelCreation, UpdateChannelRepoInput
+                Channel, ChannelId, ChannelType, CreateChannelRepoInput, DeleteChannelEvent, ServerChannelCreation, UpdateChannelRepoInput
             },
             ports::ChannelRepository,
         },
@@ -249,7 +249,7 @@ impl ChannelRepository for PostgresChannelRepository {
         if channel.server_id.is_some() {
             let delete_event = DeleteChannelEvent {
                 id: channel_id,
-                server_id: channel.server_id.map(ServerId),
+                server_id: ServerId(channel.server_id.unwrap()),
             };
             let outbox_event =
                 OutboxEventRecord::new(self.delete_channel_router.clone(), delete_event);

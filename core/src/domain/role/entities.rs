@@ -54,7 +54,7 @@ impl Into<PermissionBitmask> for Permissions {
     }
 }
 
-#[derive(Clone, ToSchema, Serialize)]
+#[derive(Clone, ToSchema, Serialize, Deserialize)]
 pub struct Role {
     pub id: RoleId,
     pub server_id: ServerId,

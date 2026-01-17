@@ -114,7 +114,7 @@ pub struct Channel {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ServerChannelCreation {
     pub id: ChannelId,
     pub server_id: ServerId,
@@ -130,7 +130,7 @@ impl Into<ChannelCreated> for ServerChannelCreation {
 }
 
 /// Event emitted when a channel is deleted
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeleteChannelEvent {
     pub id: ChannelId,
     pub server_id: ServerId,

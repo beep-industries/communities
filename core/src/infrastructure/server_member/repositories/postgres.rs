@@ -207,12 +207,14 @@ impl MemberRepository for PostgresMemberRepository {
                 })?;
 
         if result.rows_affected() == 0 {
+            dbg!("Error on deletje");
             return Err(CoreError::MemberNotFound {
                 server_id: *server_id,
                 user_id: *user_id,
             });
         }
 
+        dbg!("Success on delete ");
         // Write the delete event to the outbox table
         let delete_event = DeleteMemberEvent {
             server_id: *server_id,
@@ -282,7 +284,11 @@ mod tests {
     async fn test_insert_member_writes_row(pool: PgPool) -> Result<(), CoreError> {
         let delete_router = MessageRoutingInfo::new("member.exchange");
 
-        let repository = PostgresMemberRepository::new(pool.clone(), delete_router);
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            delete_router,
+            MessageRoutingInfo::default(),
+        );
 
         let server_id = ServerId(Uuid::new_v4());
         let user_id = UserId(Uuid::new_v4());
@@ -317,7 +323,11 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_find_by_server_and_user_returns_member(pool: PgPool) -> Result<(), CoreError> {
-        let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
+        );
 
         let server_id = ServerId(Uuid::new_v4());
         let user_id = UserId(Uuid::new_v4());
@@ -352,7 +362,11 @@ mod tests {
     async fn test_find_by_server_and_user_returns_error_for_nonexistent(
         pool: PgPool,
     ) -> Result<(), CoreError> {
-        let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
+        );
 
         // Try to find a member that doesn't exist
         let nonexistent_server = ServerId(Uuid::new_v4());
@@ -367,7 +381,11 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_list_by_server_returns_paginated_members(pool: PgPool) -> Result<(), CoreError> {
-        let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
+        );
 
         let server_id = ServerId(Uuid::new_v4());
 
@@ -402,7 +420,11 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_member_updates_fields(pool: PgPool) -> Result<(), CoreError> {
-        let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
+        );
 
         let server_id = ServerId(Uuid::new_v4());
         let user_id = UserId(Uuid::new_v4());
@@ -443,7 +465,11 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_update_nonexistent_member_returns_error(pool: PgPool) -> Result<(), CoreError> {
-        let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
+        );
 
         // Try to update a member that doesn't exist
         let nonexistent_server = ServerId(Uuid::new_v4());
@@ -472,7 +498,11 @@ mod tests {
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_member_removes_row_and_outbox(pool: PgPool) -> Result<(), CoreError> {
         let delete_router = MessageRoutingInfo::new("member.exchange");
-        let repository = PostgresMemberRepository::new(pool.clone(), delete_router.clone());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            delete_router.clone(),
+            MessageRoutingInfo::default(),
+        );
 
         let server_id = ServerId(Uuid::new_v4());
         let user_id = UserId(Uuid::new_v4());
@@ -535,7 +565,11 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_delete_nonexistent_member_returns_error(pool: PgPool) -> Result<(), CoreError> {
-        let repository = PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+        let repository = PostgresMemberRepository::new(
+            pool.clone(),
+            MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
+        );
 
         // Try to delete a member that doesn't exist
         let nonexistent_server = ServerId(Uuid::new_v4());

@@ -57,6 +57,7 @@ pub async fn create_repositories(
     message_routing_config: MessageRoutingConfig,
     keycloak_issuer: String,
 ) -> Result<CommunitiesRepositories, CoreError> {
+    dbg!(message_routing_config.clone());
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect_with(pg_connection_options)
@@ -67,13 +68,14 @@ pub async fn create_repositories(
         message_routing_config.clone().delete_server,
         message_routing_config.clone().create_server,
         message_routing_config.clone().upsert_role,
+        message_routing_config.clone().user_join_server,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
     let member_repository = PostgresMemberRepository::new(
         pool.clone(),
-        MessageRoutingInfo::default(),
         message_routing_config.clone().user_leave_server,
+        message_routing_config.clone().user_join_server,
     );
     let channel_repository = PostgresChannelRepository::new(
         pool.clone(),
@@ -83,9 +85,9 @@ pub async fn create_repositories(
     let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
     let role_repository = PostgresRoleRepository::new(
         pool.clone(),
-        MessageRoutingInfo::default(),
-        MessageRoutingInfo::default(),
-        MessageRoutingInfo::default(),
+        message_routing_config.clone().upsert_role,
+        message_routing_config.clone().upsert_role,
+        message_routing_config.clone().delete_role,
     );
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();

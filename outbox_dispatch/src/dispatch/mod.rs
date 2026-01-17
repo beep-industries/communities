@@ -52,6 +52,7 @@ impl Dispatcher {
     }
 
     async fn send_message(&self, exchange_payload: ExchangePayload) -> Result<(), DispatcherError> {
+        println!("{:?}", exchange_payload);
         self.rabbit_client
             .produce(
                 exchange_payload.exchange_name(),

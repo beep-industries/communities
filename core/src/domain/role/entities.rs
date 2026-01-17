@@ -34,7 +34,7 @@ impl Deref for RoleId {
 }
 
 //
-#[derive(Clone, sqlx::Type, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, sqlx::Type, Serialize, Deserialize, ToSchema)]
 #[sqlx(transparent)]
 pub struct Permissions(pub i32);
 
@@ -54,7 +54,7 @@ impl Into<PermissionBitmask> for Permissions {
     }
 }
 
-#[derive(Clone, ToSchema, Serialize, Deserialize)]
+#[derive(Debug, Clone, ToSchema, Serialize, Deserialize)]
 pub struct Role {
     pub id: RoleId,
     pub server_id: ServerId,

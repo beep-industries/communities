@@ -209,3 +209,32 @@ pub async fn assign_role(
         .map_err(Into::<ApiError>::into)?;
     Ok(Response::created(member_role))
 }
+
+#[utoipa::path(
+     delete,
+     path = "/roles/{role_id}/members/{member_id}",
+     tag = "role",
+     params(
+         ("role_id" = String, Path, description = "Role ID"),
+         ("member_id" = String, Path, description = "Member ID")
+     ),
+     responses(
+         (status = 201, description = "Role unassigned successfully from member"),
+         (status = 401, description = "Unauthorized"),
+         (status = 403, description = "Forbidden - Not the server owner"),
+         (status = 404, description = "Server or role not found"),
+         (status = 500, description = "Internal server error")
+     )
+ )]
+pub async fn unassign_role(
+    Path((role_id, member_id)): Path<(Uuid, Uuid)>,
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+) -> Result<Response<()>, ApiError> {
+    state
+        .service
+        .unassign_member_from_role(RoleId(role_id), MemberId(member_id))
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    Ok(Response::deleted(()))
+}

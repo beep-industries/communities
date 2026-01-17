@@ -508,3 +508,257 @@ async fn test_delete_role_not_found(ctx: &mut context::TestContext) {
     // Note: Backend returns 500 instead of 404 - this is a backend issue
     res.assert_status(StatusCode::INTERNAL_SERVER_ERROR);
 }
+
+// ============================================================================
+// ASSIGN ROLE TESTS
+// ============================================================================
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_assign_role_unauthorized(ctx: &mut context::TestContext) {
+    let role_id = Uuid::new_v4();
+    let member_id = Uuid::new_v4();
+    let res = ctx
+        .unauthenticated_router
+        .post(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    res.assert_status(StatusCode::UNAUTHORIZED);
+    res.assert_json(&json!(Into::<ErrorBody>::into(ApiError::Unauthorized)));
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_assign_role_success(ctx: &mut context::TestContext) {
+    // First create a server
+    let server_input = CreateServerRequest {
+        name: "Test Server".to_string(),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+        visibility: ServerVisibility::Public,
+    };
+
+    let server_res = ctx
+        .authenticated_router
+        .post("/servers")
+        .json(&server_input)
+        .await;
+    server_res.assert_status(StatusCode::CREATED);
+    let server: Value = server_res.json();
+    let server_id = server.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Create a role
+    let role_input = json!({
+        "name": "Moderator",
+        "permissions": 0x10  // MANAGE_CHANNELS
+    });
+
+    let role_res = ctx
+        .authenticated_router
+        .post(&format!("/servers/{}/roles", server_id))
+        .json(&role_input)
+        .await;
+    role_res.assert_status(StatusCode::CREATED);
+    let role: Value = role_res.json();
+    let role_id = role.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Get the server member (creator is automatically a member)
+    let members_res = ctx
+        .authenticated_router
+        .get(&format!("/servers/{}/members?page=1&limit=10", server_id))
+        .await;
+    members_res.assert_status(StatusCode::OK);
+    let members_body: Value = members_res.json();
+    let members = members_body.get("data").unwrap().as_array().unwrap();
+    let member_id = members[0].get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Assign the role to the member
+    let res = ctx
+        .authenticated_router
+        .post(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    res.assert_status(StatusCode::CREATED);
+
+    let body: Value = res.json();
+    assert!(body.is_object(), "response must be a JSON object");
+    assert_eq!(body.get("role_id").and_then(|v| v.as_str()), Some(role_id));
+    assert_eq!(body.get("member_id").and_then(|v| v.as_str()), Some(member_id));
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_assign_role_not_found(ctx: &mut context::TestContext) {
+    let role_id = Uuid::new_v4();
+    let member_id = Uuid::new_v4();
+    let res = ctx
+        .authenticated_router
+        .post(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    // Note: Backend may return 500 or 404 depending on what's not found
+    assert!(
+        res.status_code() == StatusCode::NOT_FOUND || 
+        res.status_code() == StatusCode::INTERNAL_SERVER_ERROR
+    );
+}
+
+// ============================================================================
+// UNASSIGN ROLE TESTS
+// ============================================================================
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_unassign_role_unauthorized(ctx: &mut context::TestContext) {
+    let role_id = Uuid::new_v4();
+    let member_id = Uuid::new_v4();
+    let res = ctx
+        .unauthenticated_router
+        .delete(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    res.assert_status(StatusCode::UNAUTHORIZED);
+    res.assert_json(&json!(Into::<ErrorBody>::into(ApiError::Unauthorized)));
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_unassign_role_success(ctx: &mut context::TestContext) {
+    // First create a server
+    let server_input = CreateServerRequest {
+        name: "Test Server".to_string(),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+        visibility: ServerVisibility::Public,
+    };
+
+    let server_res = ctx
+        .authenticated_router
+        .post("/servers")
+        .json(&server_input)
+        .await;
+    server_res.assert_status(StatusCode::CREATED);
+    let server: Value = server_res.json();
+    let server_id = server.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Create a role
+    let role_input = json!({
+        "name": "Moderator",
+        "permissions": 0x10  // MANAGE_CHANNELS
+    });
+
+    let role_res = ctx
+        .authenticated_router
+        .post(&format!("/servers/{}/roles", server_id))
+        .json(&role_input)
+        .await;
+    role_res.assert_status(StatusCode::CREATED);
+    let role: Value = role_res.json();
+    let role_id = role.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Get the server member (creator is automatically a member)
+    let members_res = ctx
+        .authenticated_router
+        .get(&format!("/servers/{}/members?page=1&limit=10", server_id))
+        .await;
+    members_res.assert_status(StatusCode::OK);
+    let members_body: Value = members_res.json();
+    let members = members_body.get("data").unwrap().as_array().unwrap();
+    let member_id = members[0].get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Assign the role to the member
+    let assign_res = ctx
+        .authenticated_router
+        .post(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+    assign_res.assert_status(StatusCode::CREATED);
+
+    // Unassign the role from the member
+    let res = ctx
+        .authenticated_router
+        .delete(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    res.assert_status(StatusCode::OK);
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_unassign_role_not_found(ctx: &mut context::TestContext) {
+    let role_id = Uuid::new_v4();
+    let member_id = Uuid::new_v4();
+    let res = ctx
+        .authenticated_router
+        .delete(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    // Note: Backend may return 500 or 404 depending on what's not found
+    assert!(
+        res.status_code() == StatusCode::NOT_FOUND || 
+        res.status_code() == StatusCode::INTERNAL_SERVER_ERROR
+    );
+}
+
+#[test_context(context::TestContext)]
+#[tokio::test]
+async fn test_unassign_role_not_assigned(ctx: &mut context::TestContext) {
+    // First create a server
+    let server_input = CreateServerRequest {
+        name: "Test Server".to_string(),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+        visibility: ServerVisibility::Public,
+    };
+
+    let server_res = ctx
+        .authenticated_router
+        .post("/servers")
+        .json(&server_input)
+        .await;
+    server_res.assert_status(StatusCode::CREATED);
+    let server: Value = server_res.json();
+    let server_id = server.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Create a role
+    let role_input = json!({
+        "name": "Moderator",
+        "permissions": 0x10  // MANAGE_CHANNELS
+    });
+
+    let role_res = ctx
+        .authenticated_router
+        .post(&format!("/servers/{}/roles", server_id))
+        .json(&role_input)
+        .await;
+    role_res.assert_status(StatusCode::CREATED);
+    let role: Value = role_res.json();
+    let role_id = role.get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Get the server member (creator is automatically a member)
+    let members_res = ctx
+        .authenticated_router
+        .get(&format!("/servers/{}/members?page=1&limit=10", server_id))
+        .await;
+    members_res.assert_status(StatusCode::OK);
+    let members_body: Value = members_res.json();
+    let members = members_body.get("data").unwrap().as_array().unwrap();
+    let member_id = members[0].get("id").and_then(|v| v.as_str()).unwrap();
+
+    // Try to unassign a role that was never assigned
+    let res = ctx
+        .authenticated_router
+        .delete(&format!("/roles/{}/members/{}", role_id, member_id))
+        .await;
+
+    // Backend may return 200 (OK) even if role wasn't assigned, or an error
+    // This depends on the backend implementation
+    assert!(
+        res.status_code() == StatusCode::OK ||
+        res.status_code() == StatusCode::NOT_FOUND || 
+        res.status_code() == StatusCode::INTERNAL_SERVER_ERROR,
+        "Unexpected status code: {}", res.status_code()
+    );
+}

@@ -144,7 +144,10 @@ pub struct MessageRoutingConfig {
     pub delete_server: MessageRoutingInfo,
     pub create_channel: MessageRoutingInfo,
     pub delete_channel: MessageRoutingInfo,
-    pub create_role: MessageRoutingInfo,
+    pub user_join_server: MessageRoutingInfo,
+    pub user_leave_server: MessageRoutingInfo,
+    pub upsert_role: MessageRoutingInfo,
+    pub delete_role: MessageRoutingInfo,
 }
 
 impl MessageRoutingConfig {
@@ -154,10 +157,21 @@ impl MessageRoutingConfig {
 
     fn to_raw(&self) -> HashMap<String, Routing> {
         let mut config = HashMap::<String, Routing>::new();
-        // config.insert(self.create_channel.exchange_name(), Routing::CreateChannel);
+        config.insert(self.create_channel.exchange_name(), Routing::CreateChannel);
         // config.insert(self.delete_channel.exchange_name(), Routing::DeleteChannel);
         config.insert(self.create_server.exchange_name(), Routing::CreateServer);
-        // config.insert(self.delete_server.exchange_name(), Routing::DeleteServer);
+        config.insert(self.delete_server.exchange_name(), Routing::DeleteServer);
+        config.insert(self.upsert_role.exchange_name(), Routing::UpsertRole);
+        config.insert(self.delete_role.exchange_name(), Routing::DeleteRole);
+        config.insert(
+            self.user_join_server.exchange_name(),
+            Routing::UserJoinServer,
+        );
+        config.insert(
+            self.user_leave_server.exchange_name(),
+            Routing::UserLeaveServer,
+        );
+
         config
     }
 }
@@ -170,4 +184,6 @@ pub enum Routing {
     // DeleteChannel,
     UserJoinServer,
     UserLeaveServer,
+    UpsertRole,
+    DeleteRole,
 }

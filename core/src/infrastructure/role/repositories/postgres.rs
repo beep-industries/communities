@@ -5,7 +5,7 @@ use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         role::{
-            entities::{CreateRoleInput, Role, RoleId, UpdateRoleRepoInput},
+            entities::{CreateRoleInput, DeleteRole, Role, RoleId, UpdateRoleRepoInput},
             ports::RoleRepository,
         },
     },
@@ -171,7 +171,8 @@ impl RoleRepository for PostgresRoleRepository {
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         // Write the update event to the outbox table for eventual processing
-        let update_role_event = OutboxEventRecord::new(self.update_role_router.clone(), input);
+        let update_role_event =
+            OutboxEventRecord::new(self.update_role_router.clone(), role.clone());
         update_role_event.write(&mut *tx).await?;
 
         tx.commit()
@@ -199,7 +200,8 @@ impl RoleRepository for PostgresRoleRepository {
         }
 
         // Write the delete event to the outbox table for eventual processing
-        let delete_role_event = OutboxEventRecord::new(self.delete_role_router.clone(), id);
+        let delete_role_event =
+            OutboxEventRecord::new(self.delete_role_router.clone(), DeleteRole { role_id: *id });
         delete_role_event.write(&mut *tx).await?;
 
         tx.commit()

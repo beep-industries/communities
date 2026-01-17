@@ -1,6 +1,7 @@
 use std::{fmt::Display, ops::Deref};
 
 use chrono::{DateTime, Utc};
+use events_protobuf::communities_events::{self, PermissionBitmask, UpsertRole};
 use permission_translation::models::CapilityHexValue;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -45,6 +46,14 @@ impl Deref for Permissions {
     }
 }
 
+impl Into<PermissionBitmask> for Permissions {
+    fn into(self) -> PermissionBitmask {
+        PermissionBitmask {
+            value: *self as u64,
+        }
+    }
+}
+
 #[derive(Clone, ToSchema, Serialize)]
 pub struct Role {
     pub id: RoleId,
@@ -53,6 +62,16 @@ pub struct Role {
     pub permissions: Permissions,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
+}
+
+impl Into<UpsertRole> for Role {
+    fn into(self) -> UpsertRole {
+        UpsertRole {
+            role_id: self.id.to_string(),
+            server_id: self.server_id.to_string(),
+            permissions_bitmask: Some(self.permissions.into()),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -116,6 +135,19 @@ impl TryFrom<UpdateRoleInput> for UpdateRoleRepoInput {
             name: value.name,
             permissions,
         })
+    }
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
+pub struct DeleteRole {
+    pub role_id: RoleId,
+}
+
+impl Into<communities_events::DeleteRole> for DeleteRole {
+    fn into(self) -> communities_events::DeleteRole {
+        communities_events::DeleteRole {
+            role_id: self.role_id.to_string(),
+        }
     }
 }
 

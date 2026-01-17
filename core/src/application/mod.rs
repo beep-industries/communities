@@ -160,7 +160,7 @@ impl MessageRoutingConfig {
     fn to_raw(&self) -> HashMap<String, Routing> {
         let mut config = HashMap::<String, Routing>::new();
         config.insert(self.create_channel.exchange_name(), Routing::CreateChannel);
-        // config.insert(self.delete_channel.exchange_name(), Routing::DeleteChannel);
+        config.insert(self.delete_channel.exchange_name(), Routing::DeleteChannel);
         config.insert(self.create_server.exchange_name(), Routing::CreateServer);
         config.insert(self.delete_server.exchange_name(), Routing::DeleteServer);
         config.insert(self.upsert_role.exchange_name(), Routing::UpsertRole);
@@ -191,7 +191,7 @@ pub enum Routing {
     CreateServer,
     DeleteServer,
     CreateChannel,
-    // DeleteChannel,
+    DeleteChannel,
     UserJoinServer,
     UserLeaveServer,
     UpsertRole,

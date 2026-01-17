@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use chrono::{DateTime, Utc};
-use events_protobuf::communities_events::CreateServer;
+use events_protobuf::communities_events::{CreateServer, DeleteServer};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -151,4 +151,12 @@ pub struct UpdateServerEvent {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeleteServerEvent {
     pub id: ServerId,
+}
+
+impl Into<DeleteServer> for DeleteServerEvent {
+    fn into(self) -> DeleteServer {
+        DeleteServer {
+            server_id: self.id.to_string(),
+        }
+    }
 }

@@ -18,41 +18,60 @@ use crate::{
 #[derive(Clone)]
 pub struct PostgresMemberRepository {
     pub(crate) pool: PgPool,
+    user_join_server_router: MessageRoutingInfo,
     delete_member_router: MessageRoutingInfo,
 }
 
 impl PostgresMemberRepository {
-    pub fn new(pool: PgPool, delete_member_router: MessageRoutingInfo) -> Self {
+    pub fn new(
+        pool: PgPool,
+        delete_member_router: MessageRoutingInfo,
+        user_join_server_router: MessageRoutingInfo,
+    ) -> Self {
         Self {
             pool,
             delete_member_router,
+            user_join_server_router,
         }
     }
 }
 
 impl MemberRepository for PostgresMemberRepository {
     async fn insert(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| CoreError::DatabaseError {
+                msg: format!("Failed to begin transaction: {}", e),
+            })?;
         let member_id = Uuid::new_v4();
 
         // Insert the member into the database
-        let row = sqlx::query(
+        let server_member = sqlx::query_as!(
+            ServerMember,
             r#"
             INSERT INTO server_members (id, server_id, user_id, nickname)
             VALUES ($1, $2, $3, $4)
             RETURNING id, server_id, user_id, nickname, joined_at, updated_at
             "#,
+            member_id,
+            *input.server_id,
+            *input.user_id,
+            input.nickname,
         )
-        .bind(member_id)
-        .bind(input.server_id.0)
-        .bind(input.user_id.0)
-        .bind(&input.nickname)
-        .fetch_one(&self.pool)
+        .fetch_one(&mut *tx)
         .await
         .map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to insert member: {}", e),
         })?;
 
-        Ok((&row).into())
+        let member_join_server =
+            OutboxEventRecord::new(self.user_join_server_router.clone(), server_member.clone());
+
+        member_join_server.write(&mut *tx).await?;
+
+        Ok(server_member)
     }
 
     async fn find_by_server_and_user(

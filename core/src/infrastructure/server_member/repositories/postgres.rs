@@ -221,7 +221,6 @@ impl MemberRepository for PostgresMemberRepository {
             });
         }
 
-        dbg!("Success on delete ");
         // Write the delete event to the outbox table
         let delete_event = DeleteMemberEvent {
             server_id: *server_id,

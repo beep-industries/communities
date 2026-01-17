@@ -6,7 +6,7 @@ use communities_core::{
         outbox::entities::OutboxMessage,
         role::entities::{DeleteRole, Role},
         server::entities::{DeleteServerEvent, Server},
-        server_member::{entities::DeleteMemberEvent, ServerMember},
+        server_member::{ServerMember, entities::DeleteMemberEvent},
     },
 };
 use events_protobuf::communities_events::{
@@ -14,10 +14,11 @@ use events_protobuf::communities_events::{
     MemberRemovedFromRole, UpsertRole, UserJoinServer, UserLeaveServer,
 };
 use prost::Message;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{dispatch::DispatcherError, lapin::ExchangeName};
 
+#[derive(Debug)]
 pub enum ExchangePayload {
     CreateServer(ProcessedEvent<CreateServer, Server>),
     DeleteServer(ProcessedEvent<DeleteServer, DeleteServerEvent>),
@@ -99,6 +100,7 @@ impl ExchangePayload {
     }
 }
 
+#[derive(Debug)]
 pub struct ProcessedEvent<
     TProtoMessage: Message,
     TOutboxPayload: Into<TProtoMessage> + for<'a> Deserialize<'a> + Clone,

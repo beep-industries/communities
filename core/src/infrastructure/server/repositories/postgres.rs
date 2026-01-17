@@ -20,6 +20,7 @@ pub struct PostgresServerRepository {
     delete_server_router: MessageRoutingInfo,
     create_server_router: MessageRoutingInfo,
     create_role_router: MessageRoutingInfo,
+    user_join_server_router: MessageRoutingInfo,
 }
 
 impl PostgresServerRepository {
@@ -28,12 +29,14 @@ impl PostgresServerRepository {
         delete_server_router: MessageRoutingInfo,
         create_server_router: MessageRoutingInfo,
         create_role_router: MessageRoutingInfo,
+        user_join_server_router: MessageRoutingInfo,
     ) -> Self {
         Self {
             pool,
             delete_server_router,
             create_server_router,
             create_role_router,
+            user_join_server_router,
         }
     }
 }
@@ -126,7 +129,7 @@ impl ServerRepository for PostgresServerRepository {
         })?;
 
         let member_id = Uuid::new_v4();
-        let _ = query_as!(
+        let server_member = query_as!(
             ServerMember,
             r#"
             INSERT INTO server_members (id, server_id, user_id)
@@ -143,6 +146,12 @@ impl ServerRepository for PostgresServerRepository {
             server_id: server.id,
             user_id: input.owner_id,
         })?;
+
+        let member_join_server =
+            OutboxEventRecord::new(self.user_join_server_router.clone(), server_member.clone());
+
+        member_join_server.write(&mut *tx).await?;
+
         // Write the create event to the outbox table for eventual processing
         let create_server_event =
             OutboxEventRecord::new(self.create_server_router.clone(), server.clone());
@@ -157,10 +166,11 @@ impl ServerRepository for PostgresServerRepository {
         let role = query_as!(
             Role,
             r#"
-            INSERT INTO roles (server_id, name, permissions)
-            VALUES ($1, $2, $3)
+            INSERT INTO roles (id, server_id, name, permissions)
+            VALUES ($1, $2, $3, $4)
             RETURNING id, server_id, name, permissions as "permissions: _", created_at, updated_at
             "#,
+            *server.id,
             *server.id,
             "BasicUser",
             *base_permission
@@ -232,9 +242,7 @@ impl ServerRepository for PostgresServerRepository {
         )
         .fetch_one(&mut *tx)
         .await
-        .map_err(|_| CoreError::ServerNotFound {
-            id: input.id.clone(),
-        })?;
+        .map_err(|_| CoreError::ServerNotFound { id: input.id })?;
 
         tx.commit()
             .await
@@ -258,12 +266,12 @@ impl ServerRepository for PostgresServerRepository {
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         if result.rows_affected() == 0 {
-            return Err(CoreError::ServerNotFound { id: id.clone() });
+            return Err(CoreError::ServerNotFound { id: *id });
         }
 
         // Write the delete event to the outbox table
         // for eventual processing
-        let event = DeleteServerEvent { id: id.clone() };
+        let event = DeleteServerEvent { id: *id };
         let delete_server_event = OutboxEventRecord::new(self.delete_server_router.clone(), event);
         delete_server_event.write(&mut *tx).await?;
 

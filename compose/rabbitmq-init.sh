@@ -1,16 +1,49 @@
 #!/bin/bash
 # RabbitMQ Initialization Script
-# This script declares the fanout exchange for create_server events
+# This script declares fanout exchanges and queues for all outbox events
 
 set -e
 
 echo "Waiting for RabbitMQ to be ready..."
 sleep 5
 
-# Declare fanout exchange for create_server using rabbitmqadmin
-rabbitmqadmin --host=${RABBITMQ_HOST:-rabbitmq} \
-  --username=${RABBITMQ_USER:-guest} \
-  --password=${RABBITMQ_PASS:-guest} \
-  declare exchange name=created_server type=fanout durable=true
+# RabbitMQ connection parameters
+HOST=${RABBITMQ_HOST:-rabbitmq}
+USER=${RABBITMQ_USER:-guest}
+PASS=${RABBITMQ_PASS:-guest}
 
-echo "Fanout exchange 'beep.community.fanout' created successfully"
+# Array of exchange names from routing.yaml
+EXCHANGES=(
+  "create.server"
+  "delete.server"
+  "create.channel"
+  "delete.channel"
+  "update.channel"
+  "user.join.server"
+  "user.leave.server"
+  "role.upsert"
+  "role.delete"
+  "member.assign.role"
+  "member.unassign.role"
+)
+
+echo "Creating exchanges and queues..."
+
+# Create each exchange and its corresponding queue
+for EXCHANGE in "${EXCHANGES[@]}"; do
+  echo "  Creating exchange: $EXCHANGE"
+  rabbitmqadmin --host=$HOST --username=$USER --password=$PASS \
+    declare exchange name=$EXCHANGE type=fanout durable=true
+  
+  # Create a queue with the same name as the exchange
+  echo "  Creating queue: ${EXCHANGE}.queue"
+  rabbitmqadmin --host=$HOST --username=$USER --password=$PASS \
+    declare queue name="${EXCHANGE}.queue" durable=true
+  
+  # Bind the queue to the exchange
+  echo "  Binding queue ${EXCHANGE}.queue to exchange $EXCHANGE"
+  rabbitmqadmin --host=$HOST --username=$USER --password=$PASS \
+    declare binding source=$EXCHANGE destination="${EXCHANGE}.queue"
+done
+
+echo "All exchanges and queues created successfully!"

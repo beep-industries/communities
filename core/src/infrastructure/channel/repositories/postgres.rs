@@ -7,7 +7,7 @@ use crate::{
     domain::{
         channel::{
             entities::{
-                Channel, ChannelId, ChannelType, CreateChannelRepoInput, UpdateChannelRepoInput,
+                Channel, ChannelId, ChannelType, CreateChannelRepoInput, ServerChannelCreation, UpdateChannelRepoInput
             },
             ports::ChannelRepository,
         },
@@ -17,22 +17,7 @@ use crate::{
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
-/// Event emitted when a channel is created
-#[derive(Debug, Clone, Serialize)]
-pub struct CreateChannelEvent {
-    pub id: ChannelId,
-    pub name: String,
-    pub server_id: Option<ServerId>,
-    pub parent_id: Option<ChannelId>,
-    pub channel_type: ChannelType,
-}
 
-/// Event emitted when a channel is deleted
-#[derive(Debug, Clone, Serialize)]
-pub struct DeleteChannelEvent {
-    pub id: ChannelId,
-    pub server_id: Option<ServerId>,
-}
 
 #[derive(Clone)]
 pub struct PostgresChannelRepository {
@@ -114,20 +99,17 @@ impl ChannelRepository for PostgresChannelRepository {
         let channel: Channel = row.into();
 
         // Only send outbox event for server channels
-        if channel.server_id.is_some() {
-            let create_event = CreateChannelEvent {
+        if let Some(server_id) = channel.server_id{
+            let server_channel = ServerChannelCreation {
                 id: channel.id,
-                name: channel.name.clone(),
-                server_id: channel.server_id,
-                parent_id: channel.parent_id,
-                channel_type: channel.channel_type,
+                 server_id,
             };
             let outbox_event =
-                OutboxEventRecord::new(self.create_channel_router.clone(), create_event);
+                OutboxEventRecord::new(self.create_channel_router.clone(),server_channel);
             outbox_event.write(&mut *tx).await?;
         }
-
         tx.commit().await.map_err(|e| CoreError::DatabaseError {
+
             msg: format!("Failed to commit transaction: {}", e),
         })?;
 

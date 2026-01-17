@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use chrono::{DateTime, Utc};
+use events_protobuf::communities_events::{ChannelCreated, ChannelDeleted};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
@@ -111,6 +112,36 @@ pub struct Channel {
     pub channel_type: ChannelType,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct ServerChannelCreation {
+    pub id: ChannelId,
+    pub server_id: ServerId,
+}
+
+impl Into<ChannelCreated> for ServerChannelCreation {
+    fn into(self) -> ChannelCreated {
+        ChannelCreated {
+            channel_id: self.id.to_string(),
+            server_id: self.server_id.to_string(),
+        }
+    }
+}
+
+/// Event emitted when a channel is deleted
+#[derive(Debug, Clone, Serialize)]
+pub struct DeleteChannelEvent {
+    pub id: ChannelId,
+    pub server_id: ServerId,
+}
+
+impl Into<ChannelDeleted> for DeleteChannelEvent {
+    fn into(self) -> ChannelDeleted {
+        ChannelDeleted {
+            channel_id: self.id.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema, Copy, sqlx::Type)]

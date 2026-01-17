@@ -4,6 +4,7 @@ use axum::{
 };
 use communities_core::domain::{
     common::GetPaginated,
+    member_role::{entities::MemberRole, ports::MemberRoleService},
     role::{
         entities::{
             CreateRoleInput, CreateRoleRequest, Permissions, Role, RoleId, UpdateRoleInput,
@@ -11,6 +12,7 @@ use communities_core::domain::{
         },
         ports::RoleService,
     },
+    server_member::MemberId,
 };
 use uuid::Uuid;
 
@@ -55,10 +57,9 @@ pub async fn create_role(
 
 #[utoipa::path(
     get,
-    path = "/servers/{server_id}/roles/{role_id}",
+    path = "/roles/{role_id}",
     tag = "roles",
     params(
-        ("server_id" = String, Path, description = "Server ID"),
         ("role_id" = String, Path, description = "Role ID")
     ),
     responses(
@@ -70,7 +71,7 @@ pub async fn create_role(
     )
 )]
 pub async fn get_role(
-    Path((_server_id, role_id)): Path<(Uuid, Uuid)>,
+    Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,
 ) -> Result<Response<Role>, ApiError> {
@@ -84,7 +85,7 @@ pub async fn get_role(
 
 #[utoipa::path(
     get,
-    path = "/servers/{server_id}",
+    path = "/servers/{server_id}/roles",
     tag = "roles",
     params(
         ("server_id" = String, Path, description = "Server ID"),
@@ -118,10 +119,9 @@ pub async fn list_roles_by_server(
 
 #[utoipa::path(
     put,
-    path = "/servers/{server_id}/roles/{role_id}",
+    path = "/roles/{role_id}",
     tag = "roles",
     params(
-        ("server_id" = String, Path, description = "Server ID"),
         ("role_id" = String, Path, description = "Role ID")
     ),
     request_body = UpdateRoleInput,
@@ -135,7 +135,7 @@ pub async fn list_roles_by_server(
     )
 )]
 pub async fn update_role(
-    Path((_server_id, role_id)): Path<(Uuid, Uuid)>,
+    Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,
     Json(request): Json<UpdateRoleRequest>,
@@ -155,11 +155,10 @@ pub async fn update_role(
 
 #[utoipa::path(
     delete,
-    path = "/servers/{server_id}/roles/{role_id}",
+    path = "/roles/{role_id}",
     tag = "role",
     params(
         ("role_id" = String, Path, description = "Role ID"),
-        ("server_id" = String, Path, description = "Server ID")
     ),
     responses(
         (status = 200, description = "Role deleted successfully"),
@@ -170,7 +169,7 @@ pub async fn update_role(
     )
 )]
 pub async fn delete_role(
-    Path((_server_id, role_id)): Path<(Uuid, Uuid)>,
+    Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,
 ) -> Result<Response<()>, ApiError> {
@@ -180,4 +179,33 @@ pub async fn delete_role(
         .await
         .map_err(Into::<ApiError>::into)?;
     Ok(Response::deleted(()))
+}
+
+#[utoipa::path(
+     post,
+     path = "/roles/{role_id}/members/{member_id}",
+     tag = "role",
+     params(
+         ("role_id" = String, Path, description = "Role ID"),
+         ("member_id" = String, Path, description = "Member ID")
+     ),
+     responses(
+         (status = 201, description = "Role assigned successfully to member"),
+         (status = 401, description = "Unauthorized"),
+         (status = 403, description = "Forbidden - Not the server owner"),
+         (status = 404, description = "Server or role not found"),
+         (status = 500, description = "Internal server error")
+     )
+ )]
+pub async fn assign_role(
+    Path((role_id, member_id)): Path<(Uuid, Uuid)>,
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+) -> Result<Response<MemberRole>, ApiError> {
+    let member_role = state
+        .service
+        .assign_member_to_role(RoleId(role_id), MemberId(member_id))
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    Ok(Response::created(member_role))
 }

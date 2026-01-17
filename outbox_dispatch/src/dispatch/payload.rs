@@ -2,12 +2,13 @@ use communities_core::{
     application::Routing,
     domain::{
         outbox::entities::OutboxMessage,
+        role::entities::{DeleteRole, Role},
         server::entities::{DeleteServerEvent, Server},
         server_member::ServerMember,
     },
 };
 use events_protobuf::communities_events::{
-    CreateServer, DeleteServer, UserJoinServer, UserLeaveServer,
+    self, CreateServer, DeleteServer, UpsertRole, UserJoinServer, UserLeaveServer,
 };
 use prost::Message;
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,8 @@ pub enum ExchangePayload {
     DeleteServer(ProcessedEvent<DeleteServer, DeleteServerEvent>),
     UserJoinServer(ProcessedEvent<UserJoinServer, ServerMember>),
     UserLeaveServer(ProcessedEvent<UserLeaveServer, ServerMember>),
+    UpsertRole(ProcessedEvent<UpsertRole, Role>),
+    DeleteRole(ProcessedEvent<communities_events::DeleteRole, DeleteRole>),
 }
 
 impl TryFrom<(OutboxMessage, Routing)> for ExchangePayload {
@@ -35,6 +38,8 @@ impl TryFrom<(OutboxMessage, Routing)> for ExchangePayload {
             Routing::UserLeaveServer => {
                 ExchangePayload::UserLeaveServer(ProcessedEvent::new(outbox)?)
             }
+            Routing::UpsertRole => ExchangePayload::UpsertRole(ProcessedEvent::new(outbox)?),
+            Routing::DeleteRole => ExchangePayload::DeleteRole(ProcessedEvent::new(outbox)?),
         };
         Ok(payload)
     }
@@ -47,6 +52,8 @@ impl ExchangePayload {
             ExchangePayload::DeleteServer(event) => &event.2,
             ExchangePayload::UserJoinServer(event) => &event.2,
             ExchangePayload::UserLeaveServer(event) => &event.2,
+            ExchangePayload::UpsertRole(event) => &event.2,
+            ExchangePayload::DeleteRole(event) => &event.2,
         }
     }
 
@@ -56,6 +63,8 @@ impl ExchangePayload {
             ExchangePayload::DeleteServer(event) => event.0.encode_to_vec(),
             ExchangePayload::UserJoinServer(event) => event.0.encode_to_vec(),
             ExchangePayload::UserLeaveServer(event) => event.0.encode_to_vec(),
+            ExchangePayload::UpsertRole(event) => event.0.encode_to_vec(),
+            ExchangePayload::DeleteRole(event) => event.0.encode_to_vec(),
         }
     }
 }

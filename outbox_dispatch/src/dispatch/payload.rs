@@ -6,7 +6,7 @@ use communities_core::{
         outbox::entities::OutboxMessage,
         role::entities::{DeleteRole, Role},
         server::entities::{DeleteServerEvent, Server},
-        server_member::ServerMember,
+        server_member::{entities::DeleteMemberEvent, ServerMember},
     },
 };
 use events_protobuf::communities_events::{
@@ -24,7 +24,7 @@ pub enum ExchangePayload {
     CreateChannel(ProcessedEvent<ChannelCreated, ServerChannelCreation>),
     DeleteChannel(ProcessedEvent<ChannelDeleted, DeleteChannelEvent>),
     UserJoinServer(ProcessedEvent<UserJoinServer, ServerMember>),
-    UserLeaveServer(ProcessedEvent<UserLeaveServer, ServerMember>),
+    UserLeaveServer(ProcessedEvent<UserLeaveServer, DeleteMemberEvent>),
     UpsertRole(ProcessedEvent<UpsertRole, Role>),
     DeleteRole(ProcessedEvent<communities_events::DeleteRole, DeleteRole>),
     MemberAssignToRole(ProcessedEvent<MemberAssignedToRole, AssignUserRole>),

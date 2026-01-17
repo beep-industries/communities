@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use events_protobuf::communities_events::{MemberAssignedToRole, MemberRemovedFromRole};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::domain::{friend::entities::UserId, role::entities::RoleId, server_member::MemberId};
 
@@ -18,7 +18,7 @@ pub struct AssignMemberRole {
     pub role_id: RoleId,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AssignUserRole {
     pub user_id: UserId,
     pub role_id: RoleId,
@@ -39,7 +39,7 @@ pub struct UnassignMemberRole {
     pub role_id: RoleId,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnassignUserRole {
     pub user_id: UserId,
     pub role_id: RoleId,

@@ -66,12 +66,15 @@ pub async fn create_repositories(
         pool.clone(),
         message_routing_config.clone().delete_server,
         message_routing_config.clone().create_server,
-        message_routing_config.clone().create_role,
+        message_routing_config.clone().upsert_role,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let health_repository = PostgresHealthRepository::new(pool.clone());
-    let member_repository =
-        PostgresMemberRepository::new(pool.clone(), MessageRoutingInfo::default());
+    let member_repository = PostgresMemberRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        message_routing_config.clone().user_leave_server,
+    );
     let channel_repository = PostgresChannelRepository::new(
         pool.clone(),
         message_routing_config.clone().create_channel,
@@ -87,7 +90,7 @@ pub async fn create_repositories(
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();
     let member_role_repository =
-        PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().create_role);
+        PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().upsert_role);
     Ok(CommunitiesRepositories {
         pool,
         server_repository,

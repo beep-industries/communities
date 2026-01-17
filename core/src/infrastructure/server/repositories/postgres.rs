@@ -299,6 +299,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
         MessageRoutingInfo::default(),
         create_router.clone(),
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     let owner_id = UserId(Uuid::new_v4());
@@ -409,6 +410,7 @@ async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<()
         delete_router,
         create_router,
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     // Try to find a server with a random UUID that doesn't exist
@@ -436,6 +438,7 @@ async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreE
         pool.clone(),
         delete_router,
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
 
@@ -472,6 +475,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
         pool.clone(),
         delete_router.clone(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
 
@@ -547,6 +551,7 @@ async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError
         MessageRoutingInfo::default(),
         create_router,
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     // Arrange: insert a server first
@@ -610,6 +615,7 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
         MessageRoutingInfo::default(),
         create_router,
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     // Try to update a server with a random UUID that doesn't exist
@@ -649,6 +655,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
 
@@ -698,6 +705,7 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
 
@@ -762,6 +770,7 @@ async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreE
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
 

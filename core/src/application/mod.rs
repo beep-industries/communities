@@ -20,8 +20,8 @@ use crate::{
         outbox::{MessageRouter, postgres::PostgresOutboxRepository},
         role::repositories::postgres::PostgresRoleRepository,
         server::repositories::postgres::PostgresServerRepository,
-        server_member::repositories::PostgresMemberRepository,
         server_invitation::repositories::postgres::PostgresServerInvitationRepository,
+        server_member::repositories::PostgresMemberRepository,
     },
 };
 
@@ -79,6 +79,7 @@ pub async fn create_repositories(
         pool.clone(),
         message_routing_config.clone().user_leave_server,
         message_routing_config.clone().user_join_server,
+        message_routing_config.clone().member_assign_to_role,
     );
     let channel_repository = PostgresChannelRepository::new(
         pool.clone(),

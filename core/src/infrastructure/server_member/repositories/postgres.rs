@@ -1,10 +1,12 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, query_as};
 use uuid::Uuid;
 
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         friend::entities::UserId,
+        member_role::entities::MemberRole,
+        role::entities::RoleId,
         server::entities::ServerId,
         server_member::{
             MemberId,
@@ -20,6 +22,7 @@ pub struct PostgresMemberRepository {
     pub(crate) pool: PgPool,
     user_join_server_router: MessageRoutingInfo,
     delete_member_router: MessageRoutingInfo,
+    assign_role_routing: MessageRoutingInfo,
 }
 
 impl PostgresMemberRepository {
@@ -27,11 +30,13 @@ impl PostgresMemberRepository {
         pool: PgPool,
         delete_member_router: MessageRoutingInfo,
         user_join_server_router: MessageRoutingInfo,
+        assign_role_routing: MessageRoutingInfo,
     ) -> Self {
         Self {
             pool,
             delete_member_router,
             user_join_server_router,
+            assign_role_routing,
         }
     }
 }
@@ -70,6 +75,26 @@ impl MemberRepository for PostgresMemberRepository {
             OutboxEventRecord::new(self.user_join_server_router.clone(), server_member.clone());
 
         member_join_server.write(&mut *tx).await?;
+
+        let member_role = query_as!(
+            MemberRole,
+            r#"
+            INSERT INTO member_roles (role_id, member_id)
+            VALUES ($1, $2)
+            RETURNING role_id, member_id, created_at, updated_at
+            "#,
+            *input.server_id,
+            member_id
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| CoreError::AssignMemberRoleError {
+            member_id: MemberId(member_id),
+            role_id: RoleId(*input.server_id),
+        })?;
+
+        let assign_member_to_role_event =
+            OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
 
         tx.commit().await.map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to commit transaction: {}", e),
@@ -333,6 +358,7 @@ mod tests {
             pool.clone(),
             MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
         );
 
         let server_id = ServerId(Uuid::new_v4());
@@ -372,6 +398,7 @@ mod tests {
             pool.clone(),
             MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
+            MessageRoutingInfo::default(),
         );
 
         // Try to find a member that doesn't exist
@@ -389,6 +416,7 @@ mod tests {
     async fn test_list_by_server_returns_paginated_members(pool: PgPool) -> Result<(), CoreError> {
         let repository = PostgresMemberRepository::new(
             pool.clone(),
+            MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
         );
@@ -428,6 +456,7 @@ mod tests {
     async fn test_update_member_updates_fields(pool: PgPool) -> Result<(), CoreError> {
         let repository = PostgresMemberRepository::new(
             pool.clone(),
+            MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
         );
@@ -473,6 +502,7 @@ mod tests {
     async fn test_update_nonexistent_member_returns_error(pool: PgPool) -> Result<(), CoreError> {
         let repository = PostgresMemberRepository::new(
             pool.clone(),
+            MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
         );
@@ -573,6 +603,7 @@ mod tests {
     async fn test_delete_nonexistent_member_returns_error(pool: PgPool) -> Result<(), CoreError> {
         let repository = PostgresMemberRepository::new(
             pool.clone(),
+            MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
         );

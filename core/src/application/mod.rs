@@ -21,6 +21,7 @@ use crate::{
         role::repositories::postgres::PostgresRoleRepository,
         server::repositories::postgres::PostgresServerRepository,
         server_member::repositories::PostgresMemberRepository,
+        server_invitation::repositories::postgres::PostgresServerInvitationRepository,
     },
 };
 
@@ -35,6 +36,7 @@ pub type CommunitiesService = Service<
     PostgresOutboxRepository,
     MockChannelMemberRepository,
     PostgresMemberRoleRepository,
+    PostgresServerInvitationRepository,
 >;
 
 #[derive(Clone)]
@@ -50,6 +52,7 @@ pub struct CommunitiesRepositories {
     pub outbox_repository: PostgresOutboxRepository,
     pub channel_member_repository: MockChannelMemberRepository,
     pub member_role_repository: PostgresMemberRoleRepository,
+    pub server_invitation_repository: PostgresServerInvitationRepository,
 }
 
 pub async fn create_repositories(
@@ -93,6 +96,7 @@ pub async fn create_repositories(
     let channel_member_repository = MockChannelMemberRepository::new();
     let member_role_repository =
         PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().upsert_role);
+    let server_invitation_repository = PostgresServerInvitationRepository::new(pool.clone());
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -105,6 +109,7 @@ pub async fn create_repositories(
         outbox_repository,
         channel_member_repository,
         member_role_repository,
+        server_invitation_repository,
     })
 }
 
@@ -120,6 +125,7 @@ impl From<CommunitiesRepositories> for CommunitiesService {
             repos.outbox_repository,
             repos.channel_member_repository,
             repos.member_role_repository,
+            repos.server_invitation_repository,
         )
     }
 }

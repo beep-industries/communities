@@ -13,11 +13,12 @@ use crate::{
         role::ports::RoleRepository,
         server::ports::ServerRepository,
         server_member::ports::MemberRepository,
+        server_invitation::ports::ServerInvitationRepository,
     },
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-impl<S, F, H, M, C, R, O, CM, MR> FriendService for Service<S, F, H, M, C, R, O, CM, MR>
+impl<S, F, H, M, C, R, O, CM, MR, SI> FriendService for Service<S, F, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -28,6 +29,7 @@ where
     O: OutboxRepository,
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
 {
     async fn get_friends(
         &self,
@@ -44,7 +46,7 @@ where
     }
 }
 
-impl<S, F, H, M, C, R, O, CM, MR> FriendRequestService for Service<S, F, H, M, C, R, O, CM, MR>
+impl<S, F, H, M, C, R, O, CM, MR, SI> FriendRequestService for Service<S, F, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -55,6 +57,7 @@ where
     O: OutboxRepository,
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
 {
     async fn get_friend_requests(
         &self,

@@ -16,10 +16,11 @@ use crate::{
         },
         server::ports::ServerRepository,
         server_member::MemberRepository,
+        server_invitation::ports::ServerInvitationRepository,
     },
 };
 
-impl<S, F, H, M, C, R, O, CM, MR> RoleService for Service<S, F, H, M, C, R, O, CM, MR>
+impl<S, F, H, M, C, R, O, CM, MR, SI> RoleService for Service<S, F, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -30,6 +31,7 @@ where
     O: OutboxRepository,
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
         let repo_input = CreateRoleInput::try_from(create_role_input).map_err(|e| {

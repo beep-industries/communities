@@ -7,7 +7,7 @@ license.workspace = true
 
 [dependencies]
 events-protobuf = { git = "https://github.com/beep-industries/events-protobuf.git" }
-clap = "4.5.53"
+clap = { version = "4.5.53", features = ["derive", "env"] }
 communities-core = { path = "../core", package = "communities_core" }
 dotenv = "0.15"
 futures-util = "0.3.31"

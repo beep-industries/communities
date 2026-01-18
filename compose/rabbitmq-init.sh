@@ -25,6 +25,8 @@ EXCHANGES=(
   "role.delete"
   "member.assign.role"
   "member.unassign.role"
+  "permission_override.upsert_permission_override"
+  "permission_override.delete_permission_override"
 )
 
 echo "Creating exchanges and queues..."
@@ -34,12 +36,12 @@ for EXCHANGE in "${EXCHANGES[@]}"; do
   echo "  Creating exchange: $EXCHANGE"
   rabbitmqadmin --host=$HOST --username=$USER --password=$PASS \
     declare exchange name=$EXCHANGE type=fanout durable=true
-  
+
   # Create a queue with the same name as the exchange
   echo "  Creating queue: ${EXCHANGE}.queue"
   rabbitmqadmin --host=$HOST --username=$USER --password=$PASS \
     declare queue name="${EXCHANGE}.queue" durable=true
-  
+
   # Bind the queue to the exchange
   echo "  Binding queue ${EXCHANGE}.queue to exchange $EXCHANGE"
   rabbitmqadmin --host=$HOST --username=$USER --password=$PASS \

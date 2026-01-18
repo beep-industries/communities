@@ -2,7 +2,6 @@ use clap::Parser;
 use lapin::{
     Channel, Connection, options::BasicPublishOptions, publisher_confirm::PublisherConfirm,
 };
-use prost::Message;
 use thiserror::Error;
 use tracing::{debug, error, info, instrument};
 
@@ -68,13 +67,11 @@ impl RabbitClient {
         Ok(())
     }
 
-    pub async fn produce<T>(
+    pub async fn produce(
         &self,
         exchange: &ExchangeName,
-        message: T,
+        message: &[u8],
     ) -> Result<(), RabbitClientError>
-    where
-        T: Message,
     {
         let _: PublisherConfirm = self
             .channel
@@ -82,7 +79,7 @@ impl RabbitClient {
                 exchange,
                 "",
                 BasicPublishOptions::default(),
-                &message.encode_to_vec(),
+                message,
                 lapin::BasicProperties::default(),
             )
             .await

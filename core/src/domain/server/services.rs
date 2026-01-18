@@ -12,9 +12,10 @@ use crate::domain::{
         ports::{ServerRepository, ServerService},
     },
     server_member::MemberRepository,
+    server_invitation::ports::ServerInvitationRepository,
 };
 
-impl<S, F, H, M, C, R, O, CM, MR> ServerService for Service<S, F, H, M, C, R, O, CM, MR>
+impl<S, F, H, M, C, R, O, CM, MR, SI> ServerService for Service<S, F, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -25,6 +26,7 @@ where
     O: OutboxRepository,
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
 {
     async fn create_server(&self, input: InsertServerInput) -> Result<Server, CoreError> {
         // Validate server name is not empty

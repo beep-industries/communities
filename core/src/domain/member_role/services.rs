@@ -17,10 +17,11 @@ use crate::{
         },
         server::ports::ServerRepository,
         server_member::{MemberId, MemberRepository, ServerMember},
+        server_invitation::ports::ServerInvitationRepository,
     },
 };
 
-impl<S, F, H, M, C, R, O, CM, MR> MemberRoleService for Service<S, F, H, M, C, R, O, CM, MR>
+impl<S, F, H, M, C, R, O, CM, MR, SI> MemberRoleService for Service<S, F, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -31,6 +32,7 @@ where
     O: OutboxRepository,
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
 {
     async fn assign_member_to_role(
         &self,

@@ -17,10 +17,11 @@ use crate::{
         role::ports::RoleRepository,
         server::{entities::ServerId, ports::ServerRepository},
         server_member::MemberRepository,
+        server_invitation::ports::ServerInvitationRepository,
     },
 };
 
-impl<S, F, H, M, C, R, O, CM, MR> ChannelService for Service<S, F, H, M, C, R, O, CM, MR>
+impl<S, F, H, M, C, R, O, CM, MR, SI> ChannelService for Service<S, F, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -31,6 +32,7 @@ where
     O: OutboxRepository,
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
 {
     async fn create_private_channel(
         &self,

@@ -2,12 +2,11 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain::{
     common::{CoreError, GetPaginated, TotalPaginatedElements},
-    server::entities::ServerId,
+    friend::entities::UserId,
     server_invitation::entities::{
-        InsertServerInvitationInput, ServerInvitation, ServerInvitationId,
+        AcceptInvitationInput, InsertServerInvitationInput, ServerInvitation, ServerInvitationId,
         UpdateServerInvitationInput,
     },
-    friend::entities::UserId,
 };
 
 pub trait ServerInvitationRepository: Send + Sync {
@@ -15,38 +14,25 @@ pub trait ServerInvitationRepository: Send + Sync {
         &self,
         input: InsertServerInvitationInput,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-    
+
     fn find_by_id(
         &self,
         id: &ServerInvitationId,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-    
-    fn list(
-        &self,
-        pagination: &GetPaginated,
-    ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-    
-    fn list_by_server(
-        &self,
-        server_id: &ServerId,
-        pagination: &GetPaginated,
-    ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-    
+
     fn list_by_invitee(
         &self,
         invitee_id: &Option<UserId>,
         pagination: &GetPaginated,
     ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-    
+
     fn update(
         &self,
         input: UpdateServerInvitationInput,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-    
-    fn delete(
-        &self,
-        id: &ServerInvitationId,
-    ) -> impl Future<Output = Result<(), CoreError>> + Send;
+
+    fn delete(&self, id: &ServerInvitationId)
+    -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
 pub trait ServerInvitationService: Send + Sync {
@@ -60,36 +46,9 @@ pub trait ServerInvitationService: Send + Sync {
         invitation_id: &ServerInvitationId,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
 
-    fn list_invitations(
-        &self,
-        pagination: &GetPaginated,
-    ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-
-    fn list_server_invitations(
-        &self,
-        server_id: &ServerId,
-        pagination: &GetPaginated,
-    ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-
-    fn list_user_invitations(
-        &self,
-        invitee_id: &Option<UserId>,
-        pagination: &GetPaginated,
-    ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-
     fn accept_invitation(
         &self,
-        invitation_id: &ServerInvitationId,
-    ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-
-    fn reject_invitation(
-        &self,
-        invitation_id: &ServerInvitationId,
-    ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-
-    fn cancel_invitation(
-        &self,
-        invitation_id: &ServerInvitationId,
+        accept_input: &AcceptInvitationInput,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
 }
 
@@ -107,26 +66,14 @@ impl MockServerInvitationRepository {
 }
 
 impl ServerInvitationRepository for MockServerInvitationRepository {
-    async fn insert(&self, _input: InsertServerInvitationInput) -> Result<ServerInvitation, CoreError> {
+    async fn insert(
+        &self,
+        _input: InsertServerInvitationInput,
+    ) -> Result<ServerInvitation, CoreError> {
         todo!()
     }
 
     async fn find_by_id(&self, _id: &ServerInvitationId) -> Result<ServerInvitation, CoreError> {
-        todo!()
-    }
-
-    async fn list(
-        &self,
-        _pagination: &GetPaginated,
-    ) -> Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError> {
-        todo!()
-    }
-
-    async fn list_by_server(
-        &self,
-        _server_id: &ServerId,
-        _pagination: &GetPaginated,
-    ) -> Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError> {
         todo!()
     }
 
@@ -138,7 +85,10 @@ impl ServerInvitationRepository for MockServerInvitationRepository {
         todo!()
     }
 
-    async fn update(&self, _input: UpdateServerInvitationInput) -> Result<ServerInvitation, CoreError> {
+    async fn update(
+        &self,
+        _input: UpdateServerInvitationInput,
+    ) -> Result<ServerInvitation, CoreError> {
         todo!()
     }
 

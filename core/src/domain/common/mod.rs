@@ -84,6 +84,9 @@ pub enum CoreError {
         member_id: MemberId,
         role_id: RoleId,
     },
+
+    #[error("Forbidden")]
+    Forbidden,
 }
 
 impl From<ChannelError> for CoreError {

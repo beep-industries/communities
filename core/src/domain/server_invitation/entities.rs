@@ -42,7 +42,6 @@ pub enum ServerInvitationStatus {
     Pending,
     Accepted,
     Rejected,
-    Expired,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -55,6 +54,17 @@ pub struct ServerInvitation {
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
     pub expires_at: Option<DateTime<Utc>>,
+}
+
+impl ServerInvitation {
+    pub fn is_expired(&self) -> bool {
+        if let Some(expiration_date) = self.expires_at {
+            let now = Utc::now();
+            return if expiration_date > now { false } else { true };
+        } else {
+            true
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -72,7 +82,11 @@ pub struct CreateServerInvitationRequest {
 }
 
 impl CreateServerInvitationRequest {
-    pub fn into_input(self, server_id: ServerId, inviter_id: UserId) -> InsertServerInvitationInput {
+    pub fn into_input(
+        self,
+        server_id: ServerId,
+        inviter_id: UserId,
+    ) -> InsertServerInvitationInput {
         InsertServerInvitationInput {
             server_id,
             inviter_id,
@@ -86,4 +100,10 @@ impl CreateServerInvitationRequest {
 pub struct UpdateServerInvitationInput {
     pub id: ServerInvitationId,
     pub status: ServerInvitationStatus,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct AcceptInvitationInput {
+    pub user_id: UserId,
+    pub invitation_id: ServerInvitationId,
 }

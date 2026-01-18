@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM outbox_messages\n            WHERE status = 'SENT'\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "127e7e7ff4367fae9252d05e5f5964780a1c26955ba74cd5ae6de20bd669510d"
+}

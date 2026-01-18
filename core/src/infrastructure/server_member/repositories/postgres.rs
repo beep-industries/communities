@@ -76,25 +76,48 @@ impl MemberRepository for PostgresMemberRepository {
 
         member_join_server.write(&mut *tx).await?;
 
-        let member_role = query_as!(
-            MemberRole,
+        // Get the default role for this server (the role with ID = server_id, created when server was created)
+        // Or get any role if multiple exist - typically the "BasicUser" role
+        let default_role_id: Option<Uuid> = sqlx::query_scalar!(
             r#"
-            INSERT INTO member_roles (role_id, member_id)
-            VALUES ($1, $2)
-            RETURNING role_id, member_id, created_at, updated_at
+            SELECT id
+            FROM roles
+            WHERE server_id = $1
+            ORDER BY created_at ASC
+            LIMIT 1
             "#,
-            *input.server_id,
-            member_id
+            *input.server_id
         )
-        .fetch_one(&mut *tx)
+        .fetch_optional(&mut *tx)
         .await
-        .map_err(|_| CoreError::AssignMemberRoleError {
-            member_id: MemberId(member_id),
-            role_id: RoleId(*input.server_id),
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to fetch default role: {}", e),
         })?;
 
-        let assign_member_to_role_event =
-            OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
+        // Only assign role if one exists for this server
+        if let Some(role_id) = default_role_id {
+            let member_role = query_as!(
+                MemberRole,
+                r#"
+                INSERT INTO member_roles (role_id, member_id)
+                VALUES ($1, $2)
+                RETURNING role_id, member_id, created_at, updated_at
+                "#,
+                role_id,
+                member_id
+            )
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| CoreError::AssignMemberRoleError {
+                member_id: MemberId(member_id),
+                role_id: RoleId(role_id),
+            })?;
+
+            let assign_member_to_role_event =
+                OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
+            
+            assign_member_to_role_event.write(&mut *tx).await?;
+        }
 
         tx.commit().await.map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to commit transaction: {}", e),
@@ -108,8 +131,6 @@ impl MemberRepository for PostgresMemberRepository {
         server_id: &ServerId,
         user_id: &UserId,
     ) -> Result<ServerMember, CoreError> {
-        dbg!(**server_id);
-        dbg!(**user_id);
         let row = sqlx::query_as!(
             ServerMember,
             r#"
@@ -125,7 +146,6 @@ impl MemberRepository for PostgresMemberRepository {
         .map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to find member: {}", e),
         })?;
-        dbg!("Finding members failed");
         match row {
             Some(member) => Ok(member),
             None => Err(CoreError::MemberNotFound {
@@ -239,7 +259,6 @@ impl MemberRepository for PostgresMemberRepository {
                 })?;
 
         if result.rows_affected() == 0 {
-            dbg!("Error on deletje");
             return Err(CoreError::MemberNotFound {
                 server_id: *server_id,
                 user_id: *user_id,
@@ -291,7 +310,7 @@ mod tests {
     use crate::infrastructure::outbox::MessageRouter;
     use sqlx::Row;
 
-    // Helper function to create a test server
+    // Helper function to create a test server with a default role
     async fn create_test_server(pool: &PgPool, server_id: ServerId) -> Result<(), CoreError> {
         sqlx::query(
             r#"
@@ -308,6 +327,24 @@ mod tests {
         .map_err(|e| CoreError::DatabaseError {
             msg: format!("Failed to create test server: {}", e),
         })?;
+
+        // Create a default role for the server (mimicking what happens in real server creation)
+        sqlx::query(
+            r#"
+            INSERT INTO roles (id, server_id, name, permissions)
+            VALUES ($1, $2, $3, $4)
+            "#,
+        )
+        .bind(server_id.0)  // Role ID = Server ID (same as in real server creation)
+        .bind(server_id.0)
+        .bind("BasicUser")
+        .bind(0i32)  // Basic permissions
+        .execute(pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to create default role: {}", e),
+        })?;
+
         Ok(())
     }
 
@@ -318,6 +355,7 @@ mod tests {
         let repository = PostgresMemberRepository::new(
             pool.clone(),
             delete_router,
+            MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
         );
 
@@ -537,6 +575,7 @@ mod tests {
         let repository = PostgresMemberRepository::new(
             pool.clone(),
             delete_router.clone(),
+            MessageRoutingInfo::default(),
             MessageRoutingInfo::default(),
         );
 

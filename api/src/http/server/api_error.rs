@@ -89,6 +89,7 @@ impl From<CoreError> for ApiError {
             },
             CoreError::ChannelNotFound { .. } => ApiError::NotFound,
             CoreError::ChannelPayloadError { msg, .. } => ApiError::BadRequest { msg },
+            CoreError::Forbidden => ApiError::Forbidden,
             _ => ApiError::InternalServerError,
         }
     }

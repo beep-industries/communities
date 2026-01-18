@@ -4,7 +4,7 @@ use axum::{
 };
 use communities_core::domain::{
     friend::entities::UserId,
-    server::entities::ServerId,
+    server::{entities::ServerId, ports::ServerService},
     server_invitation::{
         entities::{AcceptInvitationInput, CreateServerInvitationRequest, ServerInvitation, ServerInvitationId},
         ports::ServerInvitationService,

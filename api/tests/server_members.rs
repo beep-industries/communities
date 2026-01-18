@@ -494,7 +494,6 @@ async fn test_delete_member_ok(ctx: &mut context::TestContext) {
 
     let user_id = "550e8400-e29b-41d4-a716-446655440000";
 
-    dbg!(server_id);
     // Add a member
     ctx.authenticated_router
         .post(&format!("/servers/{}/members", server_id))

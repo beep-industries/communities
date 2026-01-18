@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, server_id, inviter_id, invitee_id, \n                   status as \"status: ServerInvitationStatus\", created_at, updated_at, expires_at\n            FROM server_invitations\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "server_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "inviter_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "invitee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "status: ServerInvitationStatus",
+        "type_info": {
+          "Custom": {
+            "name": "server_invitation_status",
+            "kind": {
+              "Enum": [
+                "pending",
+                "accepted",
+                "rejected",
+                "expired"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "a80f9076551a6a5be2f790d5d8453d0ac837489239c03fd37b13cc0b73d22db2"
+}

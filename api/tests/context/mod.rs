@@ -174,6 +174,12 @@ impl TestContext {
     /// This is useful for testing access control between different users
     /// Note: When using real Keycloak, you'd need to create additional test users
     pub async fn create_authenticated_router_with_different_user(&self) -> TestServer {
+        let (router, _) = self.create_authenticated_router_with_different_user_and_id().await;
+        router
+    }
+
+    /// Create an authenticated router for a different user, returning both the router and user ID
+    pub async fn create_authenticated_router_with_different_user_and_id(&self) -> (TestServer, Uuid) {
         let fallback_user_id = Uuid::new_v4();
 
         // Try to get token for a different user, or use mock token
@@ -191,12 +197,16 @@ impl TestContext {
             Err(_) => generate_mock_token(&fallback_user_id),
         };
 
+        // Extract user ID from token
+        let user_id = Self::extract_user_id_from_token(&different_token)
+            .unwrap_or(fallback_user_id);
+
         let mut router = TestServer::new(self.app.app_router()).unwrap();
         router.add_header(
             axum::http::header::AUTHORIZATION,
             format!("Bearer {}", different_token),
         );
-        router
+        (router, user_id)
     }
 
     /// Get the current authenticated user's ID

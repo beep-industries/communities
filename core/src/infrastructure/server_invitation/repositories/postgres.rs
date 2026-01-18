@@ -1,5 +1,4 @@
 use sqlx::PgPool;
-use uuid::Uuid;
 
 use crate::domain::{
     common::CoreError,
@@ -7,7 +6,7 @@ use crate::domain::{
     server_invitation::{
         entities::{
             InsertServerInvitationInput, ServerInvitation, ServerInvitationId,
-            UpdateServerInvitationInput,
+            ServerInvitationStatus, UpdateServerInvitationInput,
         },
         ports::ServerInvitationRepository,
     },
@@ -34,7 +33,7 @@ impl ServerInvitationRepository for PostgresServerInvitationRepository {
             INSERT INTO server_invitations (server_id, inviter_id, invitee_id, expires_at)
             VALUES ($1, $2, $3, $4)
             RETURNING id, server_id, inviter_id, invitee_id, 
-                      status as "status: server_invitation_status", created_at, updated_at, expires_at
+                      status as "status: ServerInvitationStatus", created_at, updated_at, expires_at
             "#,
             input.server_id.0,
             input.inviter_id.0,
@@ -63,7 +62,7 @@ impl ServerInvitationRepository for PostgresServerInvitationRepository {
         let row = sqlx::query!(
             r#"
             SELECT id, server_id, inviter_id, invitee_id, 
-                   status as "status: server_invitation_status", created_at, updated_at, expires_at
+                   status as "status: ServerInvitationStatus", created_at, updated_at, expires_at
             FROM server_invitations
             WHERE id = $1
             "#,
@@ -102,7 +101,7 @@ impl ServerInvitationRepository for PostgresServerInvitationRepository {
             SET status = $2, updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING id, server_id, inviter_id, invitee_id, 
-                      status as "status: server_invitation_status", created_at, updated_at, expires_at
+                      status as "status: ServerInvitationStatus", created_at, updated_at, expires_at
             "#,
             input.id.0,
             input.status as _,

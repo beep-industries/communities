@@ -602,7 +602,6 @@ mod tests {
         let exchange_name: String = row.try_get("exchange_name").unwrap();
         assert_eq!(exchange_name, delete_router.exchange_name());
 
-        dbg!(&row);
         // Validate the payload JSON contains the role id
         let payload: DeleteRole = serde_json::from_value(row.try_get("payload").unwrap()).unwrap();
         // The payload is the RoleId (Uuid) serialized directly as a string

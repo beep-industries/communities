@@ -57,44 +57,68 @@ where
             .find_by_id(&accept_input.invitation_id)
             .await?;
 
+        // Check if invitation is still pending
         match invitation.status {
             ServerInvitationStatus::Pending => {}
             _ => return Err(CoreError::Forbidden),
         }
 
+        // Check if invitation is expired
         if invitation.is_expired() {
             return Err(CoreError::Forbidden);
         }
 
-        if let Some(invitee_id) = invitation.invitee_id
-            && invitee_id == accept_input.user_id
-        {
-            let _ = self
-                .member_repository
-                .insert(CreateMemberInput {
-                    server_id: invitation.server_id,
-                    user_id: invitee_id,
-                    nickname: None,
-                })
-                .await?;
+        // Check invitation type and validate user
+        match invitation.invitee_id {
+            // Personal invitation - only specific user can accept
+            Some(invitee_id) if invitee_id == accept_input.user_id => {
+                // Check if user is not already a member
+                if self.member_repository
+                    .find_by_server_and_user(&invitation.server_id, &invitee_id)
+                    .await
+                    .is_err()
+                {
+                    // User not a member yet, add them
+                    self.member_repository
+                        .insert(CreateMemberInput {
+                            server_id: invitation.server_id,
+                            user_id: invitee_id,
+                            nickname: None,
+                        })
+                        .await?;
+                }
 
-            self.server_invitation_repository
-                .delete(&invitation.id)
-                .await?;
-        } else if invitation.invitee_id == None {
-            let _ = self
-                .member_repository
-                .insert(CreateMemberInput {
-                    server_id: invitation.server_id,
-                    user_id: accept_input.user_id,
-                    nickname: None,
-                })
-                .await?;
-        } else if let Some(invitee_id) = invitation.invitee_id
-            && invitee_id != accept_input.user_id
-        {
-            return Err(CoreError::Forbidden);
+                // Always delete the personal invitation after acceptance
+                self.server_invitation_repository
+                    .delete(&invitation.id)
+                    .await?;
+            }
+            // General invitation - anyone can use it (invitee_id is None)
+            None => {
+                // Check if user is not already a member
+                if self.member_repository
+                    .find_by_server_and_user(&invitation.server_id, &accept_input.user_id)
+                    .await
+                    .is_err()
+                {
+                    // User not a member yet, add them
+                    self.member_repository
+                        .insert(CreateMemberInput {
+                            server_id: invitation.server_id,
+                            user_id: accept_input.user_id,
+                            nickname: None,
+                        })
+                        .await?;
+                }
+
+                // General invitations are NOT deleted, they can be reused
+            }
+            // Personal invitation but wrong user trying to accept
+            Some(_) => {
+                return Err(CoreError::Forbidden);
+            }
         }
+
         Ok(())
     }
 }

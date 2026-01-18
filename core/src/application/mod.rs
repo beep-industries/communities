@@ -60,7 +60,6 @@ pub async fn create_repositories(
     message_routing_config: MessageRoutingConfig,
     keycloak_issuer: String,
 ) -> Result<CommunitiesRepositories, CoreError> {
-    dbg!(message_routing_config.clone());
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect_with(pg_connection_options)

@@ -58,7 +58,6 @@ where
     TRouter: MessageRouter,
 {
     let exchange_name = event.router.exchange_name();
-    dbg!(exchange_name.clone());
     let created_at = Utc::now();
 
     // Serialize event to JSON

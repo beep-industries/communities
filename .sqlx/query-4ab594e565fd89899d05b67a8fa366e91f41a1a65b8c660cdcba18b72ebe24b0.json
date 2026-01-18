@@ -1,0 +1,89 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE server_invitations\n            SET status = $2, updated_at = CURRENT_TIMESTAMP\n            WHERE id = $1\n            RETURNING id, server_id, inviter_id, invitee_id, \n                      status as \"status: ServerInvitationStatus\", created_at, updated_at, expires_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "server_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "inviter_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "invitee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "status: ServerInvitationStatus",
+        "type_info": {
+          "Custom": {
+            "name": "server_invitation_status",
+            "kind": {
+              "Enum": [
+                "pending",
+                "accepted",
+                "rejected",
+                "expired"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "server_invitation_status",
+            "kind": {
+              "Enum": [
+                "pending",
+                "accepted",
+                "rejected",
+                "expired"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "4ab594e565fd89899d05b67a8fa366e91f41a1a65b8c660cdcba18b72ebe24b0"
+}

@@ -60,9 +60,9 @@ impl ServerInvitation {
     pub fn is_expired(&self) -> bool {
         if let Some(expiration_date) = self.expires_at {
             let now = Utc::now();
-            return if expiration_date > now { false } else { true };
+            expiration_date < now
         } else {
-            true
+            false // No expiration date means it never expires
         }
     }
 }

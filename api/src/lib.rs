@@ -9,5 +9,6 @@ pub use http::health::routes::health_routes;
 pub use http::role::routes::role_routes;
 pub use http::server::middleware::auth::AuthMiddleware;
 pub use http::server::{ApiError, AppState};
+pub use http::server_invitations::routes::server_invitation_routes;
 pub use http::server_members::routes::server_member_routes;
 pub use http::servers::routes::server_routes;

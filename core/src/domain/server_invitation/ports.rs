@@ -1,8 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::domain::{
-    common::{CoreError, GetPaginated, TotalPaginatedElements},
-    friend::entities::UserId,
+    common::CoreError,
     server_invitation::entities::{
         AcceptInvitationInput, InsertServerInvitationInput, ServerInvitation, ServerInvitationId,
         UpdateServerInvitationInput,
@@ -14,23 +13,17 @@ pub trait ServerInvitationRepository: Send + Sync {
         &self,
         input: InsertServerInvitationInput,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-
+    
     fn find_by_id(
         &self,
         id: &ServerInvitationId,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-
-    fn list_by_invitee(
-        &self,
-        invitee_id: &Option<UserId>,
-        pagination: &GetPaginated,
-    ) -> impl Future<Output = Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError>> + Send;
-
+    
     fn update(
         &self,
         input: UpdateServerInvitationInput,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-
+    
     fn delete(&self, id: &ServerInvitationId)
     -> impl Future<Output = Result<(), CoreError>> + Send;
 }
@@ -74,14 +67,6 @@ impl ServerInvitationRepository for MockServerInvitationRepository {
     }
 
     async fn find_by_id(&self, _id: &ServerInvitationId) -> Result<ServerInvitation, CoreError> {
-        todo!()
-    }
-
-    async fn list_by_invitee(
-        &self,
-        _invitee_id: &Option<UserId>,
-        _pagination: &GetPaginated,
-    ) -> Result<(Vec<ServerInvitation>, TotalPaginatedElements), CoreError> {
         todo!()
     }
 

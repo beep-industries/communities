@@ -1251,110 +1251,6 @@
             "bearer_auth": []
           }
         ]
-      },
-      "post": {
-        "tags": [
-          "server_members"
-        ],
-        "operationId": "create_member",
-        "parameters": [
-          {
-            "name": "server_id",
-            "in": "path",
-            "description": "Server ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMemberRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Member created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerMember"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid nickname",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Server not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Member already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
       }
     },
     "/servers/{server_id}/members/{user_id}": {
@@ -1713,27 +1609,6 @@
         "properties": {
           "user_id_invited": {
             "$ref": "#/components/schemas/UserId"
-          }
-        }
-      },
-      "CreateMemberRequest": {
-        "type": "object",
-        "description": "Request body for creating a new server member",
-        "required": [
-          "user_id"
-        ],
-        "properties": {
-          "nickname": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional custom nickname in the server",
-            "example": "CoolNickname"
-          },
-          "user_id": {
-            "$ref": "#/components/schemas/UserId",
-            "description": "User ID to add as member"
           }
         }
       },

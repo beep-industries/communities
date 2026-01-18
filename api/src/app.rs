@@ -22,7 +22,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 
 use crate::{
-    Config, channel_routes, friend_routes, role_routes,
+    Config, channel_routes, friend_routes, role_routes, server_invitation_routes,
     http::{
         health::routes::health_routes,
         server::{ApiError, AppState, middleware::auth::AuthMiddleware},
@@ -94,6 +94,7 @@ impl App {
             .merge(friend_routes())
             .merge(server_routes())
             .merge(server_member_routes())
+            .merge(server_invitation_routes())
             .merge(channel_routes())
             .merge(role_routes())
             // Add application routes here

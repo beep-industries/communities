@@ -45,49 +45,6 @@ pub struct UpdateMemberRequest {
 }
 
 #[utoipa::path(
-    post,
-    path = "/servers/{server_id}/members",
-    tag = "server_members",
-    request_body = CreateMemberRequest,
-    responses(
-        (status = 201, description = "Member created successfully", body = ServerMember),
-        (status = 400, description = "Invalid nickname", body = ErrorBody),
-        (status = 401, description = "Unauthorized", body = ErrorBody),
-        (status = 403, description = "Forbidden", body = ErrorBody),
-        (status = 404, description = "Server not found", body = ErrorBody),
-        (status = 409, description = "Member already exists", body = ErrorBody),
-        (status = 500, description = "Internal server error", body = ErrorBody)
-    ),
-    params(
-        ("server_id" = String, Path, description = "Server ID")
-    ),
-    security(("bearer_auth" = []))
-)]
-pub async fn create_member(
-    Path(server_id): Path<Uuid>,
-    State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
-    Json(request): Json<CreateMemberRequest>,
-) -> Result<Response<ServerMember>, ApiError> {
-    let server_id = ServerId::from(server_id);
-
-    // Check server exists and is public
-    let server = state.service.get_server(&server_id).await?;
-    if server.visibility != ServerVisibility::Public {
-        return Err(ApiError::Forbidden);
-    }
-
-    let input = CreateMemberInput {
-        server_id,
-        user_id: request.user_id,
-        nickname: request.nickname,
-    };
-
-    let member = state.service.create_member(input).await?;
-    Ok(Response::created(member))
-}
-
-#[utoipa::path(
     get,
     path = "/servers/{server_id}/members",
     tag = "server_members",

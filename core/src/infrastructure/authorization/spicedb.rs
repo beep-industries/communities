@@ -2,7 +2,7 @@ use beep_authz::SpiceDbRepository;
 
 use crate::domain::{authorization::ports::AuthorizationRepository, common::CoreError};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SpiceDbAuthorizationRepository {
     client: SpiceDbRepository,
 }

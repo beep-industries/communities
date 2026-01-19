@@ -527,9 +527,9 @@ dependencies = [
 
 [[package]]
 name = "beep-authz"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "112186819a88eae6cf83a4819d5db93f4cb62a6e08265f8183ceac0f4d54722a"
+checksum = "4b0c7ffbf88a4afce76a0280dcda4a3529e5e1c044dc9eacb7211e705134e8ec"
 dependencies = [
  "clap",
  "env",

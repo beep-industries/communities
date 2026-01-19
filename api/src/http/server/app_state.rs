@@ -1,4 +1,3 @@
-use beep_authz::SpiceDbRepository;
 use communities_core::{CommunitiesService, application::CommunitiesRepositories};
 
 /// Application state shared across request handlers
@@ -9,7 +8,7 @@ pub struct AppState {
 
 impl AppState {
     /// Create a new AppState with the given service
-    pub fn new(service: CommunitiesService, authorization: SpiceDbRepository) -> Self {
+    pub fn new(service: CommunitiesService) -> Self {
         Self { service }
     }
 

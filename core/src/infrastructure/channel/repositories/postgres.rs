@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use serde::Serialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -18,7 +17,7 @@ use crate::{
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresChannelRepository {
     pub(crate) pool: PgPool,
     create_channel_router: MessageRoutingInfo,

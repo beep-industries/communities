@@ -11,7 +11,7 @@ use crate::{
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresFriendshipRepository {
     pool: PgPool,
 }

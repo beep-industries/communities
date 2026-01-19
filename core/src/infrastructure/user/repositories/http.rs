@@ -8,7 +8,7 @@ use crate::{
 use tracing::{error, info};
 use urlencoding::encode;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct HttpUserRepository {
     base_url: String,
     client: reqwest::Client,
@@ -28,7 +28,11 @@ impl UserRepository for HttpUserRepository {
         info!("Fetching user by username: {}", username);
         let res = match self
             .client
-            .get(format!("{}/users/username/{}", self.base_url, encode(username)))
+            .get(format!(
+                "{}/users/username/{}",
+                self.base_url,
+                encode(username)
+            ))
             .send()
             .await
         {

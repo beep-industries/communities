@@ -30,6 +30,12 @@ pub trait AuthorizationService: Send + Sync {
         user_id: UserId,
         server_id: ServerId,
     ) -> impl Future<Output = Result<bool, CoreError>>;
+
+    fn can_manage_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>>;
 }
 
 #[derive(Clone)]

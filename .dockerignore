@@ -38,3 +38,6 @@ keycloak-config/
 
 # Local data volumes
 postgres_data/
+
+# Helm
+helm/

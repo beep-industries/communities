@@ -1,6 +1,7 @@
 use crate::{
     Service,
     domain::{
+        authorization::ports::AuthorizationRepository,
         channel::{
             entities::{
                 Channel, ChannelError, ChannelId, ChannelType, CreateChannelRepoInput,
@@ -22,8 +23,8 @@ use crate::{
     },
 };
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> ChannelService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> ChannelService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -36,6 +37,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn create_private_channel(
         &self,

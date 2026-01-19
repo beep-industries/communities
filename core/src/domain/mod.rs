@@ -1,3 +1,4 @@
+pub mod authorization;
 pub mod channel;
 pub mod channel_member;
 pub mod common;

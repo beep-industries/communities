@@ -1,3 +1,4 @@
+use crate::domain::authorization::ports::AuthorizationRepository;
 use crate::domain::channel::ports::ChannelRepository;
 use crate::domain::channel_member::ports::ChannelMemberRepository;
 use crate::domain::common::services::Service;
@@ -17,8 +18,8 @@ use crate::domain::user::port::UserRepository;
 use super::entities::{CreateMemberInput, ServerMember, UpdateMemberInput};
 use super::ports::{MemberRepository, MemberService};
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> MemberService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> MemberService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -31,6 +32,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists

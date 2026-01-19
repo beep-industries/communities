@@ -1,4 +1,5 @@
 use crate::domain::{
+    authorization::ports::AuthorizationRepository,
     channel::ports::ChannelRepository,
     channel_member::ports::ChannelMemberRepository,
     common::{CoreError, services::Service},
@@ -16,8 +17,8 @@ use crate::domain::{
     user::port::UserRepository,
 };
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> HealthService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> HealthService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -30,6 +31,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn check_health(&self) -> Result<IsHealthy, CoreError> {
         self.health_repository.ping().await.to_result()

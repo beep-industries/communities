@@ -4,6 +4,7 @@ use axum::{
     extract::{Path, State},
 };
 use communities_core::domain::{
+    authorization::ports::AuthorizationService,
     channel::{
         entities::{
             Channel, ChannelId, CreatePrivateChannelRequest, CreateServerChannelRequest,
@@ -35,12 +36,20 @@ use uuid::Uuid;
 pub async fn create_server_channel(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateServerChannelRequest>,
 ) -> Result<Response<Channel>, ApiError> {
     // Verify server exists
     state.service.get_server(&ServerId::from(server_id)).await?;
 
+    state
+        .service
+        .check_authz(
+            user_identity.user_id,
+            beep_authz::Permissions::ManageServer,
+            beep_authz::SpiceDbObject::Server(server_id.to_string()),
+        )
+        .await?;
     // TODO: Check if user has permission to create channels in this server
     let input = request.into_input(ServerId::from(server_id));
 

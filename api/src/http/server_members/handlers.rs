@@ -125,7 +125,7 @@ pub async fn update_member(
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != user_identity.user_id && user_id.0 != user_identity.user_id {
+    if server.owner_id != user_identity.user_id && user_id != user_identity.user_id {
         return Err(ApiError::Forbidden);
     }
 
@@ -166,9 +166,9 @@ pub async fn delete_member(
 
     // Check authorization: owner or the member themselves
     let server = state.service.get_server(&server_id).await?;
-    if server.owner_id.0 != user_identity.user_id
-        && user_id.0 != user_identity.user_id
-        && user_id.0 != server.owner_id.0
+    if server.owner_id != user_identity.user_id
+        && user_id != user_identity.user_id
+        && user_id != server.owner_id
     {
         return Err(ApiError::Forbidden);
     }

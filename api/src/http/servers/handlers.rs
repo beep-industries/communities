@@ -63,7 +63,7 @@ pub async fn get_server(
     let server = state.service.get_server(&server_id).await?;
 
     // Only allow access to public servers or if user is the owner
-    if server.visibility != ServerVisibility::Public && server.owner_id.0 != user_identity.user_id {
+    if server.visibility != ServerVisibility::Public && server.owner_id != user_identity.user_id {
         return Err(ApiError::Forbidden);
     }
 
@@ -126,7 +126,7 @@ pub async fn update_server(
 
     // Check if server exists and user is the owner
     let existing_server = state.service.get_server(&server_id).await?;
-    if existing_server.owner_id.0 != user_identity.user_id {
+    if existing_server.owner_id != user_identity.user_id {
         return Err(ApiError::Forbidden);
     }
 
@@ -159,7 +159,7 @@ pub async fn delete_server(
 
     // Check if server exists and user is the owner
     let existing_server = state.service.get_server(&server_id).await?;
-    if existing_server.owner_id.0 != user_identity.user_id {
+    if existing_server.owner_id != user_identity.user_id {
         return Err(ApiError::Forbidden);
     }
 

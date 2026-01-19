@@ -1,5 +1,6 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
 use beep_auth::{AuthRepository, KeycloakAuthRepository};
+use communities_core::domain::friend::entities::UserId;
 use uuid::Uuid;
 
 use crate::http::server::ApiError;
@@ -27,9 +28,10 @@ impl FromRequestParts<KeycloakAuthRepository> for AuthMiddleware {
             .identify(token)
             .await
             .map_err(|_| ApiError::Unauthorized)?;
-
+        let user_id_uuid =
+            Uuid::try_parse(keycloak_identity.id()).map_err(|_| ApiError::Unauthorized)?;
         let user_identity = entities::UserIdentity {
-            user_id: Uuid::try_parse(keycloak_identity.id()).map_err(|_| ApiError::Unauthorized)?,
+            user_id: UserId(user_id_uuid),
         };
 
         // Add auth state to request

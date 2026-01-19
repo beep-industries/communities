@@ -25,6 +25,15 @@ impl UserIdentity {
         }
     }
 
+    pub async fn can_view_channels_in_server(
+        &self,
+        server_id: ServerId,
+    ) -> Result<bool, CoreError> {
+        self.service
+            .can_view_channels_in_server(self.user_id, server_id)
+            .await
+    }
+
     pub async fn can_manage_channels_in_server(
         &self,
         server_id: ServerId,

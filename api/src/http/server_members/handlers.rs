@@ -68,7 +68,6 @@ pub async fn list_members(
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
     let server_id = ServerId::from(server_id);
-    let user_id = UserId::from(user_identity.user_id);
 
     // Check if server exists and user has permission to list members
     let server = state.service.get_server(&server_id).await?;
@@ -78,7 +77,7 @@ pub async fn list_members(
         // Check if the user is a member of the private server
         state
             .service
-            .get_member(server_id, user_id)
+            .get_member(server_id, *user_identity)
             .await
             .map_err(|_| ApiError::Forbidden)?;
     }

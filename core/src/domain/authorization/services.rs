@@ -53,9 +53,21 @@ where
         user_id: UserId,
         server_id: ServerId,
     ) -> impl Future<Output = Result<bool, CoreError>> {
-        self.authorization_repository.check_authz(
-            SpiceDbObject::User(user_id.to_string()),
+        self.check_authz(
+            user_id,
             Permissions::ManageChannels,
+            SpiceDbObject::Server(server_id.to_string()),
+        )
+    }
+
+    fn can_view_channels_in_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>> {
+        self.check_authz(
+            user_id,
+            beep_authz::Permissions::ViewChannels,
             SpiceDbObject::Server(server_id.to_string()),
         )
     }

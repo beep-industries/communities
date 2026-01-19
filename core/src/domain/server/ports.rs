@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain::{
     common::{CoreError, GetPaginated, TotalPaginatedElements},
+    friend::entities::UserId,
     server::entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
 };
 
@@ -14,6 +15,11 @@ pub trait ServerRepository: Send + Sync {
     fn list(
         &self,
         pagination: &GetPaginated,
+    ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
+    fn list_user_servers(
+        &self,
+        pagination: &GetPaginated,
+        user_id: UserId,
     ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
     fn update(
         &self,
@@ -138,6 +144,12 @@ pub trait ServerService: Send + Sync {
         &self,
         server_id: &ServerId,
     ) -> impl Future<Output = Result<(), CoreError>> + Send;
+
+    fn list_user_servers(
+        &self,
+        pagination: &GetPaginated,
+        user_id: UserId,
+    ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
 }
 
 #[derive(Clone)]
@@ -243,5 +255,22 @@ impl ServerRepository for MockServerRepository {
         servers.remove(index);
 
         Ok(())
+    }
+
+    async fn list_user_servers(
+        &self,
+        pagination: &GetPaginated,
+        _user_id: UserId,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        let servers = self.servers.lock().unwrap();
+        let total = servers.len() as u64;
+
+        let offset = ((pagination.page - 1) * pagination.limit) as usize;
+        let limit = pagination.limit as usize;
+
+        let paginated_servers: Vec<Server> =
+            servers.iter().skip(offset).take(limit).cloned().collect();
+
+        Ok((paginated_servers, total))
     }
 }

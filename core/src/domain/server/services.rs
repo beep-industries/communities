@@ -3,7 +3,7 @@ use crate::domain::{
     channel::ports::ChannelRepository,
     channel_member::ports::ChannelMemberRepository,
     common::{CoreError, GetPaginated, TotalPaginatedElements, services::Service},
-    friend::ports::FriendshipRepository,
+    friend::{entities::UserId, ports::FriendshipRepository},
     health::port::HealthRepository,
     member_role::ports::MemberRoleRepository,
     outbox::ports::OutboxRepository,
@@ -66,10 +66,10 @@ where
 
     async fn update_server(&self, input: UpdateServerInput) -> Result<Server, CoreError> {
         // Validate name if it's being updated
-        if let Some(ref name) = input.name {
-            if name.trim().is_empty() {
-                return Err(CoreError::InvalidServerName);
-            }
+        if let Some(ref name) = input.name
+            && name.trim().is_empty()
+        {
+            return Err(CoreError::InvalidServerName);
         }
 
         // @TODO Authorization: Verify user is the server owner or has admin privileges
@@ -87,5 +87,15 @@ where
         self.server_repository.delete(server_id).await?;
 
         Ok(())
+    }
+
+    async fn list_user_servers(
+        &self,
+        pagination: &GetPaginated,
+        user_id: UserId,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        self.server_repository
+            .list_user_servers(pagination, user_id)
+            .await
     }
 }

@@ -101,6 +101,38 @@ pub async fn list_servers(
 }
 
 #[utoipa::path(
+    get,
+    path = "/servers/@me",
+    tag = "servers",
+    params(
+        GetPaginated
+    ),
+    responses(
+        (status = 200, description = "List of servers retrieved successfully", body = PaginatedResponse<Server>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn list_user_servers(
+    State(state): State<AppState>,
+    Extension(user_identity): Extension<UserIdentity>,
+    Query(pagination): Query<GetPaginated>,
+) -> Result<Response<PaginatedResponse<Server>>, ApiError> {
+    let (servers, total) = state
+        .service
+        .list_user_servers(&pagination, *user_identity)
+        .await?;
+
+    let response = PaginatedResponse {
+        data: servers,
+        total,
+        page: pagination.page,
+    };
+
+    Ok(Response::ok(response))
+}
+
+#[utoipa::path(
     put,
     path = "/servers/{id}",
     tag = "servers",

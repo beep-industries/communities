@@ -1,6 +1,8 @@
+use beep_authz::SpiceDbConfig;
 use clap::Parser;
 use clap::ValueEnum;
 use communities_core::application::MessageRoutingConfig;
+use communities_core::domain::authorization;
 use outbox_dispatch::lapin::RabbitClientConfig;
 use sqlx::postgres::PgConnectOptions;
 use std::path::PathBuf;
@@ -20,6 +22,9 @@ pub struct Config {
 
     #[command(flatten)]
     pub rabbit: RabbitClientConfig,
+
+    #[command(flatten)]
+    pub spicedb: SpiceConfig,
 
     #[arg(
         long = "cors-origins",
@@ -58,6 +63,33 @@ impl Config {
         Ok(())
     }
 }
+
+#[derive(Clone, Parser, Debug, Default)]
+pub struct SpiceConfig {
+    #[arg(
+        long = "spicedb-endpoint",
+        env = "SPICEDB_ENDPOINT",
+        default_value = "http://localhost:50051"
+    )]
+    endpoint: String,
+
+    #[arg(
+        long = "spicedb-token",
+        env = "SPICEDB_TOKEN",
+        default_value = "foobar"
+    )]
+    token: String,
+}
+
+impl Into<beep_authz::SpiceDbConfig> for SpiceConfig {
+    fn into(self) -> beep_authz::SpiceDbConfig {
+        beep_authz::SpiceDbConfig {
+            endpoint: self.endpoint,
+            token: Some(self.token),
+        }
+    }
+}
+
 #[derive(Clone, Parser, Debug, Default)]
 pub struct DatabaseConfig {
     #[arg(

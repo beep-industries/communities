@@ -119,6 +119,7 @@ impl AsyncTestContext for TestContext {
                 internal_url: keycloak_url.to_string(),
                 realm: keycloak_realm.to_string(),
             },
+            ..Default::default()
         };
 
         config
@@ -134,6 +135,7 @@ impl AsyncTestContext for TestContext {
             BeepServicesConfig {
                 user_service_url: config.beep_services.user_service_url.clone(),
             },
+            config.clone().spicedb.into(),
         )
         .await
         .expect("Failed to create repositories");

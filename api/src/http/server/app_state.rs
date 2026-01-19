@@ -5,7 +5,6 @@ use communities_core::{CommunitiesService, application::CommunitiesRepositories}
 #[derive(Clone)]
 pub struct AppState {
     pub service: CommunitiesService,
-    pub authorization: SpiceDbRepository,
 }
 
 impl AppState {
@@ -34,6 +33,7 @@ impl From<CommunitiesRepositories> for AppState {
             repositories.channel_member_repository,
             repositories.member_role_repository,
             repositories.server_invitation_repository,
+            repositories.authorization_repository,
         );
         AppState { service }
     }

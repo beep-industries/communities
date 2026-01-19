@@ -30,8 +30,8 @@ utoipa = "5.4.0"
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 beep-auth = "0.1"
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-beep-authz = "0.2.0"
+beep-authz = "0.3.0"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
 [dev-dependencies]
 axum-test = "18.3.0"

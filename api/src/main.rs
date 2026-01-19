@@ -5,14 +5,20 @@ use dotenv::dotenv;
 use api::config::Config;
 use clap::Parser;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 #[tokio::main]
 async fn main() -> Result<(), ApiError> {
     // Load environment variables from .env file
     dotenv().ok();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+    // Initialize tracing subscriber
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
         .init();
 
     let mut config: Config = Config::parse();

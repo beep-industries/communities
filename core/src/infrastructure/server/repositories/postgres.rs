@@ -178,6 +178,7 @@ impl ServerRepository for PostgresServerRepository {
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
         let create_role_event = OutboxEventRecord::new(self.create_role_router.clone(), role);
 
         create_role_event.write(&mut *tx).await?;

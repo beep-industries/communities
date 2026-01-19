@@ -5,7 +5,7 @@ use communities_core::{
     CommunitiesService,
     domain::{
         authorization::ports::AuthorizationService, common::CoreError, friend::entities::UserId,
-        server::entities::ServerId,
+        server::entities::ServerId, server_member::MemberService,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -41,6 +41,21 @@ impl UserIdentity {
         self.service
             .can_manage_channels_in_server(self.user_id, server_id)
             .await
+    }
+
+    pub async fn can_manage_server(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        self.service
+            .can_manage_server(self.user_id, server_id)
+            .await
+    }
+
+    pub async fn can_view_server(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        let _ = self
+            .service
+            .get_member(server_id, self.user_id)
+            .await
+            .map_err(|_| CoreError::Forbidden)?;
+        Ok(true)
     }
 }
 

@@ -4,7 +4,6 @@ use axum::{
 };
 use communities_core::domain::{
     common::GetPaginated,
-    friend::entities::UserId,
     server::{
         entities::{CreateServerRequest, Server, ServerId, ServerVisibility, UpdateServerRequest},
         ports::ServerService,
@@ -34,7 +33,7 @@ pub async fn create_server(
     Extension(user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateServerRequest>,
 ) -> Result<Response<Server>, ApiError> {
-    let input = request.into_input(UserId::from(user_identity.user_id));
+    let input = request.into_input(*user_identity);
     let server = state.service.create_server(input).await?;
     Ok(Response::created(server))
 }
@@ -61,6 +60,8 @@ pub async fn get_server(
 ) -> Result<Response<Server>, ApiError> {
     let server_id = ServerId::from(id);
     let server = state.service.get_server(&server_id).await?;
+
+    user_identity.can_view_server(server_id).await?;
 
     // Only allow access to public servers or if user is the owner
     if server.visibility != ServerVisibility::Public && server.owner_id != user_identity.user_id {
@@ -125,8 +126,10 @@ pub async fn update_server(
     let server_id = ServerId::from(id);
 
     // Check if server exists and user is the owner
-    let existing_server = state.service.get_server(&server_id).await?;
-    if existing_server.owner_id != user_identity.user_id {
+    let server = state.service.get_server(&server_id).await?;
+
+    user_identity.can_manage_server(server.id).await?;
+    if server.owner_id != user_identity.user_id {
         return Err(ApiError::Forbidden);
     }
 

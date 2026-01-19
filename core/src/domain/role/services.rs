@@ -39,10 +39,7 @@ where
     A: AuthorizationRepository,
 {
     async fn create_role(&self, create_role_input: CreateRoleInput) -> Result<Role, CoreError> {
-        let repo_input = CreateRoleInput::try_from(create_role_input).map_err(|e| {
-            Into::<CoreError>::into(RoleError::BadRolePayload { msg: e.to_string() })
-        })?;
-        self.role_repository.create(repo_input).await
+        self.role_repository.create(create_role_input).await
     }
 
     async fn get_role(&self, role_id: &RoleId) -> Result<Role, CoreError> {
@@ -67,6 +64,10 @@ where
     }
 
     async fn delete_role(&self, role_id: &RoleId) -> Result<(), CoreError> {
+        let role = self.role_repository.find_by_id(role_id).await?;
+        if *role.id == *role.server_id {
+            return Err(CoreError::DefaultRoleDeletion);
+        }
         self.role_repository.delete(role_id).await
     }
 }

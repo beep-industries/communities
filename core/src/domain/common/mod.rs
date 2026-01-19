@@ -87,6 +87,9 @@ pub enum CoreError {
 
     #[error("Forbidden")]
     Forbidden,
+
+    #[error("Default role basic user cannot be deleted")]
+    DefaultRoleDeletion,
 }
 
 impl From<ChannelError> for CoreError {

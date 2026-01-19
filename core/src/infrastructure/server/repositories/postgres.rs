@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
+        friend::entities::UserId,
         role::entities::{Permission, Permissions, Role},
         server::{
             entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
@@ -281,6 +282,51 @@ impl ServerRepository for PostgresServerRepository {
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         Ok(())
+    }
+
+    async fn list_user_servers(
+        &self,
+        pagination: &GetPaginated,
+        user_id: UserId,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+        let limit = std::cmp::min(pagination.limit, 50) as i64;
+
+        // Get total count of servers for this user
+        let total: i64 = sqlx::query_scalar(
+            r#"
+            SELECT COUNT(*)
+            FROM servers s
+            INNER JOIN server_members sm ON s.id = sm.server_id
+            WHERE sm.user_id = $1
+            "#,
+        )
+        .bind(user_id.0)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+        // Get paginated servers for this user with a single JOIN query
+        let servers = query_as!(
+            Server,
+            r#"
+            SELECT s.id, s.name, s.banner_url, s.picture_url, s.description, s.owner_id,
+                   s.visibility as "visibility: _", s.created_at, s.updated_at
+            FROM servers s
+            INNER JOIN server_members sm ON s.id = sm.server_id
+            WHERE sm.user_id = $1
+            ORDER BY sm.joined_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id.0,
+            limit,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+        Ok((servers, total as u64))
     }
 }
 

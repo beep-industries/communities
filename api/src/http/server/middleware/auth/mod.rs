@@ -21,7 +21,7 @@ impl FromRequestParts<AuthState> for AuthMiddleware {
         let token = auth_header
             .and_then(|value| value.to_str().ok())
             .and_then(|value| value.strip_prefix("Bearer "))
-            .ok_or_else(|| ApiError::Unauthorized)?;
+            .ok_or(ApiError::Unauthorized)?;
 
         // Validate the token
         let keycloak_identity = state

@@ -63,6 +63,31 @@ impl UserIdentity {
             .can_manage_roles_in_server(self.user_id, server_id)
             .await
     }
+
+    pub async fn can_update_or_change_nickname(
+        &self,
+        server_id: ServerId,
+        updated_user_id: UserId,
+    ) -> Result<bool, CoreError> {
+        let mut can_do_operation = self
+            .service
+            .can_update_nickname(self.user_id, server_id)
+            .await
+            .unwrap_or(false);
+
+        if !can_do_operation && (self.user_id == updated_user_id) {
+            can_do_operation = self
+                .service
+                .can_change_nickname(self.user_id, server_id)
+                .await
+                .unwrap_or(false);
+        }
+
+        if !can_do_operation {
+            return Err(CoreError::Forbidden);
+        }
+        Ok(can_do_operation)
+    }
 }
 
 impl Deref for UserIdentity {

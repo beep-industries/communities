@@ -42,6 +42,18 @@ pub trait AuthorizationService: Send + Sync {
         user_id: UserId,
         server_id: ServerId,
     ) -> impl Future<Output = Result<bool, CoreError>>;
+
+    fn can_change_nickname(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>>;
+
+    fn can_update_nickname(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>>;
 }
 
 #[derive(Clone)]

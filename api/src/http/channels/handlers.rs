@@ -40,17 +40,13 @@ pub async fn create_server_channel(
     Json(request): Json<CreateServerChannelRequest>,
 ) -> Result<Response<Channel>, ApiError> {
     // Verify server exists
-    state.service.get_server(&ServerId::from(server_id)).await?;
+    let server_id = ServerId::from(server_id);
+    state.service.get_server(&server_id).await?;
 
-    state
-        .service
-        .check_authz(
-            user_identity.user_id,
-            beep_authz::Permissions::ManageChannels,
-            beep_authz::SpiceDbObject::Server(server_id.to_string()),
-        )
+    user_identity
+        .can_manage_channels_in_server(server_id)
         .await?;
-    let input = request.into_input(ServerId::from(server_id));
+    let input = request.into_input(server_id);
 
     let channel = state.service.create_server_channel(input).await?;
     Ok(Response::created(channel))
@@ -97,21 +93,11 @@ pub async fn list_channels(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<Vec<Channel>>, ApiError> {
+    let server_id = ServerId::from(server_id);
     // Verify server exists
-    state.service.get_server(&ServerId::from(server_id)).await?;
-
-    state
-        .service
-        .check_authz(
-            *user_identity,
-            beep_authz::Permissions::ViewChannels,
-            beep_authz::SpiceDbObject::Server(server_id.to_string()),
-        )
-        .await?;
-    let channels = state
-        .service
-        .list_channels_in_server(ServerId::from(server_id))
-        .await?;
+    state.service.get_server(&server_id).await?;
+    user_identity.can_view_channels_in_server(server_id).await?;
+    let channels = state.service.list_channels_in_server(server_id).await?;
 
     Ok(Response::ok(channels))
 }
@@ -139,14 +125,7 @@ pub async fn get_channel(
     let channel = state.service.get_channel_by_id(channel_id).await?;
 
     if let Some(server_id) = channel.server_id {
-        state
-            .service
-            .check_authz(
-                *user_identity,
-                beep_authz::Permissions::ViewChannels,
-                beep_authz::SpiceDbObject::Server(server_id.to_string()),
-            )
-            .await?;
+        user_identity.can_view_channels_in_server(server_id).await?;
     }
 
     Ok(Response::ok(channel))
@@ -179,13 +158,8 @@ pub async fn update_channel(
 
     let channel = state.service.get_channel_by_id(channel_id).await?;
     if let Some(server_id) = channel.server_id {
-        state
-            .service
-            .check_authz(
-                *user_identity,
-                beep_authz::Permissions::ManageChannels,
-                beep_authz::SpiceDbObject::Server(server_id.to_string()),
-            )
+        user_identity
+            .can_manage_channels_in_server(server_id)
             .await?;
     }
 
@@ -217,13 +191,8 @@ pub async fn delete_channel(
     let channel_id = ChannelId::from(id);
     let channel = state.service.get_channel_by_id(channel_id).await?;
     if let Some(server_id) = channel.server_id {
-        state
-            .service
-            .check_authz(
-                *user_identity,
-                beep_authz::Permissions::ManageChannels,
-                beep_authz::SpiceDbObject::Server(server_id.to_string()),
-            )
+        user_identity
+            .can_manage_channels_in_server(server_id)
             .await?;
     }
 

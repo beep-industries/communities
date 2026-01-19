@@ -48,6 +48,18 @@ where
         )
     }
 
+    fn can_manage_roles_in_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>> {
+        self.check_authz(
+            user_id,
+            beep_authz::Permissions::ManageRoles,
+            SpiceDbObject::Server(server_id.to_string()),
+        )
+    }
+
     fn can_manage_server(
         &self,
         user_id: UserId,

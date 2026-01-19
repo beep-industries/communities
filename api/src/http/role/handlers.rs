@@ -6,12 +6,14 @@ use communities_core::domain::{
     common::GetPaginated,
     member_role::{entities::MemberRole, ports::MemberRoleService},
     role::{
+        self,
         entities::{
             CreateRoleInput, CreateRoleRequest, Permissions, Role, RoleId, UpdateRoleInput,
             UpdateRoleRequest,
         },
         ports::RoleService,
     },
+    server::entities::ServerId,
     server_member::MemberId,
 };
 use uuid::Uuid;
@@ -41,9 +43,12 @@ use crate::{
 pub async fn create_role(
     State(state): State<AppState>,
     Path(server_id): Path<Uuid>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateRoleRequest>,
 ) -> Result<Response<Role>, ApiError> {
+    user_identity
+        .can_manage_role_in_servers(ServerId(server_id))
+        .await?;
     let permissions =
         Permissions::try_from(request.permissions).map_err(|e| ApiError::BadRequest {
             msg: e.to_string(),
@@ -76,8 +81,12 @@ pub async fn create_role(
 pub async fn get_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<Role>, ApiError> {
+    let role = state.service.get_role(&RoleId(role_id)).await?;
+    user_identity
+        .can_manage_role_in_servers(role.server_id)
+        .await?;
     let role = state
         .service
         .get_role(&RoleId(role_id))
@@ -104,9 +113,12 @@ pub async fn get_role(
 pub async fn list_roles_by_server(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
     Query(pagination): Query<GetPaginated>,
 ) -> Result<Response<PaginatedResponse<Role>>, ApiError> {
+    user_identity
+        .can_manage_role_in_servers(ServerId(server_id))
+        .await?;
     let (data, total) = state
         .service
         .list_roles_by_server(&pagination, server_id)
@@ -140,9 +152,13 @@ pub async fn list_roles_by_server(
 pub async fn update_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
     Json(request): Json<UpdateRoleRequest>,
 ) -> Result<Response<Role>, ApiError> {
+    let role = state.service.get_role(&RoleId(role_id)).await?;
+    user_identity
+        .can_manage_role_in_servers(role.server_id)
+        .await?;
     let update_role = UpdateRoleInput {
         id: RoleId(role_id),
         name: request.name,
@@ -174,8 +190,12 @@ pub async fn update_role(
 pub async fn delete_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<()>, ApiError> {
+    let role = state.service.get_role(&RoleId(role_id)).await?;
+    user_identity
+        .can_manage_role_in_servers(role.server_id)
+        .await?;
     state
         .service
         .delete_role(&RoleId(role_id))
@@ -203,8 +223,12 @@ pub async fn delete_role(
 pub async fn assign_role(
     Path((role_id, member_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<MemberRole>, ApiError> {
+    let role = state.service.get_role(&RoleId(role_id)).await?;
+    user_identity
+        .can_manage_role_in_servers(role.server_id)
+        .await?;
     let member_role = state
         .service
         .assign_member_to_role(RoleId(role_id), MemberId(member_id))
@@ -232,8 +256,12 @@ pub async fn assign_role(
 pub async fn unassign_role(
     Path((role_id, member_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
-    Extension(_user_identity): Extension<UserIdentity>,
+    Extension(user_identity): Extension<UserIdentity>,
 ) -> Result<Response<()>, ApiError> {
+    let role = state.service.get_role(&RoleId(role_id)).await?;
+    user_identity
+        .can_manage_role_in_servers(role.server_id)
+        .await?;
     state
         .service
         .unassign_member_from_role(RoleId(role_id), MemberId(member_id))

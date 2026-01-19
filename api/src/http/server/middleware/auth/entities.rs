@@ -1,10 +1,11 @@
 use chrono::Utc;
+use communities_core::domain::friend::entities::UserId;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct UserIdentity {
-    pub user_id: Uuid,
+    pub user_id: UserId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

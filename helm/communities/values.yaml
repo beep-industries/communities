@@ -87,9 +87,15 @@ database:
   port: 5432
   user: "postgres"
   name: "communities"
-  # Password should be provided via secret
+  # Password configuration (choose one):
+  # Option 1: Provide an existing secret name (recommended for production)
   existingSecret: ""
   secretKey: "password"
+  # Option 2: Provide the password directly (will be base64 encoded in the secret)
+  # password: "your-secure-password"
+  # Option 3: Auto-generate a random 32-character password (useful for dev/testing)
+  # WARNING: Auto-generated passwords change on each helm upgrade, which may break connections
+  autoGeneratePassword: false
 
 # Keycloak configuration
 keycloak:

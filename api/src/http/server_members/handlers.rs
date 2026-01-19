@@ -5,10 +5,7 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
-    server::{
-        entities::{ServerId, ServerVisibility},
-        ports::ServerService,
-    },
+    server::entities::ServerId,
     server_member::{
         entities::{ServerMember, UpdateMemberInput},
         ports::MemberService,
@@ -69,18 +66,7 @@ pub async fn list_members(
 ) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
     let server_id = ServerId::from(server_id);
 
-    // Check if server exists and user has permission to list members
-    let server = state.service.get_server(&server_id).await?;
-
-    // For private servers, only members can list other members
-    if server.visibility != ServerVisibility::Public {
-        // Check if the user is a member of the private server
-        state
-            .service
-            .get_member(server_id, *user_identity)
-            .await
-            .map_err(|_| ApiError::Forbidden)?;
-    }
+    user_identity.can_view_server(server_id).await?;
 
     let page = pagination.page;
     let (members, total) = state.service.list_members(server_id, pagination).await?;
@@ -123,10 +109,9 @@ pub async fn update_member(
     let user_id = UserId::from(user_id);
 
     // Check authorization: owner or the member themselves
-    let server = state.service.get_server(&server_id).await?;
-    if server.owner_id != user_identity.user_id && user_id != user_identity.user_id {
-        return Err(ApiError::Forbidden);
-    }
+    user_identity
+        .can_update_or_change_nickname(server_id, user_id)
+        .await?;
 
     let input = UpdateMemberInput {
         server_id,
@@ -163,14 +148,7 @@ pub async fn delete_member(
     let server_id = ServerId::from(server_id);
     let user_id = UserId::from(user_id);
 
-    // Check authorization: owner or the member themselves
-    let server = state.service.get_server(&server_id).await?;
-    if server.owner_id != user_identity.user_id
-        && user_id != user_identity.user_id
-        && user_id != server.owner_id
-    {
-        return Err(ApiError::Forbidden);
-    }
+    user_identity.can_manage_server(server_id).await?;
 
     state.service.delete_member(server_id, user_id).await?;
     Ok(Response::ok(json!({})))

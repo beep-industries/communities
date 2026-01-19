@@ -95,4 +95,28 @@ where
             SpiceDbObject::Server(server_id.to_string()),
         )
     }
+
+    fn can_change_nickname(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>> {
+        self.check_authz(
+            user_id,
+            beep_authz::Permissions::ChangeNickname,
+            SpiceDbObject::Server(server_id.to_string()),
+        )
+    }
+
+    fn can_update_nickname(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>> {
+        self.check_authz(
+            user_id,
+            beep_authz::Permissions::ManageNicknames,
+            SpiceDbObject::Server(server_id.to_string()),
+        )
+    }
 }

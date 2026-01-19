@@ -1,6 +1,7 @@
 use crate::{
     Service,
     domain::{
+        authorization::ports::AuthorizationRepository,
         channel::ports::ChannelRepository,
         channel_member::{
             entities::{ChannelMember, CreateChannelMemberInput, DeleteChannelMemberInput},
@@ -19,8 +20,8 @@ use crate::{
     },
 };
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> ChannelMemberService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> ChannelMemberService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -33,6 +34,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn create_channel_member(
         &self,

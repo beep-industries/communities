@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use beep_auth::KeycloakAuthRepository;
+use beep_authz::{SpiceDbConfig, SpiceDbRepository};
 use sqlx::{
     PgPool,
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -13,6 +14,7 @@ use crate::{
     },
     infrastructure::{
         MessageRoutingInfo,
+        authorization::SpiceDbAuthorizationRepository,
         channel::repositories::PostgresChannelRepository,
         friend::repositories::postgres::PostgresFriendshipRepository,
         health::repositories::postgres::PostgresHealthRepository,
@@ -43,6 +45,7 @@ pub type CommunitiesService = Service<
     MockChannelMemberRepository,
     PostgresMemberRoleRepository,
     PostgresServerInvitationRepository,
+    SpiceDbAuthorizationRepository,
 >;
 
 #[derive(Clone)]
@@ -60,6 +63,7 @@ pub struct CommunitiesRepositories {
     pub channel_member_repository: MockChannelMemberRepository,
     pub member_role_repository: PostgresMemberRoleRepository,
     pub server_invitation_repository: PostgresServerInvitationRepository,
+    pub authorization_repository: SpiceDbAuthorizationRepository,
 }
 
 pub async fn create_repositories(
@@ -67,6 +71,7 @@ pub async fn create_repositories(
     message_routing_config: MessageRoutingConfig,
     keycloak_issuer: String,
     beep_services: BeepServicesConfig,
+    spicedb_config: SpiceDbConfig,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -106,6 +111,10 @@ pub async fn create_repositories(
     let member_role_repository =
         PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().upsert_role);
     let server_invitation_repository = PostgresServerInvitationRepository::new(pool.clone());
+    let spicedb_repository = SpiceDbRepository::new(spicedb_config)
+        .await
+        .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
+    let authorization_repository = SpiceDbAuthorizationRepository::new(spicedb_repository);
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -120,6 +129,7 @@ pub async fn create_repositories(
         channel_member_repository,
         member_role_repository,
         server_invitation_repository,
+        authorization_repository,
     })
 }
 
@@ -137,6 +147,7 @@ impl From<CommunitiesRepositories> for CommunitiesService {
             repos.channel_member_repository,
             repos.member_role_repository,
             repos.server_invitation_repository,
+            repos.authorization_repository,
         )
     }
 }

@@ -1,3 +1,4 @@
+use crate::domain::authorization::ports::AuthorizationRepository;
 use crate::domain::channel::ports::ChannelRepository;
 use crate::domain::channel_member::ports::ChannelMemberRepository;
 use crate::domain::common::CoreError;
@@ -16,8 +17,8 @@ use crate::domain::user::port::UserRepository;
 use super::entities::{InsertServerInvitationInput, ServerInvitation, ServerInvitationId};
 use super::ports::{ServerInvitationRepository, ServerInvitationService};
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> ServerInvitationService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> ServerInvitationService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -30,6 +31,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn create_invitation(
         &self,

@@ -1,5 +1,6 @@
 use crate::{
     domain::{
+        authorization::ports::AuthorizationRepository,
         channel::ports::ChannelRepository,
         channel_member::ports::ChannelMemberRepository,
         common::{GetPaginated, TotalPaginatedElements, services::Service},
@@ -21,8 +22,8 @@ use crate::{
 
 use tracing::error;
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> FriendService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> FriendService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -35,6 +36,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn get_friends(
         &self,
@@ -51,8 +53,8 @@ where
     }
 }
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI> FriendRequestService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> FriendRequestService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -65,6 +67,7 @@ where
     CM: ChannelMemberRepository,
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn get_friend_requests(
         &self,

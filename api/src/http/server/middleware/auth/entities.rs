@@ -57,6 +57,12 @@ impl UserIdentity {
             .map_err(|_| CoreError::Forbidden)?;
         Ok(true)
     }
+
+    pub async fn can_manage_role_in_servers(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        self.service
+            .can_manage_roles_in_server(self.user_id, server_id)
+            .await
+    }
 }
 
 impl Deref for UserIdentity {

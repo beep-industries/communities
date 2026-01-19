@@ -1,6 +1,6 @@
 use beep_authz::SpiceDbRepository;
 
-use crate::domain::authorization::ports::AuthorizationRepository;
+use crate::domain::{authorization::ports::AuthorizationRepository, common::CoreError};
 
 #[derive(Clone)]
 pub struct SpiceDbAuthorizationRepository {
@@ -14,5 +14,17 @@ impl SpiceDbAuthorizationRepository {
 }
 
 impl AuthorizationRepository for SpiceDbAuthorizationRepository {
-    // Methods will be implemented later
+    async fn check_authz(
+        &self,
+        user: beep_authz::SpiceDbObject,
+        permission: beep_authz::Permissions,
+        resource: beep_authz::SpiceDbObject,
+    ) -> Result<bool, CoreError> {
+        self.client
+            .check_permissions(resource, permission, user)
+            .await
+            .result()
+            .map_err(|_| CoreError::Forbidden)?;
+        Ok(true)
+    }
 }

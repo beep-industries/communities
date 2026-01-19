@@ -14,7 +14,7 @@ use crate::{
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PostgresMemberRoleRepository {
     pool: PgPool,
     assign_role_routing: MessageRoutingInfo,

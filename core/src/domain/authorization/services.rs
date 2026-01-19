@@ -1,4 +1,4 @@
-use beep_authz::SpiceDbObject;
+use beep_authz::{Permissions, SpiceDbObject};
 
 use crate::{
     Service,
@@ -12,17 +12,19 @@ use crate::{
         member_role::ports::MemberRoleRepository,
         outbox::ports::OutboxRepository,
         role::ports::RoleRepository,
-        server::ports::ServerRepository,
+        server::{entities::ServerId, ports::ServerRepository},
         server_invitation::ports::ServerInvitationRepository,
         server_member::MemberRepository,
+        user::port::UserRepository,
     },
 };
 
-impl<S, F, H, M, C, R, O, CM, MR, SI, A> AuthorizationService
-    for Service<S, F, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> AuthorizationService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    U: UserRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,
@@ -43,6 +45,18 @@ where
             SpiceDbObject::User(user_id.to_string()),
             permission,
             resource,
+        )
+    }
+
+    fn can_manage_channels_in_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>> {
+        self.authorization_repository.check_authz(
+            SpiceDbObject::User(user_id.to_string()),
+            Permissions::ManageChannels,
+            SpiceDbObject::Server(server_id.to_string()),
         )
     }
 }

@@ -5,7 +5,6 @@ use axum::{
     },
     middleware::from_extractor_with_state,
 };
-use beep_auth::KeycloakAuthRepository;
 use communities_core::{
     application::{BeepServicesConfig, CommunitiesRepositories},
     create_repositories,
@@ -25,7 +24,10 @@ use crate::{
     Config, channel_routes, friend_routes,
     http::{
         health::routes::health_routes,
-        server::{ApiError, AppState, middleware::auth::AuthMiddleware},
+        server::{
+            ApiError, AppState,
+            middleware::auth::{AuthMiddleware, auth_state::AuthState},
+        },
     },
     role_routes, server_invitation_routes, server_member_routes, server_routes,
 };
@@ -95,6 +97,11 @@ impl App {
             .allow_credentials(true)
             .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
+        let state: AppState = repositories.clone().into();
+        let auth_state = AuthState::new(
+            repositories.keycloak_repository.clone(),
+            state.service.clone(),
+        );
         let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
             .merge(server_routes())
@@ -103,10 +110,9 @@ impl App {
             .merge(channel_routes())
             .merge(role_routes())
             // Add application routes here
-            .route_layer(from_extractor_with_state::<
-                AuthMiddleware,
-                KeycloakAuthRepository,
-            >(repositories.keycloak_repository.clone()))
+            .route_layer(from_extractor_with_state::<AuthMiddleware, AuthState>(
+                auth_state,
+            ))
             .layer(cors)
             .split_for_parts();
 
@@ -117,7 +123,6 @@ impl App {
         let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
             msg: format!("Failed to generate OpenAPI spec: {}", e),
         })?;
-        let state: AppState = repositories.into();
 
         let outbox_stream = state
             .service

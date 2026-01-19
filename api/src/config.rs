@@ -1,8 +1,6 @@
-use beep_authz::SpiceDbConfig;
 use clap::Parser;
 use clap::ValueEnum;
 use communities_core::application::MessageRoutingConfig;
-use communities_core::domain::authorization;
 use outbox_dispatch::lapin::RabbitClientConfig;
 use sqlx::postgres::PgConnectOptions;
 use std::path::PathBuf;

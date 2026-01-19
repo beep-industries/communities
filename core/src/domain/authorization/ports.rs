@@ -1,6 +1,6 @@
 use beep_authz::SpiceDbObject;
 
-use crate::domain::{common::CoreError, friend::entities::UserId};
+use crate::domain::{common::CoreError, friend::entities::UserId, server::entities::ServerId};
 
 pub trait AuthorizationRepository: Send + Sync {
     fn check_authz(
@@ -17,6 +17,12 @@ pub trait AuthorizationService: Send + Sync {
         user_id: UserId,
         permission: beep_authz::Permissions,
         resource: SpiceDbObject,
+    ) -> impl Future<Output = Result<bool, CoreError>>;
+
+    fn can_manage_channels_in_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
     ) -> impl Future<Output = Result<bool, CoreError>>;
 }
 
@@ -44,5 +50,4 @@ impl AuthorizationRepository for MockAuthorizationRepository {
     ) -> Result<bool, CoreError> {
         Ok(true)
     }
-    // Methods will be implemented later
 }

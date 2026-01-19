@@ -14,7 +14,7 @@ use crate::domain::{
 };
 
 /// PostgreSQL implementation of the outbox repository
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresOutboxRepository {
     pool: PgPool,
 }

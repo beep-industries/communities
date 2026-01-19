@@ -10,7 +10,7 @@ use communities_core::domain::{
         ports::ServerService,
     },
     server_member::{
-        entities::{CreateMemberInput, ServerMember, UpdateMemberInput},
+        entities::{ServerMember, UpdateMemberInput},
         ports::MemberService,
     },
 };

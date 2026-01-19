@@ -2,7 +2,7 @@ use sqlx::PgPool;
 
 use crate::domain::health::{entities::IsHealthy, port::HealthRepository};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresHealthRepository {
     pool: PgPool,
 }

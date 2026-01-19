@@ -1,11 +1,46 @@
+use std::ops::Deref;
+
 use chrono::Utc;
-use communities_core::domain::friend::entities::UserId;
+use communities_core::{
+    CommunitiesService,
+    domain::{
+        authorization::ports::AuthorizationService, common::CoreError, friend::entities::UserId,
+        server::entities::ServerId,
+    },
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct UserIdentity {
+    service: CommunitiesService,
     pub user_id: UserId,
+}
+
+impl UserIdentity {
+    pub fn new(service: CommunitiesService, user_id_uuid: Uuid) -> Self {
+        Self {
+            service,
+            user_id: UserId(user_id_uuid),
+        }
+    }
+
+    pub async fn can_manage_channels_in_server(
+        &self,
+        server_id: ServerId,
+    ) -> Result<bool, CoreError> {
+        self.service
+            .can_manage_channels_in_server(self.user_id, server_id)
+            .await
+    }
+}
+
+impl Deref for UserIdentity {
+    type Target = UserId;
+
+    fn deref(&self) -> &Self::Target {
+        &self.user_id
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

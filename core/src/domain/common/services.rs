@@ -7,7 +7,7 @@ use crate::domain::{
     user::port::UserRepository,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,

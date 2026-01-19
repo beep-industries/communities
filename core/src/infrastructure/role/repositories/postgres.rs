@@ -12,7 +12,7 @@ use crate::{
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresRoleRepository {
     pool: PgPool,
     create_role_router: MessageRoutingInfo,

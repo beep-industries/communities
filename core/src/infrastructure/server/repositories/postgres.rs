@@ -14,7 +14,7 @@ use crate::{
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresServerRepository {
     pub(crate) pool: PgPool,
     delete_server_router: MessageRoutingInfo,

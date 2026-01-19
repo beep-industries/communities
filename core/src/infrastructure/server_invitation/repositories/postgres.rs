@@ -12,7 +12,7 @@ use crate::domain::{
     },
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresServerInvitationRepository {
     pub(crate) pool: PgPool,
 }

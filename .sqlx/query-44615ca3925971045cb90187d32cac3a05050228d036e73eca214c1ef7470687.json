@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT s.id, s.name, s.banner_url, s.picture_url, s.description, s.owner_id,\n                   s.visibility as \"visibility: _\", s.created_at, s.updated_at\n            FROM servers s\n            INNER JOIN server_members sm ON s.id = sm.server_id\n            WHERE sm.user_id = $1\n            ORDER BY sm.joined_at DESC\n            LIMIT $2 OFFSET $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "banner_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "picture_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "owner_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "visibility: _",
+        "type_info": {
+          "Custom": {
+            "name": "server_visibility",
+            "kind": {
+              "Enum": [
+                "public",
+                "private"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "44615ca3925971045cb90187d32cac3a05050228d036e73eca214c1ef7470687"
+}

@@ -13,17 +13,17 @@ pub trait ServerInvitationRepository: Send + Sync {
         &self,
         input: InsertServerInvitationInput,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-    
+
     fn find_by_id(
         &self,
         id: &ServerInvitationId,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-    
+
     fn update(
         &self,
         input: UpdateServerInvitationInput,
     ) -> impl Future<Output = Result<ServerInvitation, CoreError>> + Send;
-    
+
     fn delete(&self, id: &ServerInvitationId)
     -> impl Future<Output = Result<(), CoreError>> + Send;
 }

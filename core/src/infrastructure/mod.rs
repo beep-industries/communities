@@ -7,6 +7,7 @@ pub mod role;
 pub mod server;
 pub mod server_invitation;
 pub mod server_member;
+pub mod user;
 
 pub use outbox::MessageRoutingInfo;
 pub use outbox::write_outbox_event;

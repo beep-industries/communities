@@ -6,15 +6,16 @@ use communities_core::domain::{
     friend::entities::UserId,
     server::{entities::ServerId, ports::ServerService},
     server_invitation::{
-        entities::{AcceptInvitationInput, CreateServerInvitationRequest, ServerInvitation, ServerInvitationId},
+        entities::{
+            AcceptInvitationInput, CreateServerInvitationRequest, ServerInvitation,
+            ServerInvitationId,
+        },
         ports::ServerInvitationService,
     },
 };
 use uuid::Uuid;
 
-use crate::http::server::{
-    ApiError, AppState, Response, middleware::auth::entities::UserIdentity,
-};
+use crate::http::server::{ApiError, AppState, Response, middleware::auth::entities::UserIdentity};
 
 #[utoipa::path(
     post,
@@ -41,7 +42,7 @@ pub async fn create_invitation(
 ) -> Result<Response<ServerInvitation>, ApiError> {
     let server_id = ServerId::from(server_id);
     let inviter_id = UserId::from(user_identity.user_id);
-    
+
     // Verify user owns the server
     let server = state.service.get_server(&server_id).await?;
     if server.owner_id != inviter_id {
@@ -101,7 +102,7 @@ pub async fn accept_invitation(
         invitation_id: ServerInvitationId::from(invitation_id),
         user_id: UserId::from(user_identity.user_id),
     };
-    
+
     state.service.accept_invitation(&accept_input).await?;
     Ok(Response::ok(()))
 }

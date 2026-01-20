@@ -116,7 +116,7 @@ pub trait FriendRequestService: Send + Sync {
     fn create_friend_request(
         &self,
         user_id_requested: &UserId,
-        user_id_invited: &UserId,
+        user_id_invited: &str,
     ) -> impl Future<Output = Result<FriendRequest, FriendshipError>> + Send;
 
     fn accept_friend_request(

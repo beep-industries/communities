@@ -13,6 +13,7 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
+use tracing::info;
 use uuid::Uuid;
 
 use crate::http::server::{
@@ -166,10 +167,11 @@ pub async fn create_friend_request(
     Extension(user_identity): Extension<UserIdentity>,
     Json(input): Json<CreateFriendRequestInput>,
 ) -> Result<Response<FriendRequest>, ApiError> {
+    info!("Creating friend request to {:?}", input.user_pseudo_invited);
     let user_id = UserId::from(user_identity.user_id);
     let friend_request = state
         .service
-        .create_friend_request(&user_id, &input.user_id_invited)
+        .create_friend_request(&user_id, &input.user_pseudo_invited)
         .await?;
     Ok(Response::created(friend_request))
 }

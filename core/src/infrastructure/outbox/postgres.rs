@@ -196,8 +196,7 @@ mod tests {
 
         // Insert multiple READY test messages
         for _ in 0..5 {
-            insert_test_message(&pool, "test.exchange", "READY")
-                .await?;
+            insert_test_message(&pool, "test.exchange", "READY").await?;
         }
 
         // Insert some SENT messages that should NOT be returned

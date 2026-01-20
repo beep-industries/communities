@@ -1604,11 +1604,11 @@
       "CreateFriendRequestInput": {
         "type": "object",
         "required": [
-          "user_id_invited"
+          "user_pseudo_invited"
         ],
         "properties": {
-          "user_id_invited": {
-            "$ref": "#/components/schemas/UserId"
+          "user_pseudo_invited": {
+            "type": "string"
           }
         }
       },

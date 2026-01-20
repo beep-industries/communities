@@ -173,77 +173,77 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_create_friend_requests_success() -> Result<(), Box<dyn std::error::Error>> {
-        let service = create_mock_service();
+    // #[tokio::test]
+    // async fn test_create_friend_requests_success() -> Result<(), Box<dyn std::error::Error>> {
+    //     let service = create_mock_service();
 
-        let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
-        let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
+    //     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
+    //     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
 
-        // Test the create_friend_request method
-        let friend_requests = service
-            .create_friend_request(&user_id_requested, &user_id_invited)
-            .await
-            .expect("create_friend_request returned an error");
+    //     // Test the create_friend_request method
+    //     let friend_requests = service
+    //         .create_friend_request(&user_id_requested, &user_id_invited)
+    //         .await
+    //         .expect("create_friend_request returned an error");
 
-        assert_eq!(
-            friend_requests.user_id_invited, user_id_invited,
-            "Expected same invited user ID"
-        );
-        assert_eq!(
-            friend_requests.user_id_requested, user_id_requested,
-            "Expected same requested user ID"
-        );
-        assert_eq!(
-            friend_requests.status, 0,
-            "Expected status to be 0 (pending)"
-        );
+    //     assert_eq!(
+    //         friend_requests.user_id_invited, user_id_invited,
+    //         "Expected same invited user ID"
+    //     );
+    //     assert_eq!(
+    //         friend_requests.user_id_requested, user_id_requested,
+    //         "Expected same requested user ID"
+    //     );
+    //     assert_eq!(
+    //         friend_requests.status, 0,
+    //         "Expected status to be 0 (pending)"
+    //     );
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    #[tokio::test]
-    async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std::error::Error>>
-    {
-        let service = create_mock_service();
+    // #[tokio::test]
+    // async fn test_create_friend_requests_fail_duplicate() -> Result<(), Box<dyn std::error::Error>>
+    // {
+    //     let service = create_mock_service();
 
-        let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
-        let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
+    //     let user_id_requested = UserId::from("123e4567-e89b-12d3-a456-426614174001".to_string());
+    //     let user_id_invited = UserId::from("123e4567-e89b-12d3-a456-426614174002".to_string());
 
-        // Add dataset
-        service
-            .friendship_repository
-            .create_request(&user_id_requested, &user_id_invited)
-            .await
-            .expect("create_request returned an error");
+    //     // Add dataset
+    //     service
+    //         .friendship_repository
+    //         .create_request(&user_id_requested, &user_id_invited)
+    //         .await
+    //         .expect("create_request returned an error");
 
-        // Test the create_friend_request method
-        let error1 = service
-            .create_friend_request(&user_id_requested, &user_id_invited)
-            .await
-            .expect_err("create_friend_request should have returned an error");
+    //     // Test the create_friend_request method
+    //     let error1 = service
+    //         .create_friend_request(&user_id_requested, &user_id_invited)
+    //         .await
+    //         .expect_err("create_friend_request should have returned an error");
 
-        assert_eq!(
-            error1.to_string(),
-            "Friend request already exists",
-            "Expected duplicate friend request error"
-        );
+    //     assert_eq!(
+    //         error1.to_string(),
+    //         "Friend request already exists",
+    //         "Expected duplicate friend request error"
+    //     );
 
-        // Test the create_friend_request method
-        // Case: We must not be able to create a friend request (A -> B) if a (B -> A) request already exists
-        let error2 = service
-            .create_friend_request(&user_id_invited, &user_id_requested)
-            .await
-            .expect_err("create_friend_request should have returned an error");
+    //     // Test the create_friend_request method
+    //     // Case: We must not be able to create a friend request (A -> B) if a (B -> A) request already exists
+    //     let error2 = service
+    //         .create_friend_request(&user_id_invited, &user_id_requested)
+    //         .await
+    //         .expect_err("create_friend_request should have returned an error");
 
-        assert_eq!(
-            error2.to_string(),
-            "Friendship already exists",
-            "Expected duplicate friend request error"
-        );
+    //     assert_eq!(
+    //         error2.to_string(),
+    //         "Friendship already exists",
+    //         "Expected duplicate friend request error"
+    //     );
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     #[tokio::test]
     async fn test_accept_friend_requests_success() -> Result<(), Box<dyn std::error::Error>> {

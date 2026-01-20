@@ -10,3 +10,4 @@ pub mod server;
 pub mod server_invitation;
 pub mod server_member;
 pub mod test;
+pub mod user;

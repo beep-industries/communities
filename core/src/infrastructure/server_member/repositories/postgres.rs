@@ -115,7 +115,7 @@ impl MemberRepository for PostgresMemberRepository {
 
             let assign_member_to_role_event =
                 OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
-            
+
             assign_member_to_role_event.write(&mut *tx).await?;
         }
 
@@ -335,10 +335,10 @@ mod tests {
             VALUES ($1, $2, $3, $4)
             "#,
         )
-        .bind(server_id.0)  // Role ID = Server ID (same as in real server creation)
+        .bind(server_id.0) // Role ID = Server ID (same as in real server creation)
         .bind(server_id.0)
         .bind("BasicUser")
-        .bind(0i32)  // Basic permissions
+        .bind(0i32) // Basic permissions
         .execute(pool)
         .await
         .map_err(|e| CoreError::DatabaseError {

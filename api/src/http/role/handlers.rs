@@ -44,8 +44,11 @@ pub async fn create_role(
     Extension(_user_identity): Extension<UserIdentity>,
     Json(request): Json<CreateRoleRequest>,
 ) -> Result<Response<Role>, ApiError> {
-    let permissions = Permissions::try_from(request.permissions)
-        .map_err(|e| ApiError::BadRequest { msg: e.to_string() })?;
+    let permissions =
+        Permissions::try_from(request.permissions).map_err(|e| ApiError::BadRequest {
+            msg: e.to_string(),
+            error_code: None,
+        })?;
     let create_role = CreateRoleInput {
         server_id,
         name: request.name,

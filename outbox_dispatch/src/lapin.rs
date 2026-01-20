@@ -71,8 +71,7 @@ impl RabbitClient {
         &self,
         exchange: &ExchangeName,
         message: &[u8],
-    ) -> Result<(), RabbitClientError>
-    {
+    ) -> Result<(), RabbitClientError> {
         let _: PublisherConfirm = self
             .channel
             .basic_publish(

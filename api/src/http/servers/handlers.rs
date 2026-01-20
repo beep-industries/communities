@@ -161,9 +161,6 @@ pub async fn update_server(
     let server = state.service.get_server(&server_id).await?;
 
     user_identity.can_manage_server(server.id).await?;
-    if server.owner_id != user_identity.user_id {
-        return Err(ApiError::Forbidden);
-    }
 
     let input = request.into_input(server_id);
     let server = state.service.update_server(input).await?;

@@ -6,6 +6,7 @@ use crate::{
 };
 
 use tracing::{error, info};
+use urlencoding::encode;
 
 #[derive(Clone)]
 pub struct HttpUserRepository {
@@ -27,13 +28,13 @@ impl UserRepository for HttpUserRepository {
         info!("Fetching user by username: {}", username);
         let res = match self
             .client
-            .get(format!("{}/users/username/{}", self.base_url, username))
+            .get(format!("{}/users/username/{}", self.base_url, encode(username)))
             .send()
             .await
         {
             Ok(res) => res,
             Err(e) => {
-                error!("An error occured with the User service: {}", e);
+                error!("An error occurred with the User service: {}", e);
                 return Err(UserError::UserNotFound);
             }
         };

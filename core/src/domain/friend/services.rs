@@ -19,7 +19,7 @@ use crate::{
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-use tracing::{error, info};
+use tracing::error;
 
 impl<S, F, U, H, M, C, R, O, CM, MR, SI> FriendService
     for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
@@ -89,11 +89,11 @@ where
     async fn create_friend_request(
         &self,
         user_id_requested: &UserId,
-        user_pseudo_invited: &String,
+        user_pseudo_invited: &str,
     ) -> Result<FriendRequest, FriendshipError> {
         let user_id_invited = self
             .user_repository
-            .get_user_by_username(user_pseudo_invited)
+            .get_user_by_username(&user_pseudo_invited.to_string())
             .await
             .map_err(|e| {
                 error!("Error fetching user by username: {}", e);

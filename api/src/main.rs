@@ -8,12 +8,12 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), ApiError> {
+    // Load environment variables from .env file
+    dotenv().ok();
+
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
-
-    // Load environment variables from .env file
-    dotenv().ok();
 
     let mut config: Config = Config::parse();
     config.load_routing().map_err(|e| ApiError::StartupError {

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT user_id_requested, user_id_invited, status, created_at\n            FROM friend_requests\n            WHERE user_id_invited = $1\n            ORDER BY status ASC, created_at DESC\n            LIMIT $2\n            OFFSET $3\n            ",
+  "query": "\n            SELECT user_id_requested, user_id_invited, status, created_at\n            FROM friend_requests\n            WHERE user_id_invited = $1\n            AND status = 0\n            ORDER BY status ASC, created_at DESC\n            LIMIT $2\n            OFFSET $3\n            ",
   "describe": {
     "columns": [
       {
@@ -38,5 +38,5 @@
       false
     ]
   },
-  "hash": "b6d5e2fa319483f84943ede10185d93f6a39ec168cacdae12a566c47c3609058"
+  "hash": "acff15d134bb088fe492d6bdd9bff7ede9fe646f49a03789d1cdc76d705fbef8"
 }

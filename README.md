@@ -22,32 +22,26 @@ Create the .env file from the example:
 cp .env.example .env
 ```
 
-Launch Docker services:
+Create network & start rabbitmq:
 
 ```bash
-docker compose up -d
+docker network create authz_communities
+docker compose --profile lazy up rabbitmq rabbitmq-init -d
 ```
 
-Run migrations:
+Start the [user service](https://github.com/beep-industries/user)
+Start the [authz service](https://github.com/beep-industries/authz)
+
+You are almost done, start the app & db:
 
 ```bash
-sqlx migrate run --source core/migrations
-```
-
-Launch the API server:
-
-```bash
-RUST_LOG=info cargo run --bin api
+docker compose --profile lazy up -d
 ```
 
 The application runs two servers on separate ports:
 
-- **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
-  - `GET /health` - Health check with database connectivity
+- **Health server** on `http://localhost:9090`
 - **API server** on `http://localhost:3003` - Main application endpoints
-  - Future business logic endpoints will be added here
-
-This dual-server architecture provides DDOS protection by isolating health checks from API traffic.
 
 ## Configuration
 

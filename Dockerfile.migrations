@@ -1,0 +1,37 @@
+# Migration runner stage - Alpine with latest Rust
+FROM alpine:3.21 AS builder
+
+WORKDIR /app
+
+# Install build dependencies and Rust via rustup
+RUN apk add --no-cache \
+    curl \
+    gcc \
+    musl-dev \
+    openssl-dev \
+    openssl-libs-static \
+    pkgconfig
+
+# Install Rust (latest stable)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install sqlx-cli
+RUN cargo install sqlx-cli --no-default-features --features postgres,rustls
+
+# Runtime stage
+FROM alpine:3.21
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache libgcc
+
+# Copy sqlx-cli binary
+COPY --from=builder /root/.cargo/bin/sqlx /usr/local/bin/sqlx
+
+# Copy migrations
+COPY core/migrations /app/migrations
+
+# Set the entrypoint to run migrations
+ENTRYPOINT ["sqlx", "migrate", "run", "--source", "/app/migrations"]

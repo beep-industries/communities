@@ -13,15 +13,18 @@ use crate::{
         outbox::ports::OutboxRepository,
         role::ports::RoleRepository,
         server::ports::ServerRepository,
-        server_member::MemberRepository,
         server_invitation::ports::ServerInvitationRepository,
+        server_member::MemberRepository,
+        user::port::UserRepository,
     },
 };
 
-impl<S, F, H, M, C, R, O, CM, MR, SI> ChannelMemberService for Service<S, F, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI> ChannelMemberService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    U: UserRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,

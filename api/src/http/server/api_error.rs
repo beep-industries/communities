@@ -4,7 +4,10 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use communities_core::{
-    domain::common::CoreError, infrastructure::friend::repositories::error::FriendshipError,
+    domain::common::CoreError,
+    infrastructure::{
+        friend::repositories::error::FriendshipError, user::repositories::error::UserError,
+    },
 };
 use serde::Serialize;
 use thiserror::Error;
@@ -23,9 +26,12 @@ pub enum ApiError {
     #[error("Forbidden")]
     Forbidden,
     #[error("Not found")]
-    NotFound,
+    NotFound { error_code: Option<String> },
     #[error("Bad request: {msg}")]
-    BadRequest { msg: String },
+    BadRequest {
+        msg: String,
+        error_code: Option<String>,
+    },
     #[error("Conflict")]
     Conflict { error_code: String },
 }
@@ -55,6 +61,16 @@ impl Into<ErrorBody> for ApiError {
                 error_code: Some(error_code),
                 status: status,
             },
+            ApiError::NotFound { error_code } => ErrorBody {
+                message: message,
+                error_code: error_code,
+                status: status,
+            },
+            ApiError::BadRequest { msg, error_code } => ErrorBody {
+                message: msg,
+                error_code: error_code,
+                status: status,
+            },
             _ => ErrorBody {
                 message: message,
                 error_code: None,
@@ -76,19 +92,24 @@ impl From<CoreError> for ApiError {
             CoreError::Unhealthy => ApiError::ServiceUnavailable {
                 msg: "Service is unhealthy".to_string(),
             },
-            CoreError::ServerNotFound { .. } => ApiError::NotFound,
+            CoreError::ServerNotFound { .. } => ApiError::NotFound { error_code: None },
             CoreError::InvalidServerName => ApiError::BadRequest {
                 msg: "Server name cannot be empty".to_string(),
+                error_code: None,
             },
-            CoreError::MemberNotFound { .. } => ApiError::NotFound,
+            CoreError::MemberNotFound { .. } => ApiError::NotFound { error_code: None },
             CoreError::MemberAlreadyExists { .. } => ApiError::Conflict {
                 error_code: "MEMBER_ALREADY_EXISTS".to_string(),
             },
             CoreError::InvalidMemberNickname => ApiError::BadRequest {
                 msg: "Invalid member nickname: cannot be empty or whitespace".to_string(),
+                error_code: None,
             },
-            CoreError::ChannelNotFound { .. } => ApiError::NotFound,
-            CoreError::ChannelPayloadError { msg, .. } => ApiError::BadRequest { msg },
+            CoreError::ChannelNotFound { .. } => ApiError::NotFound { error_code: None },
+            CoreError::ChannelPayloadError { msg, .. } => ApiError::BadRequest {
+                msg,
+                error_code: None,
+            },
             CoreError::Forbidden => ApiError::Forbidden,
             _ => ApiError::InternalServerError,
         }
@@ -98,7 +119,11 @@ impl From<CoreError> for ApiError {
 impl From<FriendshipError> for ApiError {
     fn from(error: FriendshipError) -> Self {
         match error {
-            FriendshipError::FriendRequestNotFound => ApiError::NotFound,
+            FriendshipError::CannotFriendYourself => ApiError::BadRequest {
+                msg: "Cannot send a friend request to yourself".to_string(),
+                error_code: Some(error.error_code().to_string()),
+            },
+            FriendshipError::FriendRequestNotFound => ApiError::NotFound { error_code: None },
             FriendshipError::FriendRequestAlreadyExists => ApiError::Conflict {
                 error_code: error.error_code().to_string(),
             },
@@ -106,11 +131,26 @@ impl From<FriendshipError> for ApiError {
             FriendshipError::FriendshipAlreadyExists => ApiError::Conflict {
                 error_code: error.error_code().to_string(),
             },
-            FriendshipError::FriendshipNotFound => ApiError::NotFound,
+            FriendshipError::FriendshipNotFound => ApiError::NotFound { error_code: None },
+            FriendshipError::UserNotFound => ApiError::NotFound {
+                error_code: Some(error.error_code().to_string()),
+            },
             _ => ApiError::InternalServerError,
         }
     }
 }
+
+impl From<UserError> for ApiError {
+    fn from(error: UserError) -> Self {
+        match error {
+            UserError::UserNotFound => ApiError::NotFound {
+                error_code: error.error_code().to_string().into(),
+            },
+            _ => ApiError::InternalServerError,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ErrorBody {
     pub message: String,

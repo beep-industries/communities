@@ -11,14 +11,17 @@ use crate::domain::{
         entities::{InsertServerInput, Server, ServerId, UpdateServerInput},
         ports::{ServerRepository, ServerService},
     },
-    server_member::MemberRepository,
     server_invitation::ports::ServerInvitationRepository,
+    server_member::MemberRepository,
+    user::port::UserRepository,
 };
 
-impl<S, F, H, M, C, R, O, CM, MR, SI> ServerService for Service<S, F, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI> ServerService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    U: UserRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,

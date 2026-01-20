@@ -55,10 +55,7 @@ impl Dispatcher {
         println!("{:?}", exchange_payload);
         let encoded = exchange_payload.encode_proto();
         self.rabbit_client
-            .produce(
-                exchange_payload.exchange_name(),
-                &encoded,
-            )
+            .produce(exchange_payload.exchange_name(), &encoded)
             .await
             .map_err(|e| DispatcherError::SendMessageError {
                 reason: e.to_string(),

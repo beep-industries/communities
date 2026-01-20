@@ -1,8 +1,8 @@
-use api::config::{Environment, KeycloakConfig};
+use api::config::{BeepServicesConfig as BeepServicesConfigApi, Environment, KeycloakConfig};
 use api::{App, Config, app::AppBuilder, config::DatabaseConfig};
 use axum_test::TestServer;
 use base64::{Engine as _, engine::general_purpose};
-use communities_core::application::MessageRoutingConfig;
+use communities_core::application::{BeepServicesConfig, MessageRoutingConfig};
 use communities_core::{application::CommunitiesRepositories, create_repositories};
 use outbox_dispatch::lapin::RabbitClientConfig;
 use serde_json::Value;
@@ -97,6 +97,10 @@ impl AsyncTestContext for TestContext {
 
         let cors_origins = vec!["http://localhost:3003".to_string()];
 
+        let beep_services = BeepServicesConfigApi {
+            user_service_url: "http://localhost:3000".to_string(),
+        };
+
         let keycloak_url = "http://localhost:8080";
         let keycloak_realm = "myrealm";
         let rabbit = RabbitClientConfig {
@@ -109,6 +113,7 @@ impl AsyncTestContext for TestContext {
             origins: cors_origins,
             routing_config_path: "../config/routing.yaml".to_string().into(),
             routing: MessageRoutingConfig::default(),
+            beep_services,
             environment: Environment::Test,
             keycloak: KeycloakConfig {
                 internal_url: keycloak_url.to_string(),
@@ -126,6 +131,9 @@ impl AsyncTestContext for TestContext {
                 "{}/realms/{}",
                 config.keycloak.internal_url, config.keycloak.realm
             ),
+            BeepServicesConfig {
+                user_service_url: config.beep_services.user_service_url.clone(),
+            },
         )
         .await
         .expect("Failed to create repositories");
@@ -174,12 +182,16 @@ impl TestContext {
     /// This is useful for testing access control between different users
     /// Note: When using real Keycloak, you'd need to create additional test users
     pub async fn create_authenticated_router_with_different_user(&self) -> TestServer {
-        let (router, _) = self.create_authenticated_router_with_different_user_and_id().await;
+        let (router, _) = self
+            .create_authenticated_router_with_different_user_and_id()
+            .await;
         router
     }
 
     /// Create an authenticated router for a different user, returning both the router and user ID
-    pub async fn create_authenticated_router_with_different_user_and_id(&self) -> (TestServer, Uuid) {
+    pub async fn create_authenticated_router_with_different_user_and_id(
+        &self,
+    ) -> (TestServer, Uuid) {
         let fallback_user_id = Uuid::new_v4();
 
         // Try to get token for a different user, or use mock token
@@ -198,8 +210,8 @@ impl TestContext {
         };
 
         // Extract user ID from token
-        let user_id = Self::extract_user_id_from_token(&different_token)
-            .unwrap_or(fallback_user_id);
+        let user_id =
+            Self::extract_user_id_from_token(&different_token).unwrap_or(fallback_user_id);
 
         let mut router = TestServer::new(self.app.app_router()).unwrap();
         router.add_header(

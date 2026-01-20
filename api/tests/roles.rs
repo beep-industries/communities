@@ -72,7 +72,10 @@ async fn test_create_role_success(ctx: &mut context::TestContext) {
         body.get("server_id").and_then(|v| v.as_str()),
         Some(server_id)
     );
-    assert!(body.get("permissions").is_some(), "role must have permissions");
+    assert!(
+        body.get("permissions").is_some(),
+        "role must have permissions"
+    );
 }
 
 #[test_context(context::TestContext)]
@@ -109,7 +112,7 @@ async fn test_create_role_with_valid_permissions(ctx: &mut context::TestContext)
         .await;
 
     res.assert_status(StatusCode::CREATED);
-    
+
     let body: Value = res.json();
     assert_eq!(
         body.get("name").and_then(|v| v.as_str()),
@@ -271,7 +274,7 @@ async fn test_list_roles_by_server_success(ctx: &mut context::TestContext) {
     let body: Value = res.json();
     assert!(body.is_object(), "response must be a JSON object");
     assert!(body.get("data").is_some(), "response must have data field");
-    
+
     let data = body.get("data").unwrap();
     assert!(data.is_array(), "data must be an array");
     let roles = data.as_array().unwrap();
@@ -324,7 +327,10 @@ async fn test_list_roles_by_server_pagination(ctx: &mut context::TestContext) {
 
     let body: Value = res.json();
     assert!(body.get("page").is_some(), "response must have page field");
-    assert!(body.get("total").is_some(), "response must have total field");
+    assert!(
+        body.get("total").is_some(),
+        "response must have total field"
+    );
 }
 
 // ============================================================================
@@ -584,7 +590,10 @@ async fn test_assign_role_success(ctx: &mut context::TestContext) {
     let body: Value = res.json();
     assert!(body.is_object(), "response must be a JSON object");
     assert_eq!(body.get("role_id").and_then(|v| v.as_str()), Some(role_id));
-    assert_eq!(body.get("member_id").and_then(|v| v.as_str()), Some(member_id));
+    assert_eq!(
+        body.get("member_id").and_then(|v| v.as_str()),
+        Some(member_id)
+    );
 }
 
 #[test_context(context::TestContext)]
@@ -599,8 +608,8 @@ async fn test_assign_role_not_found(ctx: &mut context::TestContext) {
 
     // Note: Backend may return 500 or 404 depending on what's not found
     assert!(
-        res.status_code() == StatusCode::NOT_FOUND || 
-        res.status_code() == StatusCode::INTERNAL_SERVER_ERROR
+        res.status_code() == StatusCode::NOT_FOUND
+            || res.status_code() == StatusCode::INTERNAL_SERVER_ERROR
     );
 }
 
@@ -696,8 +705,8 @@ async fn test_unassign_role_not_found(ctx: &mut context::TestContext) {
 
     // Note: Backend may return 500 or 404 depending on what's not found
     assert!(
-        res.status_code() == StatusCode::NOT_FOUND || 
-        res.status_code() == StatusCode::INTERNAL_SERVER_ERROR
+        res.status_code() == StatusCode::NOT_FOUND
+            || res.status_code() == StatusCode::INTERNAL_SERVER_ERROR
     );
 }
 
@@ -756,9 +765,10 @@ async fn test_unassign_role_not_assigned(ctx: &mut context::TestContext) {
     // Backend may return 200 (OK) even if role wasn't assigned, or an error
     // This depends on the backend implementation
     assert!(
-        res.status_code() == StatusCode::OK ||
-        res.status_code() == StatusCode::NOT_FOUND || 
-        res.status_code() == StatusCode::INTERNAL_SERVER_ERROR,
-        "Unexpected status code: {}", res.status_code()
+        res.status_code() == StatusCode::OK
+            || res.status_code() == StatusCode::NOT_FOUND
+            || res.status_code() == StatusCode::INTERNAL_SERVER_ERROR,
+        "Unexpected status code: {}",
+        res.status_code()
     );
 }

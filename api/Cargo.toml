@@ -29,10 +29,12 @@ utoipa-axum = "0.2.0"
 utoipa = "5.4.0"
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 beep-auth = "0.1"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 axum-test = "18.3.0"
 test-context = "0.5.4"
 async-trait = "0.1"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 base64 = "0.22"

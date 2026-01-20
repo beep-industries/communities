@@ -11,15 +11,17 @@ use crate::domain::server::ports::ServerRepository;
 use crate::domain::server_invitation::entities::{AcceptInvitationInput, ServerInvitationStatus};
 use crate::domain::server_member::CreateMemberInput;
 use crate::domain::server_member::ports::MemberRepository;
+use crate::domain::user::port::UserRepository;
 
 use super::entities::{InsertServerInvitationInput, ServerInvitation, ServerInvitationId};
 use super::ports::{ServerInvitationRepository, ServerInvitationService};
 
-impl<S, F, H, M, C, R, O, CM, MR, SI> ServerInvitationService
-    for Service<S, F, H, M, C, R, O, CM, MR, SI>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI> ServerInvitationService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    U: UserRepository,
     H: HealthRepository,
     M: MemberRepository,
     C: ChannelRepository,
@@ -73,7 +75,8 @@ where
             // Personal invitation - only specific user can accept
             Some(invitee_id) if invitee_id == accept_input.user_id => {
                 // Check if user is not already a member
-                if self.member_repository
+                if self
+                    .member_repository
                     .find_by_server_and_user(&invitation.server_id, &invitee_id)
                     .await
                     .is_err()
@@ -96,7 +99,8 @@ where
             // General invitation - anyone can use it (invitee_id is None)
             None => {
                 // Check if user is not already a member
-                if self.member_repository
+                if self
+                    .member_repository
                     .find_by_server_and_user(&invitation.server_id, &accept_input.user_id)
                     .await
                     .is_err()

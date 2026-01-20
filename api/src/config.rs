@@ -39,6 +39,9 @@ pub struct Config {
     #[arg(skip)]
     pub routing: MessageRoutingConfig,
 
+    #[command(flatten)]
+    pub beep_services: BeepServicesConfig,
+
     #[arg(
         long = "environment",
         env = "ENVIRONMENT",
@@ -134,6 +137,17 @@ pub struct ServerConfig {
         default_value = "8081"
     )]
     pub health_port: u16,
+}
+
+#[derive(Clone, Parser, Debug, Default)]
+pub struct BeepServicesConfig {
+    #[arg(
+        long = "user-service-url",
+        env = "USER_SERVICE_URL",
+        default_value = "http://localhost:3001",
+        name = "user_service_url"
+    )]
+    pub user_service_url: String,
 }
 
 #[derive(Clone, Debug, ValueEnum, Default)]

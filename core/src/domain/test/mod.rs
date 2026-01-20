@@ -5,8 +5,8 @@ use crate::{
         friend::ports::MockFriendshipRepository, health::port::MockHealthRepository,
         member_role::ports::MockMemberRoleRepository, outbox::ports::MockOutboxRepository,
         role::ports::MockRoleRepository, server::ports::MockServerRepository,
-        server_member::MockMemberRepository,
         server_invitation::ports::MockServerInvitationRepository,
+        server_member::MockMemberRepository, user::port::MockUserRepository,
     },
 };
 pub mod channel;
@@ -20,6 +20,7 @@ pub mod server_member;
 pub type MockService = Service<
     MockServerRepository,
     MockFriendshipRepository,
+    MockUserRepository,
     MockHealthRepository,
     MockMemberRepository,
     MockChannelRepository,
@@ -33,6 +34,7 @@ pub type MockService = Service<
 pub fn create_mock_service() -> MockService {
     let channel_repository = MockChannelRepository::new();
     let friendship_repository = MockFriendshipRepository::new();
+    let user_repository = MockUserRepository::new();
     let health_repository = MockHealthRepository::new();
     let member_repository = MockMemberRepository::new();
     let server_repository = MockServerRepository::new();
@@ -44,6 +46,7 @@ pub fn create_mock_service() -> MockService {
     MockService::new(
         server_repository,
         friendship_repository,
+        user_repository,
         health_repository,
         member_repository,
         channel_repository,

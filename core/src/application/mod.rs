@@ -22,13 +22,19 @@ use crate::{
         server::repositories::postgres::PostgresServerRepository,
         server_invitation::repositories::postgres::PostgresServerInvitationRepository,
         server_member::repositories::PostgresMemberRepository,
+        user::repositories::http::HttpUserRepository,
     },
 };
+
+pub struct BeepServicesConfig {
+    pub user_service_url: String,
+}
 
 /// Concrete service type with PostgreSQL repositories
 pub type CommunitiesService = Service<
     PostgresServerRepository,
     PostgresFriendshipRepository,
+    HttpUserRepository,
     PostgresHealthRepository,
     PostgresMemberRepository,
     PostgresChannelRepository,
@@ -44,6 +50,7 @@ pub struct CommunitiesRepositories {
     pool: PgPool,
     pub server_repository: PostgresServerRepository,
     pub friendship_repository: PostgresFriendshipRepository,
+    pub user_repository: HttpUserRepository,
     pub health_repository: PostgresHealthRepository,
     pub member_repository: PostgresMemberRepository,
     pub channel_repository: PostgresChannelRepository,
@@ -59,6 +66,7 @@ pub async fn create_repositories(
     pg_connection_options: PgConnectOptions,
     message_routing_config: MessageRoutingConfig,
     keycloak_issuer: String,
+    beep_services: BeepServicesConfig,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -73,6 +81,7 @@ pub async fn create_repositories(
         message_routing_config.clone().user_join_server,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
+    let user_repository = HttpUserRepository::new(beep_services.user_service_url);
     let health_repository = PostgresHealthRepository::new(pool.clone());
     let member_repository = PostgresMemberRepository::new(
         pool.clone(),
@@ -102,6 +111,7 @@ pub async fn create_repositories(
         server_repository,
         health_repository,
         friendship_repository,
+        user_repository,
         member_repository,
         channel_repository,
         role_repository,
@@ -118,6 +128,7 @@ impl From<CommunitiesRepositories> for CommunitiesService {
         Service::new(
             repos.server_repository,
             repos.friendship_repository,
+            repos.user_repository,
             repos.health_repository,
             repos.member_repository,
             repos.channel_repository,

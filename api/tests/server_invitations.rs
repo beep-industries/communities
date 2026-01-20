@@ -106,8 +106,10 @@ async fn test_create_general_invitation_success(ctx: &mut context::TestContext) 
         Some(server_id)
     );
     assert_eq!(body.get("status").and_then(|v| v.as_str()), Some("Pending"));
-    assert!(body.get("invitee_id").is_none() || body.get("invitee_id").unwrap().is_null(), 
-        "general invitation should have null invitee_id");
+    assert!(
+        body.get("invitee_id").is_none() || body.get("invitee_id").unwrap().is_null(),
+        "general invitation should have null invitee_id"
+    );
 }
 
 #[test_context(context::TestContext)]
@@ -197,7 +199,10 @@ async fn test_create_invitation_with_expiration(ctx: &mut context::TestContext) 
     res.assert_status(StatusCode::CREATED);
 
     let body: Value = res.json();
-    assert!(body.get("expires_at").is_some(), "invitation must have expiration date");
+    assert!(
+        body.get("expires_at").is_some(),
+        "invitation must have expiration date"
+    );
 }
 
 // ============================================================================
@@ -351,7 +356,10 @@ async fn test_accept_general_invitation_success(ctx: &mut context::TestContext) 
     members_res.assert_status(StatusCode::OK);
     let members_body: Value = members_res.json();
     let members = members_body.get("data").unwrap().as_array().unwrap();
-    assert!(members.len() >= 2, "should have at least 2 members (owner + invited user)");
+    assert!(
+        members.len() >= 2,
+        "should have at least 2 members (owner + invited user)"
+    );
 }
 
 #[test_context(context::TestContext)]
@@ -403,7 +411,7 @@ async fn test_accept_general_invitation_reusable(ctx: &mut context::TestContext)
         .get(&format!("/invitations/{}", invitation_id))
         .await;
     get_res.assert_status(StatusCode::OK);
-    
+
     // NOTE: We can't test accepting with another user in this test suite
     // because we only have 2 test users, and both are now members
 }
@@ -430,7 +438,9 @@ async fn test_accept_personal_invitation_success(ctx: &mut context::TestContext)
     let server_id = server.get("id").and_then(|v| v.as_str()).unwrap();
 
     // Get the second user's ID and router
-    let (second_user_router, user_id) = ctx.create_authenticated_router_with_different_user_and_id().await;
+    let (second_user_router, user_id) = ctx
+        .create_authenticated_router_with_different_user_and_id()
+        .await;
 
     // Create a personal invitation for the second user
     let invitation_input = json!({

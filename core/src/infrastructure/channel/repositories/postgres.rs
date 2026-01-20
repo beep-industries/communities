@@ -7,7 +7,8 @@ use crate::{
     domain::{
         channel::{
             entities::{
-                Channel, ChannelId, ChannelType, CreateChannelRepoInput, DeleteChannelEvent, ServerChannelCreation, UpdateChannelRepoInput
+                Channel, ChannelId, ChannelType, CreateChannelRepoInput, DeleteChannelEvent,
+                ServerChannelCreation, UpdateChannelRepoInput,
             },
             ports::ChannelRepository,
         },
@@ -16,8 +17,6 @@ use crate::{
     },
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
-
-
 
 #[derive(Clone)]
 pub struct PostgresChannelRepository {
@@ -88,7 +87,7 @@ impl ChannelRepository for PostgresChannelRepository {
             input.name,
             server_id,
             parent_id,
-            input.channel_type as ChannelType 
+            input.channel_type as ChannelType
         )
         .fetch_one(&mut *tx)
         .await
@@ -99,17 +98,16 @@ impl ChannelRepository for PostgresChannelRepository {
         let channel: Channel = row.into();
 
         // Only send outbox event for server channels
-        if let Some(server_id) = channel.server_id{
+        if let Some(server_id) = channel.server_id {
             let server_channel = ServerChannelCreation {
                 id: channel.id,
-                 server_id,
+                server_id,
             };
             let outbox_event =
-                OutboxEventRecord::new(self.create_channel_router.clone(),server_channel);
+                OutboxEventRecord::new(self.create_channel_router.clone(), server_channel);
             outbox_event.write(&mut *tx).await?;
         }
         tx.commit().await.map_err(|e| CoreError::DatabaseError {
-
             msg: format!("Failed to commit transaction: {}", e),
         })?;
 

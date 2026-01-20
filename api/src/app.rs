@@ -7,7 +7,7 @@ use axum::{
 };
 use beep_auth::KeycloakAuthRepository;
 use communities_core::{
-    application::CommunitiesRepositories,
+    application::{BeepServicesConfig, CommunitiesRepositories},
     create_repositories,
     domain::{common::CoreError, outbox::ports::OutboxService},
 };
@@ -22,12 +22,12 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 
 use crate::{
-    Config, channel_routes, friend_routes, role_routes, server_invitation_routes,
+    Config, channel_routes, friend_routes,
     http::{
         health::routes::health_routes,
         server::{ApiError, AppState, middleware::auth::AuthMiddleware},
     },
-    server_member_routes, server_routes,
+    role_routes, server_invitation_routes, server_member_routes, server_routes,
 };
 
 #[derive(OpenApi)]
@@ -48,6 +48,7 @@ pub struct App {
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
+        let config = config.clone();
         let repositories: CommunitiesRepositories = create_repositories(
             PgConnectOptions::new()
                 .host(&config.database.host)
@@ -55,11 +56,14 @@ impl App {
                 .username(&config.database.user)
                 .password(&config.database.password)
                 .database(&config.database.db_name),
-            config.clone().routing,
+            config.routing.clone(),
             format!(
                 "{}/realms/{}",
                 config.keycloak.internal_url, config.keycloak.realm
             ),
+            BeepServicesConfig {
+                user_service_url: config.beep_services.user_service_url.clone(),
+            },
         )
         .await
         .map_err(|e| ApiError::StartupError {
@@ -120,10 +124,10 @@ impl App {
             .await
             .map_err(|e| ApiError::StartupError { msg: e.to_string() })?;
 
-        let rabbit_client = RabbitClient::new(config.clone().rabbit)
+        let rabbit_client = RabbitClient::new(config.rabbit.clone())
             .await
             .map_err(|e| ApiError::StartupError { msg: e.to_string() })?;
-        let dispatch = Dispatcher::new(outbox_stream, config.clone().routing, rabbit_client);
+        let dispatch = Dispatcher::new(outbox_stream, config.routing.clone(), rabbit_client);
         let app_router = app_router
             .with_state(state.clone())
             .merge(Scalar::with_url("/scalar", api));

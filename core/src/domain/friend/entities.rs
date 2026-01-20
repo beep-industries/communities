@@ -102,7 +102,7 @@ pub struct FriendRequest {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateFriendRequestInput {
-    pub user_id_invited: UserId,
+    pub user_pseudo_invited: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

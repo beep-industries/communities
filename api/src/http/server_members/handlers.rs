@@ -5,8 +5,12 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     friend::entities::UserId,
-    server::entities::ServerId,
+    server::{
+        entities::{ServerId, ServerVisibility},
+        ports::ServerService,
+    },
     server_member::{
+        CreateMemberInput,
         entities::{ServerMember, UpdateMemberInput},
         ports::MemberService,
     },
@@ -21,24 +25,53 @@ use crate::http::server::{
     response::PaginatedResponse,
 };
 
-/// Request body for creating a new server member
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct CreateMemberRequest {
-    /// User ID to add as member
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
-    pub user_id: UserId,
-
-    /// Optional custom nickname in the server
-    #[schema(example = "CoolNickname")]
-    pub nickname: Option<String>,
-}
-
 /// Request body for updating a server member
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateMemberRequest {
     /// New nickname for the member
     #[schema(example = "NewNickname")]
     pub nickname: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/servers/{server_id}/members",
+    tag = "server_members",
+    responses(
+        (status = 201, description = "Member created successfully", body = ServerMember),
+        (status = 400, description = "Invalid nickname", body = ErrorBody),
+        (status = 401, description = "Unauthorized", body = ErrorBody),
+        (status = 403, description = "Forbidden", body = ErrorBody),
+        (status = 404, description = "Server not found", body = ErrorBody),
+        (status = 409, description = "Member already exists", body = ErrorBody),
+        (status = 500, description = "Internal server error", body = ErrorBody)
+    ),
+    params(
+        ("server_id" = String, Path, description = "Server ID")
+    ),
+    security(("bearer_auth" = []))
+)]
+pub async fn create_member(
+    Path(server_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Extension(user_identity): Extension<UserIdentity>,
+) -> Result<Response<ServerMember>, ApiError> {
+    let server_id = ServerId::from(server_id);
+
+    // Check server exists and is public
+    let server = state.service.get_server(&server_id).await?;
+    if server.visibility != ServerVisibility::Public {
+        return Err(ApiError::Forbidden);
+    }
+
+    let input = CreateMemberInput {
+        server_id,
+        user_id: *user_identity,
+        nickname: None,
+    };
+
+    let member = state.service.create_member(input).await?;
+    Ok(Response::created(member))
 }
 
 #[utoipa::path(

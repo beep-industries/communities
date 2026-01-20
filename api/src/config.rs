@@ -69,14 +69,14 @@ pub struct SpiceConfig {
         env = "SPICEDB_ENDPOINT",
         default_value = "http://localhost:50051"
     )]
-    endpoint: String,
+    pub endpoint: String,
 
     #[arg(
         long = "spicedb-token",
         env = "SPICEDB_TOKEN",
         default_value = "foobar"
     )]
-    token: String,
+    pub token: String,
 }
 
 impl Into<beep_authz::SpiceDbConfig> for SpiceConfig {

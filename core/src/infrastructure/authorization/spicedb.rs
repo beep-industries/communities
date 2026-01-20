@@ -24,10 +24,7 @@ impl AuthorizationRepository for SpiceDbAuthorizationRepository {
             .check_permissions(resource, permission, user)
             .await
             .result()
-            .map_err(|e| {
-                dbg!(e);
-                CoreError::Forbidden
-            })?;
+            .map_err(|_| CoreError::Forbidden)?;
         Ok(true)
     }
 }

@@ -100,7 +100,7 @@ pub async fn accept_invitation(
 ) -> Result<Response<()>, ApiError> {
     let accept_input = AcceptInvitationInput {
         invitation_id: ServerInvitationId::from(invitation_id),
-        user_id: UserId::from(user_identity.user_id),
+        user_id: *user_identity,
     };
 
     state.service.accept_invitation(&accept_input).await?;

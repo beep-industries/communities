@@ -84,6 +84,7 @@ pub async fn create_repositories(
         message_routing_config.clone().create_server,
         message_routing_config.clone().upsert_role,
         message_routing_config.clone().user_join_server,
+        message_routing_config.clone().member_assign_to_role,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
     let user_repository = HttpUserRepository::new(beep_services.user_service_url);

@@ -3,17 +3,80 @@ services:
     image: postgres:17
     container_name: communities_postgres
     environment:
-      POSTGRES_DB: communities
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: $DATABASE_NAME
+      POSTGRES_USER: $DATABASE_USER
+      POSTGRES_PASSWORD: $DATABASE_PASSWORD
     ports:
-      - "5432:5432"
+      - $DATABASE_PORT:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./compose/init-uuid.sql:/docker-entrypoint-initdb.d/01-init-uuid.sql
     restart: unless-stopped
+    profiles:
+      - dev
+      - test
 
-  # PostgreSQL for Keycloak
+  postgres-lazy:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: $DATABASE_NAME
+      POSTGRES_USER: $DATABASE_USER
+      POSTGRES_PASSWORD: $DATABASE_PASSWORD
+    volumes:
+      - postgres_data_lazy:/var/lib/postgresql/data
+      - ./compose/init-uuid.sql:/docker-entrypoint-initdb.d/01-init-uuid.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - lazy
+    networks:
+      - lazy
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    environment:
+      DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres-lazy:5432/${DATABASE_NAME}
+    depends_on:
+      postgres-lazy:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - lazy
+    profiles:
+      - lazy
+
+  communities_service:
+    build:
+      context: .
+    env_file: .env
+    environment:
+      DATABASE_HOST: postgres-lazy
+      SPICEDB_ENDPOINT: http://spicedb:50051
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      USER_SERVICE_URL: http://user-service:3001
+      RABBIT_URI: amqp://rabbitmq:5672
+      ROUTING_CONFIG_PATH: /config/routing.yaml
+    volumes:
+      - ./config/routing.yaml:/config/routing.yaml
+    ports:
+      - $HEALTH_PORT:$HEALTH_PORT
+      - $API_PORT:$API_PORT
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - user
+      - lazy
+      - authz
+    profiles:
+      - lazy
+
   keycloak-communities-db:
     image: postgres:17.7
     container_name: keycloak-communities-db
@@ -28,8 +91,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    profiles:
+      - test
 
-  # Keycloak
   keycloak-communities:
     image: quay.io/keycloak/keycloak:26.4.2
     container_name: keycloak-communities
@@ -55,8 +119,9 @@ services:
     depends_on:
       keycloak-communities-db:
         condition: service_healthy
+    profiles:
+      - test
 
-  # RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management
     container_name: communities_rabbitmq
@@ -74,8 +139,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - lazy
+      - authz
+    profiles:
+      - test
+      - dev
+      - lazy
 
-  # RabbitMQ Init Container
   rabbitmq-init:
     image: rabbitmq:3-management
     container_name: communities_rabbitmq_init
@@ -90,11 +161,29 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASS: guest
     restart: "no"
+    networks:
+      - lazy
+    profiles:
+      - dev
+      - test
+      - lazy
 
 volumes:
   postgres_data:
+    driver: local
+  postgres_data_lazy:
     driver: local
   keycloak_postgres_data:
     driver: local
   rabbitmq_data:
     driver: local
+
+networks:
+  user:
+    name: user_internal
+    external: true
+  authz:
+    name: authz_communities
+    external: true
+  lazy:
+    driver: bridge

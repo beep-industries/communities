@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT user_id_1, user_id_2, created_at\n            FROM Friends\n            WHERE user_id_1 = $1 OR user_id_2 = $2\n            ",
+  "query": "\n            SELECT user_id_1, user_id_2, created_at\n            FROM Friends\n            WHERE user_id_1 = $1 AND user_id_2 = $2 OR user_id_1 = $2 AND user_id_2 = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -31,5 +31,5 @@
       false
     ]
   },
-  "hash": "147aaffb9f32167070af71f072de07b7e80934e43eaffb05faf33cec58c35009"
+  "hash": "0f800bcd2484c54d65ac5c97fba629b8f76c56939151c9513f62e3a2c1b529f0"
 }

@@ -1,3 +1,4 @@
+use events_protobuf::communities_events::MemberAssignedToRole;
 use sqlx::{PgPool, query_as};
 use uuid::Uuid;
 
@@ -5,7 +6,7 @@ use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         friend::entities::UserId,
-        member_role::entities::MemberRole,
+        member_role::entities::{AssignUserRole, MemberRole},
         role::entities::RoleId,
         server::entities::ServerId,
         server_member::{
@@ -96,7 +97,7 @@ impl MemberRepository for PostgresMemberRepository {
 
         // Only assign role if one exists for this server
         if let Some(role_id) = default_role_id {
-            let member_role = query_as!(
+            let _ = query_as!(
                 MemberRole,
                 r#"
                 INSERT INTO member_roles (role_id, member_id)
@@ -108,13 +109,18 @@ impl MemberRepository for PostgresMemberRepository {
             )
             .fetch_one(&mut *tx)
             .await
-            .map_err(|e| CoreError::AssignMemberRoleError {
+            .map_err(|_| CoreError::AssignMemberRoleError {
                 member_id: MemberId(member_id),
                 role_id: RoleId(role_id),
             })?;
 
+            let member_assigned = AssignUserRole {
+                user_id: input.user_id,
+                role_id: RoleId(role_id),
+            };
+
             let assign_member_to_role_event =
-                OutboxEventRecord::new(self.assign_role_routing.clone(), member_role.clone());
+                OutboxEventRecord::new(self.assign_role_routing.clone(), member_assigned);
 
             assign_member_to_role_event.write(&mut *tx).await?;
         }

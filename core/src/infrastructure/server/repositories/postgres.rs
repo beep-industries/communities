@@ -1,16 +1,18 @@
 use sqlx::{PgPool, query_as};
+use tracing::debug;
 use uuid::Uuid;
 
 use crate::{
     domain::{
         common::{CoreError, GetPaginated, TotalPaginatedElements},
         friend::entities::UserId,
+        member_role::entities::{AssignUserRole, MemberRole},
         role::entities::{Permission, Permissions, Role},
         server::{
             entities::{DeleteServerEvent, InsertServerInput, Server, ServerId, UpdateServerInput},
             ports::ServerRepository,
         },
-        server_member::ServerMember,
+        server_member::{MemberId, ServerMember},
     },
     infrastructure::{MessageRoutingInfo, outbox::OutboxEventRecord},
 };
@@ -22,6 +24,7 @@ pub struct PostgresServerRepository {
     create_server_router: MessageRoutingInfo,
     create_role_router: MessageRoutingInfo,
     user_join_server_router: MessageRoutingInfo,
+    assign_role_routing: MessageRoutingInfo,
 }
 
 impl PostgresServerRepository {
@@ -31,6 +34,7 @@ impl PostgresServerRepository {
         create_server_router: MessageRoutingInfo,
         create_role_router: MessageRoutingInfo,
         user_join_server_router: MessageRoutingInfo,
+        assign_role_routing: MessageRoutingInfo,
     ) -> Self {
         Self {
             pool,
@@ -38,6 +42,7 @@ impl PostgresServerRepository {
             create_server_router,
             create_role_router,
             user_join_server_router,
+            assign_role_routing,
         }
     }
 }
@@ -138,8 +143,8 @@ impl ServerRepository for PostgresServerRepository {
             RETURNING id, server_id, user_id, nickname, joined_at, updated_at
             "#,
             member_id,
-            server.id.0,
-            input.owner_id.0,
+            *server.id,
+            *input.owner_id,
         )
         .fetch_one(&mut *tx)
         .await
@@ -164,7 +169,7 @@ impl ServerRepository for PostgresServerRepository {
             Permission::ViewChannels,
         ]);
 
-        let role = query_as!(
+        let role = &query_as!(
             Role,
             r#"
             INSERT INTO roles (id, server_id, name, permissions)
@@ -183,6 +188,37 @@ impl ServerRepository for PostgresServerRepository {
         let create_role_event = OutboxEventRecord::new(self.create_role_router.clone(), role);
 
         create_role_event.write(&mut *tx).await?;
+
+        let role_id = &role.clone().id.clone();
+        let member_role = query_as!(
+            MemberRole,
+            r#"
+                INSERT INTO member_roles (role_id, member_id)
+                VALUES ($1, $2)
+                RETURNING role_id, member_id, created_at, updated_at
+                "#,
+            **role_id,
+            member_id
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| CoreError::AssignMemberRoleError {
+            member_id: MemberId(member_id),
+            role_id: role.clone().id,
+        })?;
+
+        debug!("{:?}", self.assign_role_routing.clone());
+        debug!("{:?}", member_role.clone());
+
+        let user_assign = AssignUserRole {
+            user_id: input.owner_id,
+            role_id: member_role.role_id,
+        };
+
+        let assign_member_to_role_event =
+            OutboxEventRecord::new(self.assign_role_routing.clone(), user_assign);
+
+        assign_member_to_role_event.write(&mut *tx).await?;
 
         tx.commit()
             .await
@@ -347,6 +383,7 @@ async fn test_insert_server_writes_row_and_outbox(pool: PgPool) -> Result<(), Co
         create_router.clone(),
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     let owner_id = UserId(Uuid::new_v4());
@@ -458,6 +495,7 @@ async fn test_find_by_id_returns_none_for_nonexistent(pool: PgPool) -> Result<()
         create_router,
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     // Try to find a server with a random UUID that doesn't exist
@@ -485,6 +523,7 @@ async fn test_delete_nonexistent_returns_error(pool: PgPool) -> Result<(), CoreE
         pool.clone(),
         delete_router,
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
@@ -522,6 +561,7 @@ async fn test_delete_server_removes_row_and_outbox(pool: PgPool) -> Result<(), C
         pool.clone(),
         delete_router.clone(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
@@ -599,6 +639,7 @@ async fn test_update_server_updates_fields(pool: PgPool) -> Result<(), CoreError
         create_router,
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     // Arrange: insert a server first
@@ -663,6 +704,7 @@ async fn test_update_nonexistent_server_returns_error(pool: PgPool) -> Result<()
         create_router,
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
     );
 
     // Try to update a server with a random UUID that doesn't exist
@@ -702,6 +744,7 @@ async fn test_update_server_with_no_fields_returns_unchanged(
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
@@ -752,6 +795,7 @@ async fn test_list_servers_with_pagination(pool: PgPool) -> Result<(), CoreError
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );
@@ -817,6 +861,7 @@ async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreE
         pool.clone(),
         MessageRoutingInfo::default(),
         create_router,
+        MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
         MessageRoutingInfo::default(),
     );

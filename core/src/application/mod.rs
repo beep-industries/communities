@@ -165,6 +165,8 @@ pub async fn create_repositories_with_mock_authz(
     pg_connection_options: PgConnectOptions,
     message_routing_config: MessageRoutingConfig,
     keycloak_issuer: String,
+    beep_services: BeepServicesConfig,
+    _spicedb_config: SpiceDbConfig,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -181,6 +183,7 @@ pub async fn create_repositories_with_mock_authz(
         message_routing_config.clone().member_assign_to_role,
     );
     let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
+    let user_repository = HttpUserRepository::new(beep_services.user_service_url);
     let health_repository = PostgresHealthRepository::new(pool.clone());
     let member_repository = PostgresMemberRepository::new(
         pool.clone(),
@@ -214,6 +217,7 @@ pub async fn create_repositories_with_mock_authz(
         server_repository,
         health_repository,
         friendship_repository,
+        user_repository,
         member_repository,
         channel_repository,
         role_repository,

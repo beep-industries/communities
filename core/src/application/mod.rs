@@ -159,6 +159,73 @@ impl CommunitiesRepositories {
     }
 }
 
+/// Create repositories for testing with mock authorization (no SpiceDB dependency)
+/// This is useful for tests where you want to bypass authorization checks
+pub async fn create_repositories_with_mock_authz(
+    pg_connection_options: PgConnectOptions,
+    message_routing_config: MessageRoutingConfig,
+    keycloak_issuer: String,
+) -> Result<CommunitiesRepositories, CoreError> {
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect_with(pg_connection_options)
+        .await
+        .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
+    
+    let server_repository = PostgresServerRepository::new(
+        pool.clone(),
+        message_routing_config.clone().delete_server,
+        message_routing_config.clone().create_server,
+        message_routing_config.clone().upsert_role,
+        message_routing_config.clone().user_join_server,
+        message_routing_config.clone().member_assign_to_role,
+    );
+    let friendship_repository = PostgresFriendshipRepository::new(pool.clone());
+    let health_repository = PostgresHealthRepository::new(pool.clone());
+    let member_repository = PostgresMemberRepository::new(
+        pool.clone(),
+        message_routing_config.clone().user_leave_server,
+        message_routing_config.clone().user_join_server,
+        message_routing_config.clone().member_assign_to_role,
+    );
+    let channel_repository = PostgresChannelRepository::new(
+        pool.clone(),
+        message_routing_config.clone().create_channel,
+        message_routing_config.clone().delete_channel,
+    );
+    let keycloak_repository = KeycloakAuthRepository::new(keycloak_issuer, None);
+    let role_repository = PostgresRoleRepository::new(
+        pool.clone(),
+        message_routing_config.clone().upsert_role,
+        message_routing_config.clone().upsert_role,
+        message_routing_config.clone().delete_role,
+    );
+    let outbox_repository = PostgresOutboxRepository::new(pool.clone());
+    let channel_member_repository = MockChannelMemberRepository::new();
+    let member_role_repository =
+        PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().upsert_role);
+    let server_invitation_repository = PostgresServerInvitationRepository::new(pool.clone());
+    
+    // Use mock authorization repository instead of SpiceDB
+    let authorization_repository = SpiceDbAuthorizationRepository::new_mock();
+    
+    Ok(CommunitiesRepositories {
+        pool,
+        server_repository,
+        health_repository,
+        friendship_repository,
+        member_repository,
+        channel_repository,
+        role_repository,
+        keycloak_repository,
+        outbox_repository,
+        channel_member_repository,
+        member_role_repository,
+        server_invitation_repository,
+        authorization_repository,
+    })
+}
+
 impl CommunitiesService {
     pub async fn shutdown_pool(&self) {
         self.server_repository.pool.close().await;

@@ -56,7 +56,7 @@ pub trait AuthorizationService: Send + Sync {
     ) -> impl Future<Output = Result<bool, CoreError>>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MockAuthorizationRepository;
 
 impl MockAuthorizationRepository {

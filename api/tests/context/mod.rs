@@ -1,14 +1,8 @@
-use api::config::{BeepServicesConfig as BeepServicesConfigApi, Environment, KeycloakConfig};
+use api::config::{BeepServicesConfig as BeepServicesConfigApi, Environment, KeycloakConfig, SpiceConfig};
 use api::{App, Config, app::AppBuilder, config::DatabaseConfig};
 use axum_test::TestServer;
 use base64::{Engine as _, engine::general_purpose};
 use communities_core::application::{BeepServicesConfig, MessageRoutingConfig};
-use communities_core::{application::CommunitiesRepositories, create_repositories};
-use api::config::{Environment, KeycloakConfig, SpiceConfig};
-use api::{App, Config, app::AppBuilder, config::DatabaseConfig};
-use axum_test::TestServer;
-use base64::{Engine as _, engine::general_purpose};
-use communities_core::application::MessageRoutingConfig;
 use communities_core::{application::CommunitiesRepositories, create_repositories_with_mock_authz};
 use outbox_dispatch::lapin::RabbitClientConfig;
 use serde_json::Value;
@@ -134,7 +128,7 @@ impl AsyncTestContext for TestContext {
         config
             .load_routing()
             .expect("Could not load the routing config");
-        
+
         // Use the test repository creation function with mock authorization
         let repositories = create_repositories_with_mock_authz(
             config.clone().database.into(),
@@ -143,13 +137,10 @@ impl AsyncTestContext for TestContext {
                 "{}/realms/{}",
                 config.keycloak.internal_url, config.keycloak.realm
             ),
-<<<<<<< HEAD
             BeepServicesConfig {
                 user_service_url: config.beep_services.user_service_url.clone(),
             },
             config.clone().spicedb.into(),
-=======
->>>>>>> a089fd5 (fix : test)
         )
         .await
         .expect("Failed to create repositories");

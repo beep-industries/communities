@@ -78,8 +78,6 @@ where
         user_id: UserId,
         server_id: ServerId,
     ) -> impl Future<Output = Result<bool, CoreError>> {
-        dbg!(user_id);
-        dbg!(server_id);
         self.check_authz(
             user_id,
             Permissions::ManageChannels,

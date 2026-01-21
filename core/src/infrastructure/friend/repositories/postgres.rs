@@ -11,7 +11,7 @@ use crate::{
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PostgresFriendshipRepository {
     pool: PgPool,
 }
@@ -69,7 +69,7 @@ impl FriendshipRepository for PostgresFriendshipRepository {
             r#"
             SELECT user_id_1, user_id_2, created_at
             FROM Friends
-            WHERE user_id_1 = $1 OR user_id_2 = $2
+            WHERE user_id_1 = $1 AND user_id_2 = $2 OR user_id_1 = $2 AND user_id_2 = $1
             "#,
             user_id_1.0,
             user_id_2.0
@@ -122,6 +122,43 @@ impl FriendshipRepository for PostgresFriendshipRepository {
             SELECT user_id_requested, user_id_invited, status, created_at
             FROM friend_requests
             WHERE user_id_requested = $1
+            ORDER BY status ASC, created_at DESC
+            LIMIT $2
+            OFFSET $3
+            "#,
+            user_id.0,
+            (pagination.limit as i64),
+            (offset as i64)
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|_| FriendshipError::DatabaseError)?;
+
+        Ok((friend_requests, total_count as TotalPaginatedElements))
+    }
+
+    async fn list_invitations(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+
+        let total_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM friend_requests WHERE user_id_invited = $1 AND status = 0",
+        )
+        .bind(user_id.0)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|_| FriendshipError::DatabaseError)?;
+
+        let friend_requests = query_as!(
+            FriendRequest,
+            r#"
+            SELECT user_id_requested, user_id_invited, status, created_at
+            FROM friend_requests
+            WHERE user_id_invited = $1
+            AND status = 0
             ORDER BY status ASC, created_at DESC
             LIMIT $2
             OFFSET $3

@@ -1,13 +1,101 @@
+use std::ops::Deref;
+
 use chrono::Utc;
+use communities_core::{
+    CommunitiesService,
+    domain::{
+        authorization::ports::AuthorizationService, common::CoreError, friend::entities::UserId,
+        server::entities::ServerId, server_member::MemberService,
+    },
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::http::server::ApiError;
-
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 #[derive(Clone, Debug)]
 pub struct UserIdentity {
-    pub user_id: Uuid,
+    service: CommunitiesService,
+    pub user_id: UserId,
+}
+
+impl UserIdentity {
+    pub fn new(service: CommunitiesService, user_id_uuid: Uuid) -> Self {
+        Self {
+            service,
+            user_id: UserId(user_id_uuid),
+        }
+    }
+
+    pub async fn can_view_channels_in_server(
+        &self,
+        server_id: ServerId,
+    ) -> Result<bool, CoreError> {
+        self.service
+            .can_view_channels_in_server(self.user_id, server_id)
+            .await
+    }
+
+    pub async fn can_manage_channels_in_server(
+        &self,
+        server_id: ServerId,
+    ) -> Result<bool, CoreError> {
+        self.service
+            .can_manage_channels_in_server(self.user_id, server_id)
+            .await
+    }
+
+    pub async fn can_manage_server(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        self.service
+            .can_manage_server(self.user_id, server_id)
+            .await
+    }
+
+    pub async fn can_view_server(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        let _ = self
+            .service
+            .get_member(server_id, self.user_id)
+            .await
+            .map_err(|_| CoreError::Forbidden)?;
+        Ok(true)
+    }
+
+    pub async fn can_manage_role_in_servers(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        self.service
+            .can_manage_roles_in_server(self.user_id, server_id)
+            .await
+    }
+
+    pub async fn can_update_or_change_nickname(
+        &self,
+        server_id: ServerId,
+        updated_user_id: UserId,
+    ) -> Result<bool, CoreError> {
+        let mut can_do_operation = self
+            .service
+            .can_update_nickname(self.user_id, server_id)
+            .await
+            .unwrap_or(false);
+
+        if !can_do_operation && (self.user_id == updated_user_id) {
+            can_do_operation = self
+                .service
+                .can_change_nickname(self.user_id, server_id)
+                .await
+                .unwrap_or(false);
+        }
+
+        if !can_do_operation {
+            return Err(CoreError::Forbidden);
+        }
+        Ok(can_do_operation)
+    }
+}
+
+impl Deref for UserIdentity {
+    type Target = UserId;
+
+    fn deref(&self) -> &Self::Target {
+        &self.user_id
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -20,42 +108,5 @@ pub struct Claims {
 impl Claims {
     pub fn is_expired(&self) -> bool {
         self.exp < Utc::now().timestamp()
-    }
-}
-
-#[derive(Clone)]
-pub struct AuthValidator {
-    secret_key: String,
-}
-
-impl AuthValidator {
-    pub fn new(secret_key: String) -> Self {
-        Self { secret_key }
-    }
-}
-
-pub trait TokenValidator: Send + Sync {
-    fn validate_token(&self, token: &str) -> Result<UserIdentity, ApiError>;
-}
-
-impl TokenValidator for AuthValidator {
-    fn validate_token(&self, token: &str) -> Result<UserIdentity, ApiError> {
-        let token_data = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(self.secret_key.as_bytes()),
-            &Validation::new(Algorithm::HS256),
-        )
-        .map_err(|_| ApiError::Unauthorized)?;
-
-        let claims = token_data.claims;
-
-        // check if the token has expired
-        if claims.is_expired() {
-            return Err(ApiError::Unauthorized);
-        }
-
-        Ok(UserIdentity {
-            user_id: claims.sub,
-        })
     }
 }

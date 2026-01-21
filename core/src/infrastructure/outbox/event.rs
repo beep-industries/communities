@@ -1,44 +1,116 @@
+use std::ops::Deref;
+
 use serde::Serialize;
+use sqlx::PgExecutor;
+use uuid::Uuid;
 
-/// Trait for domain events that can be written to the outbox.
-///
-/// Implement this trait on your event types to enable transactional outbox writes.
-/// The event type must also implement `Serialize` so it can be stored as JSONB.
-///
-/// # Example
-///
-/// ```rust
-/// use serde::Serialize;
-/// use communities_core::infrastructure::outbox::OutboxEvent;
-///
-/// #[derive(Serialize)]
-/// struct FriendCreatedEvent {
-///     friend_id: uuid::Uuid,
-///     created_at: chrono::DateTime<chrono::Utc>,
-/// }
-///
-/// impl OutboxEvent for FriendCreatedEvent {
-///     fn exchange_name(&self) -> String {
-///         "beep.community".to_string()
-///     }
-///
-///     fn routing_key(&self) -> String {
-///         "friend.created".to_string()
-///     }
-/// }
-/// ```
-pub trait OutboxEvent: Serialize {
-    /// Returns the exchange or topic name where this event should be published
-    fn exchange_name(&self) -> String;
+use crate::{domain::common::CoreError, write_outbox_event};
 
-    /// Returns the routing key for message broker routing
-    fn routing_key(&self) -> String;
+/// A record representing an outbox event to be published to a message broker.
+///
+/// This struct encapsulates an event payload along with routing information,
+/// following the transactional outbox pattern to ensure reliable message delivery.
+///
+/// # Type Parameters
+///
+/// * `TPayload` - The type of the event payload, must be serializable
+/// * `TRouter` - The type that provides message routing information
+pub struct OutboxEventRecord<TPayload: Serialize, TRouter: MessageRouter> {
+    /// Unique identifier for this outbox event
+    pub id: Uuid,
+    /// Router providing exchange and routing key information
+    pub router: TRouter,
+    /// The event payload to be serialized and published
+    pub payload: TPayload,
+}
 
-    /// Optional: Returns a unique event identifier
+impl<TPayload: Serialize + Clone, TRouter: MessageRouter> OutboxEventRecord<TPayload, TRouter> {
+    /// Creates a new outbox event record with a generated UUID.
     ///
-    /// Defaults to generating a new UUID. Override if you want to use a specific event ID
-    /// from your event payload for idempotency.
-    fn event_id(&self) -> uuid::Uuid {
-        uuid::Uuid::new_v4()
+    /// # Arguments
+    ///
+    /// * `router` - The message router providing routing information
+    /// * `payload` - The event payload to be published
+    ///
+    /// # Returns
+    ///
+    /// A new `OutboxEventRecord` with a randomly generated UUID
+    pub fn new(router: TRouter, payload: TPayload) -> Self {
+        let uuid = Uuid::new_v4();
+        Self {
+            id: uuid,
+            router,
+            payload,
+        }
+    }
+
+    /// Writes this outbox event to the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `executor` - A PostgreSQL executor (connection or transaction)
+    ///
+    /// # Returns
+    ///
+    /// The UUID of the written event on success, or a `CoreError` on failure
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database write operation fails
+    pub async fn write(&self, executor: impl PgExecutor<'_>) -> Result<Uuid, CoreError> {
+        write_outbox_event(executor, self).await
     }
 }
+
+/// Message routing information containing the exchange name and routing key.
+///
+/// This struct encapsulates the routing metadata required to publish
+/// a message to the correct destination in a message broker.
+#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
+pub struct MessageRoutingInfo(ExchangeName);
+
+impl Deref for MessageRoutingInfo {
+    type Target = ExchangeName;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl MessageRoutingInfo {
+    /// Creates a new `MessageRoutingInfo` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `exchange_name` - The name of the message broker exchange
+    /// * `routing_key` - The routing key for message delivery
+    pub fn new(exchange_name: &str) -> Self {
+        Self(exchange_name.to_string())
+    }
+}
+
+/// Trait for types that can provide message routing information.
+///
+/// Implementors must provide both an exchange name and routing key
+/// for publishing messages to a message broker.
+pub trait MessageRouter {
+    fn exchange_name(&self) -> String;
+}
+
+impl MessageRouter for MessageRoutingInfo {
+    fn exchange_name(&self) -> String {
+        self.0.clone()
+    }
+}
+impl<TPayload: Serialize, TRouter: MessageRouter> Serialize
+    for OutboxEventRecord<TPayload, TRouter>
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.payload.serialize(serializer)
+    }
+}
+
+pub type ExchangeName = String;

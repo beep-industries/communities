@@ -1,21 +1,42 @@
 use crate::{
     domain::{
+        authorization::ports::AuthorizationRepository,
+        channel::ports::ChannelRepository,
+        channel_member::ports::ChannelMemberRepository,
         common::{GetPaginated, TotalPaginatedElements, services::Service},
         friend::{
             entities::{DeleteFriendInput, Friend, FriendRequest, UserId},
             ports::{FriendRequestService, FriendService, FriendshipRepository},
         },
         health::port::HealthRepository,
+        member_role::ports::MemberRoleRepository,
+        outbox::ports::OutboxRepository,
+        role::ports::RoleRepository,
         server::ports::ServerRepository,
+        server_invitation::ports::ServerInvitationRepository,
+        server_member::ports::MemberRepository,
+        user::port::UserRepository,
     },
     infrastructure::friend::repositories::error::FriendshipError,
 };
 
-impl<S, F, H> FriendService for Service<S, F, H>
+use tracing::error;
+
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> FriendService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    U: UserRepository,
     H: HealthRepository,
+    M: MemberRepository,
+    C: ChannelRepository,
+    R: RoleRepository,
+    O: OutboxRepository,
+    CM: ChannelMemberRepository,
+    MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn get_friends(
         &self,
@@ -32,11 +53,21 @@ where
     }
 }
 
-impl<S, F, H> FriendRequestService for Service<S, F, H>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> FriendRequestService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
 where
     S: ServerRepository,
     F: FriendshipRepository,
+    U: UserRepository,
     H: HealthRepository,
+    M: MemberRepository,
+    C: ChannelRepository,
+    R: RoleRepository,
+    O: OutboxRepository,
+    CM: ChannelMemberRepository,
+    MR: MemberRoleRepository,
+    SI: ServerInvitationRepository,
+    A: AuthorizationRepository,
 {
     async fn get_friend_requests(
         &self,
@@ -48,22 +79,65 @@ where
             .await
     }
 
+    async fn get_friend_invitations(
+        &self,
+        pagination: &GetPaginated,
+        user_id: &UserId,
+    ) -> Result<(Vec<FriendRequest>, TotalPaginatedElements), FriendshipError> {
+        self.friendship_repository
+            .list_invitations(pagination, user_id)
+            .await
+    }
+
     async fn create_friend_request(
         &self,
         user_id_requested: &UserId,
-        user_id_invited: &UserId,
+        user_pseudo_invited: &str,
     ) -> Result<FriendRequest, FriendshipError> {
+        let user_id_invited = self
+            .user_repository
+            .get_user_by_username(&user_pseudo_invited.to_string())
+            .await
+            .map_err(|e| {
+                error!("Error fetching user by username: {}", e);
+                FriendshipError::UserNotFound
+            })?
+            .ok_or(FriendshipError::UserNotFound)?
+            .sub;
+
+        if user_id_requested.eq(&UserId(user_id_invited)) {
+            error!(
+                "User {:?} attempted to send a friend request to themselves",
+                user_id_requested
+            );
+            return Err(FriendshipError::CannotFriendYourself);
+        }
+
         let existing_request = self
             .friendship_repository
-            .get_request(user_id_invited, user_id_requested)
+            .get_request(&UserId(user_id_invited), user_id_requested)
             .await?;
 
-        if existing_request.is_some() {
+        if let Some(request) = existing_request {
+            if request.status == 0 {
+                return Err(FriendshipError::FriendshipAlreadyExists);
+            } else {
+                self.friendship_repository
+                    .remove_request(&UserId(user_id_invited), user_id_requested)
+                    .await?;
+            }
+        }
+
+        let frienship = self
+            .friendship_repository
+            .get_friend(&UserId(user_id_invited), user_id_requested)
+            .await?;
+        if frienship.is_some() {
             return Err(FriendshipError::FriendshipAlreadyExists);
         }
 
         self.friendship_repository
-            .create_request(user_id_requested, user_id_invited)
+            .create_request(user_id_requested, &UserId(user_id_invited))
             .await
     }
 

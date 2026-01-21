@@ -1,5 +1,9 @@
 use clap::Parser;
+use clap::ValueEnum;
+use communities_core::application::MessageRoutingConfig;
+use outbox_dispatch::lapin::RabbitClientConfig;
 use sqlx::postgres::PgConnectOptions;
+use std::path::PathBuf;
 
 #[derive(Clone, Parser, Debug, Default)]
 #[command(name = "communities-api")]
@@ -9,10 +13,79 @@ pub struct Config {
     pub database: DatabaseConfig,
 
     #[command(flatten)]
-    pub jwt: JwtConfig,
+    pub keycloak: KeycloakConfig,
 
     #[command(flatten)]
     pub server: ServerConfig,
+
+    #[command(flatten)]
+    pub rabbit: RabbitClientConfig,
+
+    #[command(flatten)]
+    pub spicedb: SpiceConfig,
+
+    #[arg(
+        long = "cors-origins",
+        env = "CORS_ORIGINS",
+        default_value = "http://localhost:3003,https://beep.ovh",
+        value_delimiter = ','
+    )]
+    pub origins: Vec<String>,
+
+    #[arg(
+        long = "routing-config",
+        env = "ROUTING_CONFIG_PATH",
+        default_value = "config/routing.yaml"
+    )]
+    pub routing_config_path: PathBuf,
+
+    #[arg(skip)]
+    pub routing: MessageRoutingConfig,
+
+    #[command(flatten)]
+    pub beep_services: BeepServicesConfig,
+
+    #[arg(
+        long = "environment",
+        env = "ENVIRONMENT",
+        default_value = "development"
+    )]
+    pub environment: Environment,
+}
+
+impl Config {
+    /// Load routing configuration from YAML file
+    pub fn load_routing(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let yaml_content = std::fs::read_to_string(&self.routing_config_path)?;
+        self.routing = serde_yaml::from_str(&yaml_content)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Parser, Debug, Default)]
+pub struct SpiceConfig {
+    #[arg(
+        long = "spicedb-endpoint",
+        env = "SPICEDB_ENDPOINT",
+        default_value = "http://localhost:50051"
+    )]
+    pub endpoint: String,
+
+    #[arg(
+        long = "spicedb-token",
+        env = "SPICEDB_TOKEN",
+        default_value = "foobar"
+    )]
+    pub token: String,
+}
+
+impl Into<beep_authz::SpiceDbConfig> for SpiceConfig {
+    fn into(self) -> beep_authz::SpiceDbConfig {
+        beep_authz::SpiceDbConfig {
+            endpoint: self.endpoint,
+            token: Some(self.token),
+        }
+    }
 }
 
 #[derive(Clone, Parser, Debug, Default)]
@@ -60,14 +133,22 @@ impl Into<PgConnectOptions> for DatabaseConfig {
             .database(&self.db_name)
     }
 }
+
 #[derive(Clone, Parser, Debug, Default)]
-pub struct JwtConfig {
+pub struct KeycloakConfig {
     #[arg(
-        long = "jwt-secret-key",
-        env = "JWT_SECRET_KEY",
-        name = "jwt_secret_key"
+        long = "keycloak-internal-url",
+        env = "KEYCLOAK_INTERNAL_URL",
+        default_value = "localhost"
     )]
-    pub secret_key: String,
+    pub internal_url: String,
+
+    #[arg(
+        long = "keycloak-realm",
+        env = "KEYCLOAK_REALM",
+        default_value = "user"
+    )]
+    pub realm: String,
 }
 
 #[derive(Clone, Parser, Debug, Default)]
@@ -86,4 +167,23 @@ pub struct ServerConfig {
         default_value = "8081"
     )]
     pub health_port: u16,
+}
+
+#[derive(Clone, Parser, Debug, Default)]
+pub struct BeepServicesConfig {
+    #[arg(
+        long = "user-service-url",
+        env = "USER_SERVICE_URL",
+        default_value = "http://localhost:3001",
+        name = "user_service_url"
+    )]
+    pub user_service_url: String,
+}
+
+#[derive(Clone, Debug, ValueEnum, Default)]
+pub enum Environment {
+    #[default]
+    Development,
+    Production,
+    Test,
 }

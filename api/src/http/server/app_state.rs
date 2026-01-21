@@ -23,7 +23,16 @@ impl From<CommunitiesRepositories> for AppState {
         let service = CommunitiesService::new(
             repositories.server_repository,
             repositories.friendship_repository,
+            repositories.user_repository,
             repositories.health_repository,
+            repositories.member_repository,
+            repositories.channel_repository,
+            repositories.role_repository,
+            repositories.outbox_repository,
+            repositories.channel_member_repository,
+            repositories.member_role_repository,
+            repositories.server_invitation_repository,
+            repositories.authorization_repository,
         );
         AppState { service }
     }

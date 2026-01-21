@@ -1,0 +1,141 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/beep-industries/communities
+  tag: "0.0.1"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# API service configuration
+service:
+  type: ClusterIP
+  apiPort: 3003
+  healthPort: 9090
+
+# Gateway API HTTPRoute configuration
+httpRoute:
+  enabled: false
+  annotations: {}
+  # Parent gateway references
+  parentRefs:
+    - name: main-gateway
+      namespace: gateway-system
+      # sectionName: https  # Optional: specific listener name
+  # Hostnames to match
+  hostnames:
+    - communities.example.com
+  # Routing rules
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # Optional filters (e.g., for header manipulation)
+      # filters:
+      #   - type: RequestHeaderModifier
+      #     requestHeaderModifier:
+      #       add:
+      #         - name: X-Custom-Header
+      #           value: custom-value
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Application configuration
+config:
+  # Log level
+  rustLog: "info"
+
+  # CORS origins (comma-separated)
+  corsOrigins: "http://localhost:3003,https://beep.ovh"
+
+# Database configuration
+database:
+  host: "postgres"
+  port: 5432
+  user: "postgres"
+  name: "communities"
+  # Password configuration (choose one):
+  # Option 1: Provide an existing secret name (recommended for production)
+  existingSecret: ""
+  secretKey: "password"
+  # Option 2: Provide the password directly (required if existingSecret is not set)
+  # password: "your-secure-password"
+
+# Keycloak configuration
+keycloak:
+  internalUrl: "http://keycloak:8080"
+  realm: "myrealm"
+
+# RabbitMQ configuration
+rabbitmq:
+  uri: "amqp://rabbitmq:5672"
+
+# Message routing configuration (mounted as configmap)
+routing:
+  createServer: "create.server"
+  deleteServer: "delete.server"
+  createChannel: "create.channel"
+  deleteChannel: "delete.channel"
+  updateChannel: "update.channel"
+  userJoinServer: "user.join.server"
+  userLeaveServer: "user.leave.server"
+  upsertRole: "role.upsert"
+  deleteRole: "role.delete"
+  memberAssignToRole: "member.assign.role"
+  memberUnassignFromRole: "member.unassign.role"
+
+# Health check configuration
+healthCheck:
+  enabled: true
+  livenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3

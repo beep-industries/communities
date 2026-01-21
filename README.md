@@ -16,37 +16,32 @@ It will handle:
 
 ## Quickstart
 
-
-Launch postgres:
-
-```bash
-docker compose up -d postgres
-```
-Create the .env file to let sqlx know how to connect to the database:
+Create the .env file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Run migrations:
+Create network & start rabbitmq:
 
 ```bash
-sqlx migrate run --source core/migrations
+docker network create authz_communities
+docker compose --profile lazy up rabbitmq rabbitmq-init -d
 ```
 
-Launch the API server:
+Start the [user service](https://github.com/beep-industries/user)
+Start the [authz service](https://github.com/beep-industries/authz)
+
+You are almost done, start the app & db:
 
 ```bash
-cargo run --bin api
+docker compose --profile lazy up -d
 ```
-/''
+
 The application runs two servers on separate ports:
-- **Health server** on `http://localhost:9090` - Isolated health checks (prevents DDOS on API)
-  - `GET /health` - Health check with database connectivity
-- **API server** on `http://localhost:3001` - Main application endpoints
-  - Future business logic endpoints will be added here
 
-This dual-server architecture provides DDOS protection by isolating health checks from API traffic.
+- **Health server** on `http://localhost:9090`
+- **API server** on `http://localhost:3003` - Main application endpoints
 
 ## Configuration
 
@@ -57,6 +52,7 @@ cargo run --bin api -- --help
 ```
 
 You can now see all the possible way to configure the service:
+
 ```bash
 Communities API Server
 
@@ -76,9 +72,11 @@ Options:
       --jwt-secret-key <jwt_secret_key>
           [env: JWT_SECRET_KEY=a-string-secret-at-least-256-bits-long]
       --server-api-port <api_port>
-          [env: API_PORT=3001] [default: 8080]
+          [env: API_PORT=3003] [default: 8080]
       --server-health-port <HEALTH_PORT>
           [env: HEALTH_PORT=9090] [default: 8081]
+        --cors-origins <origins>
+          [env: CORS_ORIGINS=http://localhost:3003,https://beep.ovh] [default: http://localhost:3003, https://beep.ovh]
   -h, --help
           Print help
 ```
@@ -90,16 +88,54 @@ In dev mode it should be enabled automatically due to the init script you can fi
 
 The sql migration files are located in the [`core/migrations`](core/migrations) folder.
 
+## Apply Database Migrations
+
+Before running the API in development (or when setting up a fresh DB), apply the migrations:
+
+```zsh
+# Start Postgres (if not already running)
+docker compose up -d postgres
+
+# Apply all pending migrations
+sqlx migrate run --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
+
+# (Optional) Show migration status
+sqlx migrate info --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
+```
+
 ## How to create a SQLx migration
 
 ```
 sqlx migrate add <migration-name> --source core/migrations
 ```
 
-## How to run tests
+## Running tests
 
-Every repositories are mocked, it means we don't need a database instance to run the tests.
+There are two kinds of tests in this repo:
 
-```bash
-cargo test domain::test
+- Infrastructure tests that hit a real Postgres database (via `sqlx::test`).
+- Domain tests that use mocked repositories (no database required).
+
+Recommended workflow for all tests (infrastructure + domain):
+
+```zsh
+# Start Postgres from docker-compose & run the migration
+docker compose up -d
+
+sqlx migrate run --source core/migrations
+
+# Run the test
+cargo test
 ```
+
+Run only domain tests (no DB needed):
+
+```zsh
+cargo test domain::test -- -q
+```
+
+Notes:
+
+- `#[sqlx::test(migrations = "./migrations")]` automatically applies migrations to an isolated test database.
+- Only a reachable Postgres server and `DATABASE_URL` env var are required; you do not need to run migrations manually for tests.
+- If you run the API or any non-`sqlx::test` integration tests that expect existing tables, apply migrations first (see "Apply Database Migrations" below).

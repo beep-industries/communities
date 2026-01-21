@@ -10,7 +10,10 @@ axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9"
+tower-http = { version = "0.6.6", features = ["cors"] }
 communities-core = { path = "../core", package = "communities_core" }
+outbox_dispatch = { path = "../outbox_dispatch", package = "outbox_dispatch" }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.18", features = ["serde", "v4"] }
@@ -22,7 +25,20 @@ clap = { version = "4.5.53", features = ["derive", "env"] }
 env = "1.0.1"
 dotenv = "0.15.0"
 thiserror = { workspace = true }
+utoipa-axum = "0.2.0"
+utoipa = "5.4.0"
+utoipa-scalar = { version = "0.3.0", features = ["axum"] }
+beep-auth = "0.1"
+tracing = "0.1.44"
+beep-authz = "0.3.0"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
 [dev-dependencies]
 axum-test = "18.3.0"
 test-context = "0.5.4"
+async-trait = "0.1"
+reqwest = { version = "0.12", features = [
+  "json",
+  "rustls-tls",
+], default-features = false }
+base64 = "0.22"

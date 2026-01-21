@@ -5,6 +5,7 @@ use axum::{
 };
 use communities_core::domain::common::TotalPaginatedElements;
 use serde::Serialize;
+use utoipa::ToSchema;
 
 /// Generic response wrapper for consistent API responses
 #[derive(Debug, Clone)]
@@ -57,9 +58,15 @@ where
     }
 }
 
-#[derive(Serialize)]
-pub struct PaginatedResponse<T> {
+#[derive(Serialize, ToSchema)]
+pub struct PaginatedResponse<T: Serialize> {
     pub data: Vec<T>,
     pub total: TotalPaginatedElements,
     pub page: u32,
+}
+
+impl<T: Serialize> Into<Response<PaginatedResponse<T>>> for PaginatedResponse<T> {
+    fn into(self) -> Response<PaginatedResponse<T>> {
+        Response::ok(self)
+    }
 }

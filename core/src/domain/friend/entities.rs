@@ -1,11 +1,23 @@
+use std::ops::Deref;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::domain::common::CoreError;
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
+#[schema(value_type = String)]
 pub struct UserId(pub Uuid);
+
+impl Deref for UserId {
+    type Target = Uuid;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl std::fmt::Display for UserId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -47,11 +59,12 @@ pub struct FriendRow {
 }
 
 // Is used in API responses
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Friend {
     pub user_id_1: UserId,
     pub user_id_2: UserId,
 
+    #[schema(value_type = String, format = DateTime)]
     pub created_at: DateTime<Utc>,
 }
 
@@ -77,26 +90,27 @@ pub struct FriendRequestRow {
 }
 
 // Is used in API responses
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct FriendRequest {
     pub user_id_requested: UserId,
     pub user_id_invited: UserId,
     pub status: i16,
 
+    #[schema(value_type = String, format = DateTime)]
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateFriendRequestInput {
-    pub user_id_invited: UserId,
+    pub user_pseudo_invited: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AcceptFriendRequestInput {
     pub user_id_requested: UserId,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct DeclineFriendRequestInput {
     pub user_id_requested: UserId,
 }

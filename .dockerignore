@@ -1,0 +1,43 @@
+# Build artifacts
+target/
+*.rs.bk
+
+# Keep .sqlx for offline query checking
+!.sqlx/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files (secrets should be passed at runtime)
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+compose/
+
+# Documentation
+README.md
+CLAUDE.md
+*.md
+
+# Tests (not needed in production image)
+api/tests/
+
+# Keycloak config (for local dev only)
+keycloak-config/
+
+# Local data volumes
+postgres_data/
+
+# Helm
+helm/

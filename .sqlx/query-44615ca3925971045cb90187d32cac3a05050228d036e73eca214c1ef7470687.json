@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, name, banner_url, picture_url, description, owner_id, created_at, updated_at\n            FROM servers\n            WHERE id = $1\n            ",
+  "query": "\n            SELECT s.id, s.name, s.banner_url, s.picture_url, s.description, s.owner_id,\n                   s.visibility as \"visibility: _\", s.created_at, s.updated_at\n            FROM servers s\n            INNER JOIN server_members sm ON s.id = sm.server_id\n            WHERE sm.user_id = $1\n            ORDER BY sm.joined_at DESC\n            LIMIT $2 OFFSET $3\n            ",
   "describe": {
     "columns": [
       {
@@ -35,18 +35,35 @@
       },
       {
         "ordinal": 6,
+        "name": "visibility: _",
+        "type_info": {
+          "Custom": {
+            "name": "server_visibility",
+            "kind": {
+              "Enum": [
+                "public",
+                "private"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -57,8 +74,9 @@
       true,
       false,
       false,
+      false,
       true
     ]
   },
-  "hash": "fcb939b3413fb0965802a7825b43eb772afd8aca2847f39ed02da8c342eba93c"
+  "hash": "44615ca3925971045cb90187d32cac3a05050228d036e73eca214c1ef7470687"
 }

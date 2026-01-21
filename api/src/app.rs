@@ -1,56 +1,158 @@
-use axum::middleware::from_extractor_with_state;
-use communities_core::create_repositories;
+use axum::{
+    http::{
+        HeaderValue, Method,
+        header::{AUTHORIZATION, CONTENT_TYPE},
+    },
+    middleware::from_extractor_with_state,
+};
+use communities_core::{
+    application::{BeepServicesConfig, CommunitiesRepositories},
+    create_repositories,
+    domain::{common::CoreError, outbox::ports::OutboxService},
+};
+use outbox_dispatch::{
+    dispatch::{Dispatch, Dispatcher},
+    lapin::RabbitClient,
+};
 use sqlx::postgres::PgConnectOptions;
+use tower_http::cors::CorsLayer;
+use utoipa::OpenApi;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_scalar::{Scalar, Servable};
 
-use crate::friend_routes;
-use crate::http::server::middleware::auth::AuthMiddleware;
 use crate::{
-    Config,
+    Config, channel_routes, friend_routes,
     http::{
         health::routes::health_routes,
-        server::{ApiError, AppState, middleware::auth::entities::AuthValidator},
+        server::{
+            ApiError, AppState,
+            middleware::auth::{AuthMiddleware, auth_state::AuthState},
+        },
     },
+    role_routes, server_invitation_routes, server_member_routes, server_routes,
 };
 
+#[derive(OpenApi)]
+#[openapi(info(
+    title = "Beep communities openapi",
+    contact(name = "communities-core@beep.ovh"),
+    description = "API documentation for the Communities service",
+    version = "0.0.1"
+))]
+struct ApiDoc;
 pub struct App {
     config: Config,
     pub state: AppState,
-    pub auth_validator: AuthValidator,
     app_router: axum::Router,
     health_router: axum::Router,
+    dispatcher: Dispatcher,
 }
 
 impl App {
     pub async fn new(config: Config) -> Result<Self, ApiError> {
-        let state: AppState = create_repositories(
+        let config = config.clone();
+        let repositories: CommunitiesRepositories = create_repositories(
             PgConnectOptions::new()
                 .host(&config.database.host)
                 .port(config.database.port)
                 .username(&config.database.user)
                 .password(&config.database.password)
                 .database(&config.database.db_name),
+            config.routing.clone(),
+            format!(
+                "{}/realms/{}",
+                config.keycloak.internal_url, config.keycloak.realm
+            ),
+            BeepServicesConfig {
+                user_service_url: config.beep_services.user_service_url.clone(),
+            },
+            config.clone().spicedb.into(),
         )
         .await
-        .inspect_err(|e| println!("{:?}", e))?
-        .into();
+        .map_err(|e| ApiError::StartupError {
+            msg: format!("Failed to create repositories: {}", e),
+        })?;
 
-        let auth_validator = AuthValidator::new(config.clone().jwt.secret_key);
-        let app_router = axum::Router::<AppState>::new()
+        let cors_origins = config
+            .origins
+            .iter()
+            .map(|origin| {
+                origin
+                    .parse::<HeaderValue>()
+                    .map_err(|e| CoreError::UnknownError {
+                        message: format!("{}", e),
+                    })
+            })
+            .collect::<Result<Vec<HeaderValue>, CoreError>>()?;
+
+        let cors = CorsLayer::new()
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PUT,
+                Method::DELETE,
+                Method::OPTIONS,
+            ])
+            .allow_origin(cors_origins)
+            .allow_credentials(true)
+            .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
+
+        let state: AppState = repositories.clone().into();
+        let auth_state = AuthState::new(
+            repositories.keycloak_repository.clone(),
+            state.service.clone(),
+        );
+        let (app_router, mut api) = OpenApiRouter::<AppState>::new()
             .merge(friend_routes())
+            .merge(server_routes())
+            .merge(server_member_routes())
+            .merge(server_invitation_routes())
+            .merge(channel_routes())
+            .merge(role_routes())
             // Add application routes here
-            .route_layer(from_extractor_with_state::<AuthMiddleware, AuthValidator>(
-                auth_validator.clone(),
+            .route_layer(from_extractor_with_state::<AuthMiddleware, AuthState>(
+                auth_state,
             ))
-            .with_state(state.clone());
+            .layer(cors)
+            .split_for_parts();
+
+        // Override API documentation info
+        let custom_info = ApiDoc::openapi();
+        api.info = custom_info.info;
+
+        let openapi_json = api.to_pretty_json().map_err(|e| ApiError::StartupError {
+            msg: format!("Failed to generate OpenAPI spec: {}", e),
+        })?;
+
+        let outbox_stream = state
+            .service
+            .listen_outbox_event()
+            .await
+            .map_err(|e| ApiError::StartupError { msg: e.to_string() })?;
+
+        let rabbit_client = RabbitClient::new(config.rabbit.clone())
+            .await
+            .map_err(|e| ApiError::StartupError { msg: e.to_string() })?;
+        let dispatch = Dispatcher::new(outbox_stream, config.routing.clone(), rabbit_client);
+        let app_router = app_router
+            .with_state(state.clone())
+            .merge(Scalar::with_url("/scalar", api));
+        // Write OpenAPI spec to file in development environment
+        if matches!(config.environment, crate::config::Environment::Development) {
+            std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {
+                msg: format!("Failed to write OpenAPI spec to file: {}", e),
+            })?;
+        }
+
         let health_router = axum::Router::new()
             .merge(health_routes())
             .with_state(state.clone());
         Ok(Self {
             config,
             state,
-            auth_validator,
             app_router,
             health_router,
+            dispatcher: dispatch,
         })
     }
 
@@ -58,7 +160,7 @@ impl App {
         self.app_router.clone()
     }
 
-    pub async fn start(&self) -> Result<(), ApiError> {
+    pub async fn start(mut self) -> Result<(), ApiError> {
         let health_addr = format!("0.0.0.0:{}", self.config.clone().server.health_port);
         let api_addr = format!("0.0.0.0:{}", self.config.clone().server.api_port);
         // Create TCP listeners for both servers
@@ -76,9 +178,11 @@ impl App {
         // Run both servers concurrently
         tokio::try_join!(
             axum::serve(health_listener, self.health_router.clone()),
-            axum::serve(api_listener, self.app_router.clone())
+            axum::serve(api_listener, self.app_router.clone()),
+            self.dispatcher.dispatch()
         )
         .expect("Failed to start servers");
+
         Ok(())
     }
 

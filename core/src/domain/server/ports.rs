@@ -26,6 +26,11 @@ pub trait ServerRepository: Send + Sync {
         input: UpdateServerInput,
     ) -> impl Future<Output = Result<Server, CoreError>> + Send;
     fn delete(&self, id: &ServerId) -> impl Future<Output = Result<(), CoreError>> + Send;
+    fn search_or_discover(
+        &self,
+        query: Option<String>,
+        pagination: &GetPaginated,
+    ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
 }
 
 /// A service for managing server operations in the application.
@@ -150,6 +155,12 @@ pub trait ServerService: Send + Sync {
         pagination: &GetPaginated,
         user_id: UserId,
     ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
+
+    fn search_or_discover(
+        &self,
+        query: Option<String>,
+        pagination: &GetPaginated,
+    ) -> impl Future<Output = Result<(Vec<Server>, TotalPaginatedElements), CoreError>> + Send;
 }
 
 #[derive(Clone)]
@@ -270,6 +281,32 @@ impl ServerRepository for MockServerRepository {
 
         let paginated_servers: Vec<Server> =
             servers.iter().skip(offset).take(limit).cloned().collect();
+
+        Ok((paginated_servers, total))
+    }
+
+    async fn search_or_discover(
+        &self,
+        query: Option<String>,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        let servers = self.servers.lock().unwrap();
+        
+        let filtered_servers: Vec<Server> = if let Some(q) = query {
+            servers.iter()
+                .filter(|s| s.name.to_lowercase().contains(&q.to_lowercase()))
+                .cloned()
+                .collect()
+        } else {
+            servers.clone()
+        };
+        
+        let total = filtered_servers.len() as u64;
+        let offset = ((pagination.page - 1) * pagination.limit) as usize;
+        let limit = pagination.limit as usize;
+
+        let paginated_servers: Vec<Server> =
+            filtered_servers.iter().skip(offset).take(limit).cloned().collect();
 
         Ok((paginated_servers, total))
     }

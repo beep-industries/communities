@@ -108,9 +108,52 @@ impl From<ChannelError> for CoreError {
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 #[into_params(parameter_in = Query)]
+#[serde(default)]
 pub struct GetPaginated {
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub page: u32,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub limit: u32,
+}
+
+fn deserialize_number_from_string<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Deserialize};
+    
+    struct StringOrU32;
+
+    impl<'de> serde::de::Visitor<'de> for StringOrU32 {
+        type Value = u32;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a string or u32")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<u32, E>
+        where
+            E: de::Error,
+        {
+            value.parse::<u32>().map_err(de::Error::custom)
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<u32, E>
+        where
+            E: de::Error,
+        {
+            u32::try_from(value).map_err(de::Error::custom)
+        }
+
+        fn visit_u32<E>(self, value: u32) -> Result<u32, E>
+        where
+            E: de::Error,
+        {
+            Ok(value)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrU32)
 }
 
 impl Default for GetPaginated {

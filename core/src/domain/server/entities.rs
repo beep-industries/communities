@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::domain::friend::entities::UserId;
+use crate::domain::{common::GetPaginated, friend::entities::UserId};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub struct ServerId(pub Uuid);
@@ -158,5 +158,172 @@ impl Into<DeleteServer> for DeleteServerEvent {
         DeleteServer {
             server_id: self.id.to_string(),
         }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SearchServerQuery {
+    #[serde(rename = "q")]
+    pub query: Option<String>,
+    #[serde(flatten)]
+    pub pagination: GetPaginated,
+}
+
+impl SearchServerQuery {
+    const MAX_QUERY_LENGTH: usize = 100;
+    const MAX_LIMIT: u32 = 50;
+
+    /// Validates and sanitizes the search query
+    pub fn sanitized_query(&self) -> Option<String> {
+        self.query.as_ref().and_then(|q| {
+            let trimmed = q.trim();
+            
+            // Reject empty or too long queries
+            if trimmed.is_empty() || trimmed.len() > Self::MAX_QUERY_LENGTH {
+                return None;
+            }
+
+            // Remove any null bytes or control characters
+            let cleaned: String = trimmed
+                .chars()
+                .filter(|c| !c.is_control() && *c != '\0')
+                .collect();
+
+            if cleaned.is_empty() {
+                None
+            } else {
+                Some(cleaned)
+            }
+        })
+    }
+
+    /// Returns a safe pagination with enforced max limit
+    pub fn safe_pagination(&self) -> GetPaginated {
+        GetPaginated {
+            page: self.pagination.page,
+            limit: self.pagination.limit.min(Self::MAX_LIMIT),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitized_query_normal_input() {
+        let query = SearchServerQuery {
+            query: Some("gaming server".to_string()),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), Some("gaming server".to_string()));
+    }
+
+    #[test]
+    fn test_sanitized_query_removes_control_characters() {
+        let query = SearchServerQuery {
+            query: Some("gaming\x00\x01\x02server".to_string()),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), Some("gamingserver".to_string()));
+    }
+
+    #[test]
+    fn test_sanitized_query_trims_whitespace() {
+        let query = SearchServerQuery {
+            query: Some("  gaming  ".to_string()),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), Some("gaming".to_string()));
+    }
+
+    #[test]
+    fn test_sanitized_query_rejects_empty() {
+        let query = SearchServerQuery {
+            query: Some("".to_string()),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), None);
+    }
+
+    #[test]
+    fn test_sanitized_query_rejects_whitespace_only() {
+        let query = SearchServerQuery {
+            query: Some("   ".to_string()),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), None);
+    }
+
+    #[test]
+    fn test_sanitized_query_rejects_too_long() {
+        let long_query = "a".repeat(150);
+        let query = SearchServerQuery {
+            query: Some(long_query),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), None);
+    }
+
+    #[test]
+    fn test_sanitized_query_accepts_max_length() {
+        let max_query = "a".repeat(100);
+        let query = SearchServerQuery {
+            query: Some(max_query.clone()),
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), Some(max_query));
+    }
+
+    #[test]
+    fn test_sanitized_query_none_returns_none() {
+        let query = SearchServerQuery {
+            query: None,
+            pagination: GetPaginated { page: 1, limit: 20 },
+        };
+        
+        assert_eq!(query.sanitized_query(), None);
+    }
+
+    #[test]
+    fn test_safe_pagination_enforces_max_limit() {
+        let query = SearchServerQuery {
+            query: Some("test".to_string()),
+            pagination: GetPaginated { page: 1, limit: 100 },
+        };
+        
+        let safe = query.safe_pagination();
+        assert_eq!(safe.limit, 50);
+        assert_eq!(safe.page, 1);
+    }
+
+    #[test]
+    fn test_safe_pagination_preserves_lower_limit() {
+        let query = SearchServerQuery {
+            query: Some("test".to_string()),
+            pagination: GetPaginated { page: 2, limit: 20 },
+        };
+        
+        let safe = query.safe_pagination();
+        assert_eq!(safe.limit, 20);
+        assert_eq!(safe.page, 2);
+    }
+
+    #[test]
+    fn test_safe_pagination_exactly_max_limit() {
+        let query = SearchServerQuery {
+            query: Some("test".to_string()),
+            pagination: GetPaginated { page: 1, limit: 50 },
+        };
+        
+        let safe = query.safe_pagination();
+        assert_eq!(safe.limit, 50);
     }
 }

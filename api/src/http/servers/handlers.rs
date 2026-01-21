@@ -5,7 +5,7 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     server::{
-        entities::{CreateServerRequest, Server, ServerId, ServerVisibility, UpdateServerRequest},
+        entities::{CreateServerRequest, SearchServerQuery, Server, ServerId, ServerVisibility, UpdateServerRequest},
         ports::ServerService,
     },
 };
@@ -197,4 +197,40 @@ pub async fn delete_server(
 
     state.service.delete_server(&server_id).await?;
     Ok(Response::deleted(()))
+}
+
+#[utoipa::path(
+    get,
+    path = "/servers/search",
+    tag = "servers",
+    params(
+        ("q" = Option<String>, Query, description = "Search query for server name (optional - returns random servers if not provided, max 100 chars)"),
+        GetPaginated
+    ),
+    responses(
+        (status = 200, description = "Servers retrieved successfully", body = PaginatedResponse<Server>),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn search_or_discover_servers(
+    State(state): State<AppState>,
+    Extension(_user_identity): Extension<UserIdentity>,
+    Query(search): Query<SearchServerQuery>,
+) -> Result<Response<PaginatedResponse<Server>>, ApiError> {
+    let sanitized_query = search.sanitized_query();
+    let safe_pagination = search.safe_pagination();
+
+    let (servers, total) = state
+        .service
+        .search_or_discover(sanitized_query, &safe_pagination)
+        .await?;
+
+    let response = PaginatedResponse {
+        data: servers,
+        total,
+        page: safe_pagination.page,
+    };
+
+    Ok(Response::ok(response))
 }

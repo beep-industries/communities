@@ -364,6 +364,76 @@ impl ServerRepository for PostgresServerRepository {
 
         Ok((servers, total as u64))
     }
+
+    async fn search_or_discover(
+        &self,
+        query: Option<String>,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+        // Enforce max limit of 50
+        let limit = std::cmp::min(pagination.limit, 50) as i64;
+
+        let (servers, total) = if let Some(search_query) = query {
+            // Search by name
+            let search_pattern = format!("%{}%", search_query);
+            
+            let total: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM servers WHERE visibility = 'public' AND name ILIKE $1"
+            )
+            .bind(&search_pattern)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+            let servers = query_as!(
+                Server,
+                r#"
+                SELECT id, name, banner_url, picture_url, description, owner_id,
+                       visibility as "visibility: _", created_at, updated_at
+                FROM servers
+                WHERE visibility = 'public' AND name ILIKE $1
+                ORDER BY created_at DESC
+                LIMIT $2 OFFSET $3
+                "#,
+                &search_pattern,
+                limit,
+                offset as i64
+            )
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+            (servers, total)
+        } else {
+            // Random discovery
+            let total: i64 =
+                sqlx::query_scalar("SELECT COUNT(*) FROM servers WHERE visibility = 'public'")
+                    .fetch_one(&self.pool)
+                    .await
+                    .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+            let servers = query_as!(
+                Server,
+                r#"
+                SELECT id, name, banner_url, picture_url, description, owner_id,
+                       visibility as "visibility: _", created_at, updated_at
+                FROM servers
+                WHERE visibility = 'public'
+                ORDER BY RANDOM()
+                LIMIT $1
+                "#,
+                limit
+            )
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
+
+            (servers, total)
+        };
+
+        Ok((servers, total as u64))
+    }
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -918,6 +988,329 @@ async fn test_list_servers_filters_only_public(pool: PgPool) -> Result<(), CoreE
     assert_eq!(servers[0].name, "Public Server 3");
     assert_eq!(servers[1].name, "Public Server 2");
     assert_eq!(servers[2].name, "Public Server 1");
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_search_or_discover_with_query(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
+    use uuid::Uuid;
+
+    let create_router = MessageRoutingInfo::new("server.exchange");
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router,
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
+
+    let owner_id = UserId(Uuid::new_v4());
+
+    // Create servers with different names
+    let server_names = vec![
+        "Gaming Paradise",
+        "Coding Hub",
+        "Gaming Zone",
+        "Art Gallery",
+        "Game Masters",
+    ];
+
+    for name in server_names {
+        let input = InsertServerInput {
+            name: name.to_string(),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Act: search for "Gaming"
+    let pagination = GetPaginated { page: 1, limit: 10 };
+    let (servers, total) = repository
+        .search_or_discover(Some("Gaming".to_string()), &pagination)
+        .await?;
+
+    // Assert: should return servers with "Gaming" in name
+    assert_eq!(total, 2, "Should find 2 servers with 'Gaming' in name");
+    assert_eq!(servers.len(), 2);
+
+    let found_names: Vec<String> = servers.iter().map(|s| s.name.clone()).collect();
+    assert!(found_names.contains(&"Gaming Paradise".to_string()));
+    assert!(found_names.contains(&"Gaming Zone".to_string()));
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_search_or_discover_case_insensitive(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
+    use uuid::Uuid;
+
+    let create_router = MessageRoutingInfo::new("server.exchange");
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router,
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
+
+    let owner_id = UserId(Uuid::new_v4());
+
+    let input = InsertServerInput {
+        name: "RuSt Programming".to_string(),
+        owner_id: owner_id.clone(),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+        visibility: ServerVisibility::Public,
+    };
+    repository.insert(input).await?;
+
+    // Act: search with lowercase
+    let pagination = GetPaginated { page: 1, limit: 10 };
+    let (servers, _) = repository
+        .search_or_discover(Some("rust".to_string()), &pagination)
+        .await?;
+
+    // Assert: should find the server (case-insensitive)
+    assert_eq!(servers.len(), 1);
+    assert_eq!(servers[0].name, "RuSt Programming");
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_search_or_discover_without_query_returns_random(
+    pool: PgPool,
+) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
+    use uuid::Uuid;
+
+    let create_router = MessageRoutingInfo::new("server.exchange");
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router,
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
+
+    let owner_id = UserId(Uuid::new_v4());
+
+    // Create 5 servers
+    for i in 1..=5 {
+        let input = InsertServerInput {
+            name: format!("Server {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Act: discover without query (random)
+    let pagination = GetPaginated { page: 1, limit: 3 };
+    let (servers, total) = repository.search_or_discover(None, &pagination).await?;
+
+    // Assert: should return random servers
+    assert_eq!(total, 5, "Total should be 5");
+    assert_eq!(servers.len(), 3, "Should return 3 servers as requested");
+
+    // All returned servers should be public
+    for server in &servers {
+        assert_eq!(server.visibility, ServerVisibility::Public);
+    }
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_search_or_discover_respects_limit(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
+    use uuid::Uuid;
+
+    let create_router = MessageRoutingInfo::new("server.exchange");
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router,
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
+
+    let owner_id = UserId(Uuid::new_v4());
+
+    // Create 10 servers with "Test" in name
+    for i in 1..=10 {
+        let input = InsertServerInput {
+            name: format!("Test Server {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Act: search with limit of 5
+    let pagination = GetPaginated { page: 1, limit: 5 };
+    let (servers, total) = repository
+        .search_or_discover(Some("Test".to_string()), &pagination)
+        .await?;
+
+    // Assert
+    assert_eq!(total, 10, "Total should be 10");
+    assert_eq!(servers.len(), 5, "Should return only 5 servers as per limit");
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_search_or_discover_enforces_max_limit(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
+    use uuid::Uuid;
+
+    let create_router = MessageRoutingInfo::new("server.exchange");
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router,
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
+
+    let owner_id = UserId(Uuid::new_v4());
+
+    // Create 60 servers
+    for i in 1..=60 {
+        let input = InsertServerInput {
+            name: format!("Server {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Act: try to fetch 100 servers (should be capped at 50)
+    let pagination = GetPaginated {
+        page: 1,
+        limit: 100,
+    };
+    let (servers, total) = repository.search_or_discover(None, &pagination).await?;
+
+    // Assert: should return max 50 servers
+    assert_eq!(total, 60);
+    assert!(
+        servers.len() <= 50,
+        "Should return at most 50 servers, got {}",
+        servers.len()
+    );
+
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn test_search_or_discover_only_public_servers(pool: PgPool) -> Result<(), CoreError> {
+    use crate::domain::common::GetPaginated;
+    use crate::domain::{
+        friend::entities::UserId,
+        server::entities::{InsertServerInput, ServerVisibility},
+    };
+    use uuid::Uuid;
+
+    let create_router = MessageRoutingInfo::new("server.exchange");
+
+    let repository = PostgresServerRepository::new(
+        pool.clone(),
+        MessageRoutingInfo::default(),
+        create_router,
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+        MessageRoutingInfo::default(),
+    );
+
+    let owner_id = UserId(Uuid::new_v4());
+
+    // Create 2 public servers with "Community"
+    for i in 1..=2 {
+        let input = InsertServerInput {
+            name: format!("Community {}", i),
+            owner_id: owner_id.clone(),
+            picture_url: None,
+            banner_url: None,
+            description: None,
+            visibility: ServerVisibility::Public,
+        };
+        repository.insert(input).await?;
+    }
+
+    // Create 1 private server with "Community"
+    let input = InsertServerInput {
+        name: "Community Private".to_string(),
+        owner_id: owner_id.clone(),
+        picture_url: None,
+        banner_url: None,
+        description: None,
+        visibility: ServerVisibility::Private,
+    };
+    repository.insert(input).await?;
+
+    // Act: search for "Community"
+    let pagination = GetPaginated { page: 1, limit: 10 };
+    let (servers, total) = repository
+        .search_or_discover(Some("Community".to_string()), &pagination)
+        .await?;
+
+    // Assert: should only return public servers
+    assert_eq!(total, 2, "Should only count public servers");
+    assert_eq!(servers.len(), 2);
+
+    for server in &servers {
+        assert_eq!(server.visibility, ServerVisibility::Public);
+        assert!(!server.name.contains("Private"));
+    }
 
     Ok(())
 }

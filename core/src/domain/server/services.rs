@@ -98,4 +98,14 @@ where
             .list_user_servers(pagination, user_id)
             .await
     }
+
+    async fn search_or_discover(
+        &self,
+        query: Option<String>,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
+        self.server_repository
+            .search_or_discover(query, pagination)
+            .await
+    }
 }

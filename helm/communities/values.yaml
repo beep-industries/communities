@@ -5,6 +5,21 @@ image:
   tag: "0.0.1"
   pullPolicy: IfNotPresent
 
+# Database migrations init container
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/beep-industries/communities-migrations
+    tag: "0.0.4"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""

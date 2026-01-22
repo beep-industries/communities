@@ -31,6 +31,38 @@ spec:
       serviceAccountName: {{ include "communities.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.migrations.enabled }}
+      initContainers:
+        - name: migrations
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy }}
+          env:
+            - name: DATABASE_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: DATABASE_PORT
+              value: {{ .Values.database.port | quote }}
+            - name: DATABASE_USER
+              value: {{ .Values.database.user | quote }}
+            - name: DATABASE_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "communities.databaseSecretName" . }}
+                  key: {{ .Values.database.secretKey }}
+            - name: DATABASE_URL
+              value: "postgres://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)"
+          {{- with .Values.migrations.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

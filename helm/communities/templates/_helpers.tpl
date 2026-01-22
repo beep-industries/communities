@@ -69,3 +69,14 @@ Database secret name
 {{- include "communities.fullname" . }}-db
 {{- end }}
 {{- end }}
+
+{{/*
+SpiceDB secret name
+*/}}
+{{- define "communities.spicedbSecretName" -}}
+{{- if .Values.spicedb.existingSecret }}
+{{- .Values.spicedb.existingSecret }}
+{{- else }}
+{{- include "communities.fullname" . }}-spicedb
+{{- end }}
+{{- end }}

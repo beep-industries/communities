@@ -134,6 +134,14 @@ spec:
             - name: RABBIT_URI
               value: {{ .Values.rabbitmq.uri | quote }}
             {{- end }}
+            # SpiceDB configuration
+            - name: SPICEDB_ENDPOINT
+              value: {{ .Values.spicedb.endpoint | quote }}
+            - name: SPICEDB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "communities.spicedbSecretName" . }}
+                  key: {{ .Values.spicedb.secretKey }}
             # Routing config path
             - name: ROUTING_CONFIG_PATH
               value: "/config/routing.yaml"

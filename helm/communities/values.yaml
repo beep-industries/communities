@@ -127,6 +127,16 @@ keycloak:
 rabbitmq:
   uri: "amqp://rabbitmq:5672"
 
+# SpiceDB configuration (authorization)
+spicedb:
+  endpoint: "http://spicedb:50051"
+  # Token configuration (choose one):
+  # Option 1: Provide an existing secret name (recommended for production)
+  existingSecret: ""
+  secretKey: "token"
+  # Option 2: Provide the token directly (required if existingSecret is not set)
+  # token: "your-spicedb-token"
+
 # Message routing configuration (mounted as configmap)
 routing:
   createServer: "create.server"

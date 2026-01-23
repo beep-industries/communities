@@ -12,9 +12,9 @@ use crate::http::{
 pub fn server_routes() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(create_server))
+        .routes(routes!(search_or_discover_servers))
         .routes(routes!(get_server))
         .routes(routes!(list_user_servers))
-        .routes(routes!(search_or_discover_servers))
         // .routes(routes!(list_servers))
         .routes(routes!(update_server))
         .routes(routes!(delete_server))

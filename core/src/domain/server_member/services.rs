@@ -13,13 +13,14 @@ use crate::domain::server::entities::ServerId;
 use crate::domain::server::ports::ServerRepository;
 use crate::domain::server_invitation::ports::ServerInvitationRepository;
 use crate::domain::server_member::MemberId;
+use crate::domain::server_pictures::ServerPicturesRepository;
 use crate::domain::user::port::UserRepository;
 
 use super::entities::{CreateMemberInput, ServerMember, UpdateMemberInput};
 use super::ports::{MemberRepository, MemberService};
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> MemberService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC> MemberService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -33,6 +34,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     async fn create_member(&self, input: CreateMemberInput) -> Result<ServerMember, CoreError> {
         // Validate server exists

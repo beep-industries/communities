@@ -4,11 +4,11 @@ use crate::domain::{
     health::port::HealthRepository, member_role::ports::MemberRoleRepository,
     outbox::ports::OutboxRepository, role::ports::RoleRepository, server::ports::ServerRepository,
     server_invitation::ports::ServerInvitationRepository, server_member::ports::MemberRepository,
-    user::port::UserRepository,
+    server_pictures::ServerPicturesRepository, user::port::UserRepository,
 };
 
 #[derive(Clone, Debug)]
-pub struct Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+pub struct Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -22,6 +22,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     pub(crate) server_repository: S,
     pub(crate) friendship_repository: F,
@@ -35,9 +36,10 @@ where
     pub(crate) member_role_repository: MR,
     pub(crate) server_invitation_repository: SI,
     pub(crate) authorization_repository: A,
+    pub(crate) server_pictures_repository: SC,
 }
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC> Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -51,6 +53,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     pub fn new(
         server_repository: S,
@@ -65,6 +68,7 @@ where
         member_role_repository: MR,
         server_invitation_repository: SI,
         authorization_repository: A,
+        server_pictures_repository: SC,
     ) -> Self {
         Self {
             server_repository,
@@ -79,6 +83,7 @@ where
             channel_member_repository,
             server_invitation_repository,
             authorization_repository,
+            server_pictures_repository,
         }
     }
 }

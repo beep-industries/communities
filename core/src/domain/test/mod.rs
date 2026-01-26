@@ -2,12 +2,18 @@ use crate::{
     Service,
     domain::{
         authorization::ports::MockAuthorizationRepository,
-        channel::ports::MockChannelRepository, channel_member::ports::MockChannelMemberRepository,
-        friend::ports::MockFriendshipRepository, health::port::MockHealthRepository,
-        member_role::ports::MockMemberRoleRepository, outbox::ports::MockOutboxRepository,
-        role::ports::MockRoleRepository, server::ports::MockServerRepository,
+        channel::ports::MockChannelRepository,
+        channel_member::ports::MockChannelMemberRepository,
+        friend::ports::MockFriendshipRepository,
+        health::port::MockHealthRepository,
+        member_role::ports::MockMemberRoleRepository,
+        outbox::ports::MockOutboxRepository,
+        role::ports::MockRoleRepository,
+        server::ports::MockServerRepository,
         server_invitation::ports::MockServerInvitationRepository,
-        server_member::MockMemberRepository, user::port::MockUserRepository,
+        server_member::MockMemberRepository,
+        server_pictures::{self, MockServerPicturesRepository},
+        user::port::MockUserRepository,
     },
 };
 pub mod channel;
@@ -31,6 +37,7 @@ pub type MockService = Service<
     MockMemberRoleRepository,
     MockServerInvitationRepository,
     MockAuthorizationRepository,
+    MockServerPicturesRepository,
 >;
 
 pub fn create_mock_service() -> MockService {
@@ -46,6 +53,7 @@ pub fn create_mock_service() -> MockService {
     let member_role_repository = MockMemberRoleRepository::new();
     let server_invitation_repository = MockServerInvitationRepository::new();
     let authorization_repository = MockAuthorizationRepository::new();
+    let server_pictures_repository = MockServerPicturesRepository::new();
     MockService::new(
         server_repository,
         friendship_repository,
@@ -59,5 +67,6 @@ pub fn create_mock_service() -> MockService {
         member_role_repository,
         server_invitation_repository,
         authorization_repository,
+        server_pictures_repository,
     )
 }

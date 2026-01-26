@@ -14,11 +14,12 @@ use crate::domain::{
     server::ports::ServerRepository,
     server_invitation::ports::ServerInvitationRepository,
     server_member::ports::MemberRepository,
+    server_pictures::ServerPicturesRepository,
     user::port::UserRepository,
 };
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> HealthService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC> HealthService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -32,6 +33,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     async fn check_health(&self) -> Result<IsHealthy, CoreError> {
         self.health_repository.ping().await.to_result()

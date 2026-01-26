@@ -18,13 +18,19 @@ use crate::{
 pub struct PostgresMemberRoleRepository {
     pool: PgPool,
     assign_role_routing: MessageRoutingInfo,
+    unassign_role_routing: MessageRoutingInfo,
 }
 
 impl PostgresMemberRoleRepository {
-    pub fn new(pool: PgPool, assign_role_routing: MessageRoutingInfo) -> Self {
+    pub fn new(
+        pool: PgPool,
+        assign_role_routing: MessageRoutingInfo,
+        unassign_role_routing: MessageRoutingInfo,
+    ) -> Self {
         Self {
             pool,
             assign_role_routing,
+            unassign_role_routing,
         }
     }
 }
@@ -121,7 +127,7 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
             .map_err(|e| CoreError::DatabaseError { msg: e.to_string() })?;
 
         let unassign_member_from_role_event =
-            OutboxEventRecord::new(self.assign_role_routing.clone(), unassign_user);
+            OutboxEventRecord::new(self.unassign_role_routing.clone(), unassign_user);
 
         unassign_member_from_role_event.write(&mut *tx).await?;
         tx.commit()
@@ -253,8 +259,13 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_assign_member_to_role(pool: PgPool) -> Result<(), CoreError> {
-        let assign_role_routing = MessageRoutingInfo::new("test");
-        let repository = PostgresMemberRoleRepository::new(pool.clone(), assign_role_routing);
+        let assign_role_routing = MessageRoutingInfo::new("test_assign");
+        let unassign_role_routing = MessageRoutingInfo::new("test_unassign");
+        let repository = PostgresMemberRoleRepository::new(
+            pool.clone(),
+            assign_role_routing,
+            unassign_role_routing,
+        );
         let server_id = create_test_server(&pool.clone(), "test_server").await;
         let role_id = create_test_role(&pool.clone(), server_id).await;
         let member_id = create_test_member(&pool.clone(), server_id).await;
@@ -271,8 +282,13 @@ mod tests {
 
     #[sqlx::test(migrations = "./migrations")]
     async fn test_unassign_member_from_role(pool: PgPool) -> Result<(), CoreError> {
-        let assign_role_routing = MessageRoutingInfo::new("test");
-        let repository = PostgresMemberRoleRepository::new(pool.clone(), assign_role_routing);
+        let assign_role_routing = MessageRoutingInfo::new("test_assign");
+        let unassign_role_routing = MessageRoutingInfo::new("test_unassign");
+        let repository = PostgresMemberRoleRepository::new(
+            pool.clone(),
+            assign_role_routing,
+            unassign_role_routing,
+        );
         let server_id = create_test_server(&pool.clone(), "test_server").await;
         let role_id = create_test_role(&pool.clone(), server_id).await;
         let member_id = create_test_member(&pool.clone(), server_id).await;

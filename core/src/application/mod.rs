@@ -109,8 +109,11 @@ pub async fn create_repositories(
     );
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();
-    let member_role_repository =
-        PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().upsert_role);
+    let member_role_repository = PostgresMemberRoleRepository::new(
+        pool.clone(),
+        message_routing_config.clone().member_assign_to_role,
+        message_routing_config.clone().member_unassign_from_role,
+    );
     let server_invitation_repository = PostgresServerInvitationRepository::new(pool.clone());
     let spicedb_repository = SpiceDbRepository::new(spicedb_config)
         .await
@@ -205,8 +208,11 @@ pub async fn create_repositories_with_mock_authz(
     );
     let outbox_repository = PostgresOutboxRepository::new(pool.clone());
     let channel_member_repository = MockChannelMemberRepository::new();
-    let member_role_repository =
-        PostgresMemberRoleRepository::new(pool.clone(), message_routing_config.clone().upsert_role);
+    let member_role_repository = PostgresMemberRoleRepository::new(
+        pool.clone(),
+        message_routing_config.clone().member_assign_to_role,
+        message_routing_config.clone().member_unassign_from_role,
+    );
     let server_invitation_repository = PostgresServerInvitationRepository::new(pool.clone());
     
     // Use mock authorization repository instead of SpiceDB

@@ -49,7 +49,7 @@ impl Into<MemberRemovedFromRole> for UnassignUserRole {
     fn into(self) -> MemberRemovedFromRole {
         MemberRemovedFromRole {
             user_id: self.user_id.to_string(),
-            role_id: self.user_id.to_string(),
+            role_id: self.role_id.to_string(),
         }
     }
 }

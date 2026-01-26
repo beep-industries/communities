@@ -14,7 +14,7 @@ use communities_core::domain::{
         ports::RoleService,
     },
     server::entities::ServerId,
-    server_member::MemberId,
+    server_member::{MemberId, ServerMember},
 };
 use uuid::Uuid;
 
@@ -269,3 +269,42 @@ pub async fn unassign_role(
         .map_err(Into::<ApiError>::into)?;
     Ok(Response::deleted(()))
 }
+
+#[utoipa::path(
+     get,
+     path = "/roles/{role_id}/members",
+     tag = "role",
+     params(
+         ("role_id" = String, Path, description = "Role ID")
+     ),
+     responses(
+         (status = 200, description = "Members retrieved successfully", body = PaginatedResponse<Vec<ServerMember>>),
+         (status = 401, description = "Unauthorized"),
+         (status = 403, description = "Forbidden - Not the server owner"),
+         (status = 404, description = "Role not found"),
+         (status = 500, description = "Internal server error")
+     )
+ )]
+pub async fn list_members_by_role(
+    Path(role_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Extension(user_identity): Extension<UserIdentity>,
+    Query(pagination): Query<GetPaginated>,
+) -> Result<Response<PaginatedResponse<ServerMember>>, ApiError> {
+    let role = state.service.get_role(&RoleId(role_id)).await?;
+    user_identity
+        .can_manage_role_in_servers(role.server_id)
+        .await?;
+    let (data, total) = state
+        .service
+        .list_members_by_role(&RoleId(role_id), &pagination)
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    let paginated: PaginatedResponse<ServerMember> = PaginatedResponse {
+        data,
+        total,
+        page: pagination.page,
+    };
+    Ok(paginated.into())
+}
+

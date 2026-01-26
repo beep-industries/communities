@@ -1,10 +1,11 @@
 use reqwest::{Client, Url};
+use futures_util::future::join_all;
 
 use crate::{
     domain::{
         common::CoreError,
         server::entities::ServerId,
-        server_pictures::{Content, ContentVerb, PresignedUrl, ServerPicturesRepository},
+        server_pictures::{Content, ContentVerb, PresignedUrl, ServerPictureUrls, ServerPicturesMap, ServerPicturesRepository},
     },
     infrastructure::server_pictures::repositories::entities::RequestSignUrl,
 };
@@ -81,5 +82,34 @@ impl ServerPicturesRepository for ReqwestServerPicturesRepository {
     async fn put_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         self.get_signed_url(server_id, Content::ServerPicture, ContentVerb::Put)
             .await
+    }
+
+    async fn get_all(&self, server_id: ServerId) -> Result<ServerPictureUrls, CoreError> {
+        let (banner, picture) = tokio::join!(
+            self.get_banner(server_id),
+            self.get_picture(server_id)
+        );
+        Ok(ServerPictureUrls {
+            banner: banner?,
+            picture: picture?,
+        })
+    }
+
+    async fn put_all(&self, server_id: ServerId) -> Result<ServerPictureUrls, CoreError> {
+        let (banner, picture) = tokio::join!(
+            self.put_banner(server_id),
+            self.put_picture(server_id)
+        );
+        Ok(ServerPictureUrls {
+            banner: banner?,
+            picture: picture?,
+        })
+    }
+
+    async fn get_all_for_servers(&self, server_ids: Vec<ServerId>) -> ServerPicturesMap {
+        let futures = server_ids.into_iter().map(|server_id| async move {
+            self.get_all(server_id).await.ok().map(|urls| (server_id, urls))
+        });
+        join_all(futures).await.into_iter().flatten().collect()
     }
 }

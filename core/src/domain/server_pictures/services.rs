@@ -13,7 +13,7 @@ use crate::{
         server::{entities::ServerId, ports::ServerRepository},
         server_invitation::ports::ServerInvitationRepository,
         server_member::MemberRepository,
-        server_pictures::{PresignedUrl, ServerPicturesRepository, ServerPicturesService},
+        server_pictures::{PresignedUrl, ServerPictureUrls, ServerPicturesMap, ServerPicturesRepository, ServerPicturesService},
         user::port::UserRepository,
     },
 };
@@ -48,5 +48,17 @@ where
 
     async fn get_server_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         self.server_pictures_repository.get_picture(server_id).await
+    }
+
+    async fn get_all_server_pictures(&self, server_id: ServerId) -> Result<ServerPictureUrls, CoreError> {
+        self.server_pictures_repository.get_all(server_id).await
+    }
+
+    async fn put_all_server_pictures(&self, server_id: ServerId) -> Result<ServerPictureUrls, CoreError> {
+        self.server_pictures_repository.put_all(server_id).await
+    }
+
+    async fn get_all_server_pictures_for_servers(&self, server_ids: Vec<ServerId>) -> ServerPicturesMap {
+        self.server_pictures_repository.get_all_for_servers(server_ids).await
     }
 }

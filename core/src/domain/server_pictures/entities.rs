@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Deref};
+use std::{fmt::Display, ops::Deref, collections::HashMap};
 
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -71,3 +71,11 @@ impl<'de> Deserialize<'de> for PresignedUrl {
         Ok(PresignedUrl(url))
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerPictureUrls {
+    pub banner: PresignedUrl,
+    pub picture: PresignedUrl,
+}
+
+pub type ServerPicturesMap = HashMap<crate::domain::server::entities::ServerId, ServerPictureUrls>;

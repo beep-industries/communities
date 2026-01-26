@@ -11,7 +11,6 @@ use crate::{
     domain::{
         channel_member::ports::MockChannelMemberRepository,
         common::{CoreError, services::Service},
-        server_pictures::{self, ServerPicturesRepository},
     },
     infrastructure::{
         MessageRoutingInfo,
@@ -76,6 +75,7 @@ pub async fn create_repositories(
     keycloak_issuer: String,
     beep_services: BeepServicesConfig,
     spicedb_config: SpiceDbConfig,
+    content_url: String,
 ) -> Result<CommunitiesRepositories, CoreError> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -123,7 +123,7 @@ pub async fn create_repositories(
         .await
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
     let authorization_repository = SpiceDbAuthorizationRepository::new(spicedb_repository);
-    let server_pictures_repository = ReqwestServerPicturesRepository {};
+    let server_pictures_repository = ReqwestServerPicturesRepository::new(content_url);
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -224,7 +224,8 @@ pub async fn create_repositories_with_mock_authz(
 
     // Use mock authorization repository instead of SpiceDB
     let authorization_repository = SpiceDbAuthorizationRepository::new_mock();
-    let server_pictures_repository = ReqwestServerPicturesRepository {};
+    let server_pictures_repository =
+        ReqwestServerPicturesRepository::new("https://localhost:1234".to_string());
 
     Ok(CommunitiesRepositories {
         pool,

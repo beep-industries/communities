@@ -1,9 +1,11 @@
+use clap::error;
 use communities_core::{
     application::MessageRoutingConfig,
     domain::outbox::entities::{OutboxMessage, OutboxMessageStream},
 };
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use std::future::Future;
+use tracing::{error, info};
 pub mod convert_payload;
 pub mod payload;
 use crate::{dispatch::payload::ExchangePayload, lapin::RabbitClient};
@@ -52,13 +54,16 @@ impl Dispatcher {
     }
 
     async fn send_message(&self, exchange_payload: ExchangePayload) -> Result<(), DispatcherError> {
-        println!("{:?}", exchange_payload);
         let encoded = exchange_payload.encode_proto();
+        info!("Handling message for {:?}", exchange_payload);
         self.rabbit_client
             .produce(exchange_payload.exchange_name(), &encoded)
             .await
-            .map_err(|e| DispatcherError::SendMessageError {
-                reason: e.to_string(),
+            .map_err(|e| {
+                error!("{}", e.to_string());
+                DispatcherError::SendMessageError {
+                    reason: e.to_string(),
+                }
             })?;
         Ok(())
     }
@@ -66,11 +71,17 @@ impl Dispatcher {
 
 impl Dispatch for Dispatcher {
     async fn dispatch(&mut self) -> Result<(), std::io::Error> {
-        while let Some(stream_message) = self.outbox_message_stream.next().await
-            && let Ok(exchange_payload) = stream_message
-        {
+        while let Some(stream_message) = self.outbox_message_stream.next().await {
+            let exchange_payload = match stream_message {
+                Ok(payload) => payload,
+                Err(e) => {
+                    error!("{}", e.to_string());
+                    continue;
+                }
+            };
             let _ = self.send_message(exchange_payload).await;
         }
+        error!("went out of bond");
         Ok(())
     }
 }

@@ -4,7 +4,6 @@ use dotenv::dotenv;
 
 use api::config::Config;
 use clap::Parser;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 

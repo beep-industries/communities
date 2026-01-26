@@ -90,6 +90,12 @@ pub enum CoreError {
 
     #[error("Default role basic user cannot be deleted")]
     DefaultRoleDeletion,
+
+    #[error("Could not parse content url: {part}")]
+    ParseContentUrl { part: String },
+
+    #[error("Could not parse content url: {err}")]
+    FailedToGetSignedUrl { err: String },
 }
 
 impl From<ChannelError> for CoreError {
@@ -121,7 +127,7 @@ where
     D: serde::Deserializer<'de>,
 {
     use serde::de::{self, Deserialize};
-    
+
     struct StringOrU32;
 
     impl<'de> serde::de::Visitor<'de> for StringOrU32 {

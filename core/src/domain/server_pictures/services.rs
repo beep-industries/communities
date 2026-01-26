@@ -4,6 +4,7 @@ use crate::{
         authorization::ports::AuthorizationRepository,
         channel::ports::ChannelRepository,
         channel_member::ports::ChannelMemberRepository,
+        common::CoreError,
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
         member_role::ports::MemberRoleRepository,
@@ -12,7 +13,9 @@ use crate::{
         server::{entities::ServerId, ports::ServerRepository},
         server_invitation::ports::ServerInvitationRepository,
         server_member::MemberRepository,
-        server_pictures::{Content, ContentVerb, ServerPicturesRepository, ServerPicturesService},
+        server_pictures::{
+            Content, ContentVerb, PresignedUrl, ServerPicturesRepository, ServerPicturesService,
+        },
         user::port::UserRepository,
     },
 };
@@ -34,24 +37,24 @@ where
     A: AuthorizationRepository,
     SC: ServerPicturesRepository,
 {
-    async fn put_server_banner(&self, server_id: ServerId) {
+    async fn put_server_banner(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         self.server_pictures_repository
             .get_signed_url(server_id, Content::ServerBanner, ContentVerb::Put)
             .await
     }
 
-    async fn get_server_banner(&self, server_id: ServerId) {
+    async fn get_server_banner(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         self.server_pictures_repository
             .get_signed_url(server_id, Content::ServerBanner, ContentVerb::Get)
             .await
     }
-    async fn put_server_picture(&self, server_id: ServerId) {
+    async fn put_server_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         self.server_pictures_repository
             .get_signed_url(server_id, Content::ServerPicture, ContentVerb::Put)
             .await
     }
 
-    async fn get_server_picture(&self, server_id: ServerId) {
+    async fn get_server_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         self.server_pictures_repository
             .get_signed_url(server_id, Content::ServerPicture, ContentVerb::Get)
             .await

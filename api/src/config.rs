@@ -45,6 +45,9 @@ pub struct Config {
     #[command(flatten)]
     pub beep_services: BeepServicesConfig,
 
+    #[command(flatten)]
+    pub content_config: ContentConfiguration,
+
     #[arg(
         long = "environment",
         env = "ENVIRONMENT",
@@ -60,6 +63,16 @@ impl Config {
         self.routing = serde_yaml::from_str(&yaml_content)?;
         Ok(())
     }
+}
+
+#[derive(Clone, Parser, Debug, Default)]
+pub struct ContentConfiguration {
+    #[arg(
+        long = "content-url",
+        env = "CONTENT_URL",
+        default_value = "http://localhost:1234"
+    )]
+    url: String,
 }
 
 #[derive(Clone, Parser, Debug, Default)]

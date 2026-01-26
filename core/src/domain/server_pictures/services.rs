@@ -9,10 +9,10 @@ use crate::{
         member_role::ports::MemberRoleRepository,
         outbox::ports::OutboxRepository,
         role::ports::RoleRepository,
-        server::ports::ServerRepository,
+        server::{entities::ServerId, ports::ServerRepository},
         server_invitation::ports::ServerInvitationRepository,
         server_member::MemberRepository,
-        server_pictures::{ServerPicturesRepository, ServerPicturesService},
+        server_pictures::{Content, ContentVerb, ServerPicturesRepository, ServerPicturesService},
         user::port::UserRepository,
     },
 };
@@ -34,27 +34,26 @@ where
     A: AuthorizationRepository,
     SC: ServerPicturesRepository,
 {
-    fn put_server_banner(
-        server_id: crate::domain::server::entities::ServerId,
-    ) -> impl Future<Output = ()> {
-        todo!()
+    async fn put_server_banner(&self, server_id: ServerId) {
+        self.server_pictures_repository
+            .get_signed_url(server_id, Content::ServerBanner, ContentVerb::Put)
+            .await
     }
 
-    fn get_server_banner(
-        server_id: crate::domain::server::entities::ServerId,
-    ) -> impl Future<Output = ()> {
-        todo!()
+    async fn get_server_banner(&self, server_id: ServerId) {
+        self.server_pictures_repository
+            .get_signed_url(server_id, Content::ServerBanner, ContentVerb::Get)
+            .await
+    }
+    async fn put_server_picture(&self, server_id: ServerId) {
+        self.server_pictures_repository
+            .get_signed_url(server_id, Content::ServerPicture, ContentVerb::Put)
+            .await
     }
 
-    fn put_server_picture(
-        server_id: crate::domain::server::entities::ServerId,
-    ) -> impl Future<Output = ()> {
-        todo!()
-    }
-
-    fn get_server_picture(
-        server_id: crate::domain::server::entities::ServerId,
-    ) -> impl Future<Output = ()> {
-        todo!()
+    async fn get_server_picture(&self, server_id: ServerId) {
+        self.server_pictures_repository
+            .get_signed_url(server_id, Content::ServerPicture, ContentVerb::Get)
+            .await
     }
 }

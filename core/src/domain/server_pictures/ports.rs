@@ -1,6 +1,9 @@
+use reqwest::Url;
+
 use crate::domain::{
+    common::CoreError,
     server::entities::ServerId,
-    server_pictures::{Content, ContentVerb},
+    server_pictures::{Content, ContentVerb, PresignedUrl},
 };
 
 pub trait ServerPicturesRepository: Send + Sync {
@@ -9,14 +12,28 @@ pub trait ServerPicturesRepository: Send + Sync {
         server_id: ServerId,
         content: Content,
         verb: ContentVerb,
-    ) -> impl Future<Output = ()>;
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
 }
 
 pub trait ServerPicturesService: Send + Sync {
-    fn put_server_banner(&self, server_id: ServerId) -> impl Future<Output = ()>;
-    fn get_server_banner(&self, server_id: ServerId) -> impl Future<Output = ()>;
-    fn put_server_picture(&self, server_id: ServerId) -> impl Future<Output = ()>;
-    fn get_server_picture(&self, server_id: ServerId) -> impl Future<Output = ()>;
+    fn put_server_banner(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+
+    fn get_server_banner(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+
+    fn get_server_picture(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+    fn put_server_picture(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
 }
 
 pub struct MockServerPicturesRepository;
@@ -28,5 +45,14 @@ impl MockServerPicturesRepository {
 }
 
 impl ServerPicturesRepository for MockServerPicturesRepository {
-    async fn get_signed_url(&self, server_id: ServerId, content: Content, verb: ContentVerb) {}
+    async fn get_signed_url(
+        &self,
+        _server_id: ServerId,
+        _content: Content,
+        _verb: ContentVerb,
+    ) -> Result<PresignedUrl, CoreError> {
+        Ok(PresignedUrl::new(
+            Url::parse("https://example.com").unwrap(),
+        ))
+    }
 }

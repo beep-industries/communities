@@ -62,4 +62,24 @@ impl ServerPicturesRepository for ReqwestServerPicturesRepository {
 
         Ok(presigned_url)
     }
+
+    async fn put_banner(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        self.get_signed_url(server_id, Content::ServerBanner, ContentVerb::Put)
+            .await
+    }
+
+    async fn get_banner(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        self.get_signed_url(server_id, Content::ServerBanner, ContentVerb::Get)
+            .await
+    }
+
+    async fn get_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        self.get_signed_url(server_id, Content::ServerPicture, ContentVerb::Get)
+            .await
+    }
+
+    async fn put_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        self.get_signed_url(server_id, Content::ServerPicture, ContentVerb::Put)
+            .await
+    }
 }

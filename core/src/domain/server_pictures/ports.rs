@@ -13,6 +13,26 @@ pub trait ServerPicturesRepository: Send + Sync {
         content: Content,
         verb: ContentVerb,
     ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+
+    fn put_banner(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+
+    fn get_banner(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+
+    fn get_picture(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
+
+    fn put_picture(
+        &self,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<PresignedUrl, CoreError>>;
 }
 
 pub trait ServerPicturesService: Send + Sync {
@@ -51,6 +71,30 @@ impl ServerPicturesRepository for MockServerPicturesRepository {
         _content: Content,
         _verb: ContentVerb,
     ) -> Result<PresignedUrl, CoreError> {
+        Ok(PresignedUrl::new(
+            Url::parse("https://example.com").unwrap(),
+        ))
+    }
+
+    async fn put_banner(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        Ok(PresignedUrl::new(
+            Url::parse("https://example.com").unwrap(),
+        ))
+    }
+
+    async fn get_banner(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        Ok(PresignedUrl::new(
+            Url::parse("https://example.com").unwrap(),
+        ))
+    }
+
+    async fn get_picture(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
+        Ok(PresignedUrl::new(
+            Url::parse("https://example.com").unwrap(),
+        ))
+    }
+
+    async fn put_picture(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
         Ok(PresignedUrl::new(
             Url::parse("https://example.com").unwrap(),
         ))

@@ -11,6 +11,7 @@ use crate::{
     domain::{
         channel_member::ports::MockChannelMemberRepository,
         common::{CoreError, services::Service},
+        server_pictures::{self, ServerPicturesRepository},
     },
     infrastructure::{
         MessageRoutingInfo,
@@ -24,6 +25,7 @@ use crate::{
         server::repositories::postgres::PostgresServerRepository,
         server_invitation::repositories::postgres::PostgresServerInvitationRepository,
         server_member::repositories::PostgresMemberRepository,
+        server_pictures::repositories::reqwest::ReqwestServerPicturesRepository,
         user::repositories::http::HttpUserRepository,
     },
 };
@@ -46,6 +48,7 @@ pub type CommunitiesService = Service<
     PostgresMemberRoleRepository,
     PostgresServerInvitationRepository,
     SpiceDbAuthorizationRepository,
+    ReqwestServerPicturesRepository,
 >;
 
 #[derive(Clone)]
@@ -64,6 +67,7 @@ pub struct CommunitiesRepositories {
     pub member_role_repository: PostgresMemberRoleRepository,
     pub server_invitation_repository: PostgresServerInvitationRepository,
     pub authorization_repository: SpiceDbAuthorizationRepository,
+    pub server_pictures_repository: ReqwestServerPicturesRepository,
 }
 
 pub async fn create_repositories(
@@ -119,6 +123,7 @@ pub async fn create_repositories(
         .await
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
     let authorization_repository = SpiceDbAuthorizationRepository::new(spicedb_repository);
+    let server_pictures_repository = ReqwestServerPicturesRepository {};
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -134,6 +139,7 @@ pub async fn create_repositories(
         member_role_repository,
         server_invitation_repository,
         authorization_repository,
+        server_pictures_repository,
     })
 }
 
@@ -152,6 +158,7 @@ impl From<CommunitiesRepositories> for CommunitiesService {
             repos.member_role_repository,
             repos.server_invitation_repository,
             repos.authorization_repository,
+            repos.server_pictures_repository,
         )
     }
 }
@@ -176,7 +183,7 @@ pub async fn create_repositories_with_mock_authz(
         .connect_with(pg_connection_options)
         .await
         .map_err(|e| CoreError::ServiceUnavailable(e.to_string()))?;
-    
+
     let server_repository = PostgresServerRepository::new(
         pool.clone(),
         message_routing_config.clone().delete_server,
@@ -214,10 +221,11 @@ pub async fn create_repositories_with_mock_authz(
         message_routing_config.clone().member_unassign_from_role,
     );
     let server_invitation_repository = PostgresServerInvitationRepository::new(pool.clone());
-    
+
     // Use mock authorization repository instead of SpiceDB
     let authorization_repository = SpiceDbAuthorizationRepository::new_mock();
-    
+    let server_pictures_repository = ReqwestServerPicturesRepository {};
+
     Ok(CommunitiesRepositories {
         pool,
         server_repository,
@@ -233,6 +241,7 @@ pub async fn create_repositories_with_mock_authz(
         member_role_repository,
         server_invitation_repository,
         authorization_repository,
+        server_pictures_repository,
     })
 }
 

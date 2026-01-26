@@ -15,6 +15,7 @@ use crate::{
         server::ports::ServerRepository,
         server_invitation::ports::ServerInvitationRepository,
         server_member::ports::MemberRepository,
+        server_pictures::ServerPicturesRepository,
         user::port::UserRepository,
     },
     infrastructure::friend::repositories::error::FriendshipError,
@@ -22,8 +23,8 @@ use crate::{
 
 use tracing::error;
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> FriendService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC> FriendService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -37,6 +38,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     async fn get_friends(
         &self,
@@ -53,8 +55,8 @@ where
     }
 }
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> FriendRequestService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC> FriendRequestService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -68,6 +70,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     async fn get_friend_requests(
         &self,

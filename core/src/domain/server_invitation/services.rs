@@ -12,13 +12,14 @@ use crate::domain::server::ports::ServerRepository;
 use crate::domain::server_invitation::entities::{AcceptInvitationInput, ServerInvitationStatus};
 use crate::domain::server_member::CreateMemberInput;
 use crate::domain::server_member::ports::MemberRepository;
+use crate::domain::server_pictures::ServerPicturesRepository;
 use crate::domain::user::port::UserRepository;
 
 use super::entities::{InsertServerInvitationInput, ServerInvitation, ServerInvitationId};
 use super::ports::{ServerInvitationRepository, ServerInvitationService};
 
-impl<S, F, U, H, M, C, R, O, CM, MR, SI, A> ServerInvitationService
-    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A>
+impl<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC> ServerInvitationService
+    for Service<S, F, U, H, M, C, R, O, CM, MR, SI, A, SC>
 where
     S: ServerRepository,
     F: FriendshipRepository,
@@ -32,6 +33,7 @@ where
     MR: MemberRoleRepository,
     SI: ServerInvitationRepository,
     A: AuthorizationRepository,
+    SC: ServerPicturesRepository,
 {
     async fn create_invitation(
         &self,

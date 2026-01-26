@@ -5,6 +5,7 @@ use crate::domain::{
 
 pub trait ServerPicturesRepository: Send + Sync {
     fn get_signed_url(
+        &self,
         server_id: ServerId,
         content: Content,
         verb: ContentVerb,
@@ -12,10 +13,10 @@ pub trait ServerPicturesRepository: Send + Sync {
 }
 
 pub trait ServerPicturesService: Send + Sync {
-    fn put_server_banner(server_id: ServerId) -> impl Future<Output = ()>;
-    fn get_server_banner(server_id: ServerId) -> impl Future<Output = ()>;
-    fn put_server_picture(server_id: ServerId) -> impl Future<Output = ()>;
-    fn get_server_picture(server_id: ServerId) -> impl Future<Output = ()>;
+    fn put_server_banner(&self, server_id: ServerId) -> impl Future<Output = ()>;
+    fn get_server_banner(&self, server_id: ServerId) -> impl Future<Output = ()>;
+    fn put_server_picture(&self, server_id: ServerId) -> impl Future<Output = ()>;
+    fn get_server_picture(&self, server_id: ServerId) -> impl Future<Output = ()>;
 }
 
 pub struct MockServerPicturesRepository;
@@ -27,5 +28,5 @@ impl MockServerPicturesRepository {
 }
 
 impl ServerPicturesRepository for MockServerPicturesRepository {
-    async fn get_signed_url(server_id: ServerId, content: Content, verb: ContentVerb) {}
+    async fn get_signed_url(&self, server_id: ServerId, content: Content, verb: ContentVerb) {}
 }

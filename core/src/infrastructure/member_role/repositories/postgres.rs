@@ -2,7 +2,7 @@ use sqlx::{PgPool, query_as};
 
 use crate::{
     domain::{
-        common::CoreError,
+        common::{CoreError, GetPaginated, TotalPaginatedElements},
         member_role::{
             entities::{
                 AssignMemberRole, AssignUserRole, MemberRole, UnassignMemberRole, UnassignUserRole,
@@ -128,6 +128,51 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
             .await
             .map_err(|e| CoreError::Error { msg: e.to_string() })?;
         Ok(())
+    }
+
+    async fn list_members_by_role(
+        &self,
+        role_id: &crate::domain::role::entities::RoleId,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
+        let offset = (pagination.page - 1) * pagination.limit;
+        let limit = std::cmp::min(pagination.limit, 50) as i64;
+
+        let members = sqlx::query_as!(
+            ServerMember,
+            r#"
+            SELECT sm.id, sm.server_id, sm.user_id, sm.nickname, sm.joined_at, sm.updated_at
+            FROM server_members sm
+            INNER JOIN member_roles mr ON mr.member_id = sm.id
+            WHERE mr.role_id = $1
+            ORDER BY sm.joined_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            **role_id,
+            limit,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to list members by role: {}", e),
+        })?;
+
+        let total = sqlx::query_scalar!(
+            r#"
+            SELECT COUNT(*) as "count!"
+            FROM member_roles
+            WHERE role_id = $1
+            "#,
+            **role_id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to count members by role: {}", e),
+        })?;
+
+        Ok((members, total as u64))
     }
 }
 

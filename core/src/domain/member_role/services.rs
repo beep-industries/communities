@@ -4,7 +4,7 @@ use crate::{
         authorization::ports::AuthorizationRepository,
         channel::ports::ChannelRepository,
         channel_member::ports::ChannelMemberRepository,
-        common::CoreError,
+        common::{CoreError, GetPaginated, TotalPaginatedElements},
         friend::ports::FriendshipRepository,
         health::port::HealthRepository,
         member_role::{
@@ -65,5 +65,15 @@ where
             .unassign(UnassignMemberRole { role_id, member_id })
             .await?;
         Ok(())
+    }
+
+    async fn list_members_by_role(
+        &self,
+        role_id: &RoleId,
+        pagination: &GetPaginated,
+    ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
+        self.member_role_repository
+            .list_members_by_role(role_id, pagination)
+            .await
     }
 }

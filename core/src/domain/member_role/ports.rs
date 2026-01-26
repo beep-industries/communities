@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use crate::domain::{
-    common::CoreError,
+    common::{CoreError, GetPaginated, TotalPaginatedElements},
     member_role::entities::{AssignMemberRole, MemberRole, UnassignMemberRole},
     role::entities::RoleId,
-    server_member::MemberId,
+    server_member::{MemberId, ServerMember},
 };
 pub trait MemberRoleRepository: Send + Sync {
     fn assign(
@@ -15,6 +15,11 @@ pub trait MemberRoleRepository: Send + Sync {
         &self,
         member_role: UnassignMemberRole,
     ) -> impl Future<Output = Result<(), CoreError>>;
+    fn list_members_by_role(
+        &self,
+        role_id: &RoleId,
+        pagination: &GetPaginated,
+    ) -> impl Future<Output = Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError>>;
 }
 
 pub trait MemberRoleService: Send + Sync {
@@ -28,6 +33,11 @@ pub trait MemberRoleService: Send + Sync {
         role_id: RoleId,
         member_id: MemberId,
     ) -> impl Future<Output = Result<(), CoreError>>;
+    fn list_members_by_role(
+        &self,
+        role_id: &RoleId,
+        pagination: &GetPaginated,
+    ) -> impl Future<Output = Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError>>;
 }
 
 /// Mock implementation of MemberRoleRepository for testing
@@ -67,5 +77,12 @@ impl MemberRoleRepository for MockMemberRoleRepository {
             !(mr.member_id == member_role.member_id && mr.role_id == member_role.role_id)
         });
         Ok(())
+    }
+    async fn list_members_by_role(
+        &self,
+        _role_id: &RoleId,
+        _pagination: &GetPaginated,
+    ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
+        Ok((Vec::new(), 0))
     }
 }

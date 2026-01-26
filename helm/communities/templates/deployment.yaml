@@ -77,6 +77,8 @@ spec:
               containerPort: {{ .Values.service.healthPort }}
               protocol: TCP
           env:
+            - name: USER_SERVICE_URL
+              value: {{ .Values.config.user_service.url | quote }}
             - name: ENVIRONMENT
               value: {{ .Values.config.environment | default "production" | quote }}
             - name: RUST_LOG

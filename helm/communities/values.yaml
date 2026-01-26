@@ -101,7 +101,8 @@ affinity: {}
 config:
   # Log level
   rustLog: "info"
-
+  user_service:
+    url: "http://user-api-health:3001"
   # CORS origins (comma-separated)
   corsOrigins: "http://localhost:3003,https://beep.ovh"
 

@@ -40,13 +40,28 @@ where
             return Err(CoreError::InvalidServerName);
         }
 
-        let server = self.server_repository.insert(input).await?;
+        let mut server = self.server_repository.insert(input).await?;
+
+        match self.server_pictures_repository.put_all(server.id).await {
+            Ok(server_urls) => {
+                server.banner_url = Some(server_urls.banner.to_string());
+                server.picture_url = Some(server_urls.picture.to_string());
+            }
+            Err(e) => tracing::error!("{}", e.to_string()),
+        }
 
         Ok(server)
     }
 
     async fn get_server(&self, server_id: &ServerId) -> Result<Server, CoreError> {
-        let server = self.server_repository.find_by_id(server_id).await?;
+        let mut server = self.server_repository.find_by_id(server_id).await?;
+        match self.server_pictures_repository.get_all(server.id).await {
+            Ok(server_urls) => {
+                server.banner_url = Some(server_urls.banner.to_string());
+                server.picture_url = Some(server_urls.picture.to_string());
+            }
+            Err(e) => tracing::error!("{}", e.to_string()),
+        }
         Ok(server)
     }
 
@@ -54,7 +69,24 @@ where
         &self,
         pagination: &GetPaginated,
     ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
-        let (servers, total) = self.server_repository.list(pagination).await?;
+        let (mut servers, total) = self.server_repository.list(pagination).await?;
+
+        let server_ids = servers.iter().map(|server| return server.id).collect();
+        let server_urls_map = self
+            .server_pictures_repository
+            .get_all_for_servers(server_ids)
+            .await;
+
+        let servers: Vec<Server> = servers
+            .iter_mut()
+            .map(|server| {
+                if let Some(server_urls) = server_urls_map.get(&server.id) {
+                    server.banner_url = Some(server_urls.banner.to_string());
+                    server.picture_url = Some(server_urls.picture.to_string());
+                }
+                return server.to_owned();
+            })
+            .collect();
 
         Ok((servers, total))
     }
@@ -67,7 +99,19 @@ where
             return Err(CoreError::InvalidServerName);
         }
 
-        let updated_server = self.server_repository.update(input).await?;
+        let mut updated_server = self.server_repository.update(input).await?;
+
+        match self
+            .server_pictures_repository
+            .put_all(updated_server.id)
+            .await
+        {
+            Ok(server_urls) => {
+                updated_server.banner_url = Some(server_urls.banner.to_string());
+                updated_server.picture_url = Some(server_urls.picture.to_string());
+            }
+            Err(e) => tracing::error!("{}", e.to_string()),
+        }
 
         Ok(updated_server)
     }
@@ -83,9 +127,29 @@ where
         pagination: &GetPaginated,
         user_id: UserId,
     ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
-        self.server_repository
+        let (mut servers, total) = self
+            .server_repository
             .list_user_servers(pagination, user_id)
-            .await
+            .await?;
+
+        let server_ids = servers.iter().map(|server| return server.id).collect();
+        let server_urls_map = self
+            .server_pictures_repository
+            .get_all_for_servers(server_ids)
+            .await;
+
+        let servers: Vec<Server> = servers
+            .iter_mut()
+            .map(|server| {
+                if let Some(server_urls) = server_urls_map.get(&server.id) {
+                    server.banner_url = Some(server_urls.banner.to_string());
+                    server.picture_url = Some(server_urls.picture.to_string());
+                }
+                return server.to_owned();
+            })
+            .collect();
+
+        Ok((servers, total))
     }
 
     async fn search_or_discover(
@@ -93,8 +157,28 @@ where
         query: Option<String>,
         pagination: &GetPaginated,
     ) -> Result<(Vec<Server>, TotalPaginatedElements), CoreError> {
-        self.server_repository
+        let (mut servers, total) = self
+            .server_repository
             .search_or_discover(query, pagination)
-            .await
+            .await?;
+
+        let server_ids = servers.iter().map(|server| return server.id).collect();
+        let server_urls_map = self
+            .server_pictures_repository
+            .get_all_for_servers(server_ids)
+            .await;
+
+        let servers: Vec<Server> = servers
+            .iter_mut()
+            .map(|server| {
+                if let Some(server_urls) = server_urls_map.get(&server.id) {
+                    server.banner_url = Some(server_urls.banner.to_string());
+                    server.picture_url = Some(server_urls.picture.to_string());
+                }
+                return server.to_owned();
+            })
+            .collect();
+
+        Ok((servers, total))
     }
 }

@@ -13,9 +13,7 @@ use crate::{
         server::{entities::ServerId, ports::ServerRepository},
         server_invitation::ports::ServerInvitationRepository,
         server_member::MemberRepository,
-        server_pictures::{
-            Content, ContentVerb, PresignedUrl, ServerPicturesRepository, ServerPicturesService,
-        },
+        server_pictures::{PresignedUrl, ServerPicturesRepository, ServerPicturesService},
         user::port::UserRepository,
     },
 };
@@ -38,25 +36,17 @@ where
     SC: ServerPicturesRepository,
 {
     async fn put_server_banner(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        self.server_pictures_repository
-            .get_signed_url(server_id, Content::ServerBanner, ContentVerb::Put)
-            .await
+        self.server_pictures_repository.put_banner(server_id).await
     }
 
     async fn get_server_banner(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        self.server_pictures_repository
-            .get_signed_url(server_id, Content::ServerBanner, ContentVerb::Get)
-            .await
+        self.server_pictures_repository.get_banner(server_id).await
     }
     async fn put_server_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        self.server_pictures_repository
-            .get_signed_url(server_id, Content::ServerPicture, ContentVerb::Put)
-            .await
+        self.server_pictures_repository.put_picture(server_id).await
     }
 
     async fn get_server_picture(&self, server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        self.server_pictures_repository
-            .get_signed_url(server_id, Content::ServerPicture, ContentVerb::Get)
-            .await
+        self.server_pictures_repository.get_picture(server_id).await
     }
 }

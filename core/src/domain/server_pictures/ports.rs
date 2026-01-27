@@ -1,4 +1,3 @@
-use reqwest::Url;
 use futures_util::future::join_all;
 
 use crate::domain::{
@@ -102,33 +101,23 @@ impl ServerPicturesRepository for MockServerPicturesRepository {
         _content: Content,
         _verb: ContentVerb,
     ) -> Result<PresignedUrl, CoreError> {
-        Ok(PresignedUrl::new(
-            Url::parse("https://example.com").unwrap(),
-        ))
+        Ok(PresignedUrl::new("https://example.com".to_string()))
     }
 
     async fn put_banner(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        Ok(PresignedUrl::new(
-            Url::parse("https://example.com").unwrap(),
-        ))
+        Ok(PresignedUrl::new("https://example.com".to_string()))
     }
 
     async fn get_banner(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        Ok(PresignedUrl::new(
-            Url::parse("https://example.com").unwrap(),
-        ))
+        Ok(PresignedUrl::new("https://example.com".to_string()))
     }
 
     async fn get_picture(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        Ok(PresignedUrl::new(
-            Url::parse("https://example.com").unwrap(),
-        ))
+        Ok(PresignedUrl::new("https://example.com".to_string()))
     }
 
     async fn put_picture(&self, _server_id: ServerId) -> Result<PresignedUrl, CoreError> {
-        Ok(PresignedUrl::new(
-            Url::parse("https://example.com").unwrap(),
-        ))
+        Ok(PresignedUrl::new("https://example.com".to_string()))
     }
 
     async fn get_all(&self, server_id: ServerId) -> Result<ServerPictureUrls, CoreError> {
@@ -151,7 +140,10 @@ impl ServerPicturesRepository for MockServerPicturesRepository {
 
     async fn get_all_for_servers(&self, server_ids: Vec<ServerId>) -> ServerPicturesMap {
         let futures = server_ids.into_iter().map(|server_id| async move {
-            self.get_all(server_id).await.ok().map(|urls| (server_id, urls))
+            self.get_all(server_id)
+                .await
+                .ok()
+                .map(|urls| (server_id, urls))
         });
         join_all(futures).await.into_iter().flatten().collect()
     }

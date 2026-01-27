@@ -56,6 +56,7 @@ services:
       context: .
     env_file: .env
     environment:
+      RUST_LOG: debug
       DATABASE_HOST: postgres-lazy
       SPICEDB_ENDPOINT: http://spicedb:50051
       KEYCLOAK_INTERNAL_URL: http://keycloak:8080
@@ -74,6 +75,7 @@ services:
       - user
       - lazy
       - authz
+      - content
     profiles:
       - lazy
 
@@ -181,6 +183,9 @@ volumes:
 networks:
   user:
     name: user_internal
+    external: true
+  content:
+    name: content_communities
     external: true
   authz:
     name: authz_communities

@@ -72,7 +72,7 @@ pub struct ContentConfiguration {
         env = "CONTENT_URL",
         default_value = "http://localhost:1234"
     )]
-    url: String,
+    pub url: String,
 }
 
 #[derive(Clone, Parser, Debug, Default)]

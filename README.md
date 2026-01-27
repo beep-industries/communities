@@ -26,11 +26,13 @@ Create network & start rabbitmq:
 
 ```bash
 docker network create authz_communities
+docker network create content_communities
 docker compose --profile lazy up rabbitmq rabbitmq-init -d
 ```
 
 Start the [user service](https://github.com/beep-industries/user)
 Start the [authz service](https://github.com/beep-industries/authz)
+Start the [content service](https://github.com/beep-industries/content)
 
 You are almost done, start the app & db:
 

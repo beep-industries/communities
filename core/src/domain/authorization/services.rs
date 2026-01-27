@@ -122,4 +122,16 @@ where
             SpiceDbObject::Server(server_id.to_string()),
         )
     }
+
+    fn can_create_invitation(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>> {
+        self.check_authz(
+            user_id,
+            beep_authz::Permissions::CreateInvitation,
+            SpiceDbObject::Server(server_id.to_string()),
+        )
+    }
 }

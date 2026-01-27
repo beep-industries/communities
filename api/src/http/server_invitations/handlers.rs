@@ -43,11 +43,7 @@ pub async fn create_invitation(
     let server_id = ServerId::from(server_id);
     let inviter_id = UserId::from(user_identity.user_id);
 
-    // Verify user owns the server
-    let server = state.service.get_server(&server_id).await?;
-    if server.owner_id != inviter_id {
-        return Err(ApiError::Forbidden);
-    }
+    user_identity.can_create_invitation(server_id).await?;
 
     let input = request.into_input(server_id, inviter_id);
     let invitation = state.service.create_invitation(input).await?;

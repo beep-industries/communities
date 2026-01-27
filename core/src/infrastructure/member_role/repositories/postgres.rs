@@ -180,6 +180,33 @@ impl MemberRoleRepository for PostgresMemberRoleRepository {
 
         Ok((members, total as u64))
     }
+
+    async fn list_roles_by_user_and_server(
+        &self,
+        user_id: crate::domain::friend::entities::UserId,
+        server_id: crate::domain::server::entities::ServerId,
+    ) -> Result<Vec<crate::domain::role::entities::Role>, CoreError> {
+        let roles = sqlx::query_as!(
+            crate::domain::role::entities::Role,
+            r#"
+            SELECT r.id, r.server_id, r.name, r.permissions as "permissions: _", r.created_at, r.updated_at
+            FROM roles r
+            INNER JOIN member_roles mr ON mr.role_id = r.id
+            INNER JOIN server_members sm ON sm.id = mr.member_id
+            WHERE sm.user_id = $1 AND r.server_id = $2
+            ORDER BY r.created_at ASC
+            "#,
+            *user_id,
+            *server_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CoreError::DatabaseError {
+            msg: format!("Failed to list roles by user and server: {}", e),
+        })?;
+
+        Ok(roles)
+    }
 }
 
 #[cfg(test)]

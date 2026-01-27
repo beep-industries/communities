@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT r.id, r.server_id, r.name, r.permissions as \"permissions: _\", r.created_at, r.updated_at\n            FROM roles r\n            INNER JOIN member_roles mr ON mr.role_id = r.id\n            INNER JOIN server_members sm ON sm.id = mr.member_id\n            WHERE sm.user_id = $1 AND r.server_id = $2\n            ORDER BY r.created_at ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "server_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "permissions: _",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "9c14229a30797c8d7a3aa3cd8168d4e570afb16cd8c232a42fa93c8ca30ff6b0"
+}

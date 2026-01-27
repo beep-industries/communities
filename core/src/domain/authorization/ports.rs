@@ -54,6 +54,12 @@ pub trait AuthorizationService: Send + Sync {
         user_id: UserId,
         server_id: ServerId,
     ) -> impl Future<Output = Result<bool, CoreError>>;
+
+    fn can_create_invitation(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<bool, CoreError>>;
 }
 
 #[derive(Clone, Debug)]

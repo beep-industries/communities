@@ -64,6 +64,12 @@ impl UserIdentity {
             .await
     }
 
+    pub async fn can_create_invitation(&self, server_id: ServerId) -> Result<bool, CoreError> {
+        self.service
+            .can_create_invitation(self.user_id, server_id)
+            .await
+    }
+
     pub async fn can_update_or_change_nickname(
         &self,
         server_id: ServerId,

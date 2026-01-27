@@ -78,4 +78,14 @@ where
             .list_members_by_role(role_id, pagination)
             .await
     }
+
+    async fn list_roles_by_user_and_server(
+        &self,
+        user_id: crate::domain::friend::entities::UserId,
+        server_id: crate::domain::server::entities::ServerId,
+    ) -> Result<Vec<Role>, CoreError> {
+        self.member_role_repository
+            .list_roles_by_user_and_server(user_id, server_id)
+            .await
+    }
 }

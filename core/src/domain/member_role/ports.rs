@@ -2,8 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain::{
     common::{CoreError, GetPaginated, TotalPaginatedElements},
+    friend::entities::UserId,
     member_role::entities::{AssignMemberRole, MemberRole, UnassignMemberRole},
-    role::entities::RoleId,
+    role::entities::{Role, RoleId},
+    server::entities::ServerId,
     server_member::{MemberId, ServerMember},
 };
 pub trait MemberRoleRepository: Send + Sync {
@@ -20,6 +22,11 @@ pub trait MemberRoleRepository: Send + Sync {
         role_id: &RoleId,
         pagination: &GetPaginated,
     ) -> impl Future<Output = Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError>>;
+    fn list_roles_by_user_and_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<Vec<Role>, CoreError>>;
 }
 
 pub trait MemberRoleService: Send + Sync {
@@ -38,6 +45,11 @@ pub trait MemberRoleService: Send + Sync {
         role_id: &RoleId,
         pagination: &GetPaginated,
     ) -> impl Future<Output = Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError>>;
+    fn list_roles_by_user_and_server(
+        &self,
+        user_id: UserId,
+        server_id: ServerId,
+    ) -> impl Future<Output = Result<Vec<Role>, CoreError>>;
 }
 
 /// Mock implementation of MemberRoleRepository for testing
@@ -84,5 +96,12 @@ impl MemberRoleRepository for MockMemberRoleRepository {
         _pagination: &GetPaginated,
     ) -> Result<(Vec<ServerMember>, TotalPaginatedElements), CoreError> {
         Ok((Vec::new(), 0))
+    }
+    async fn list_roles_by_user_and_server(
+        &self,
+        _user_id: UserId,
+        _server_id: ServerId,
+    ) -> Result<Vec<Role>, CoreError> {
+        Ok(Vec::new())
     }
 }

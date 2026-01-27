@@ -1,0 +1,36 @@
+name: CI Pipeline
+
+on:
+  workflow_dispatch:
+    
+  pull_request:
+    branches:
+      - main
+      - develop
+      - "*"
+  push:
+    branches: 
+      - main
+    tags:
+      - "*.*.*"
+
+jobs:
+  validate_rust:
+    name: Validate Rust
+    uses: beep-industries/actions/.github/workflows/validate-rust.yml@17-add-reusable-test-ci-workflow-template-for-rust-services
+
+  test_rust:
+    name: Tests Rust
+    uses: beep-industries/actions/.github/workflows/test-rust.yml@17-add-reusable-test-ci-workflow-template-for-rust-services
+    
+  build_push_main:
+    name: Build & Push Docker (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: beep-industries/actions/.github/workflows/build-push-main.yml@main
+    secrets: inherit
+
+  build_push_tag:
+    name: Build & Push Docker (tag)
+    if: startsWith(github.ref, 'refs/tags/')
+    uses: beep-industries/actions/.github/workflows/build-push-tag.yml@main
+    secrets: inherit

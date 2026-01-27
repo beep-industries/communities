@@ -33,6 +33,7 @@ impl From<CommunitiesRepositories> for AppState {
             repositories.member_role_repository,
             repositories.server_invitation_repository,
             repositories.authorization_repository,
+            repositories.server_pictures_repository,
         );
         AppState { service }
     }

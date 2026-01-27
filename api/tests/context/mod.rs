@@ -1,4 +1,7 @@
-use api::config::{BeepServicesConfig as BeepServicesConfigApi, Environment, KeycloakConfig, SpiceConfig};
+use api::config::{
+    BeepServicesConfig as BeepServicesConfigApi, ContentConfiguration, Environment, KeycloakConfig,
+    SpiceConfig,
+};
 use api::{App, Config, app::AppBuilder, config::DatabaseConfig};
 use axum_test::TestServer;
 use base64::{Engine as _, engine::general_purpose};
@@ -122,6 +125,9 @@ impl AsyncTestContext for TestContext {
             spicedb: SpiceConfig {
                 endpoint: "http://localhost:50051".to_string(),
                 token: "foobar".to_string(),
+            },
+            content_config: ContentConfiguration {
+                url: "https://localhost:1234".to_string(),
             },
         };
 

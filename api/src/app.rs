@@ -67,6 +67,7 @@ impl App {
                 user_service_url: config.beep_services.user_service_url.clone(),
             },
             config.clone().spicedb.into(),
+            config.clone().content_config.url,
         )
         .await
         .map_err(|e| ApiError::StartupError {

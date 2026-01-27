@@ -1,7 +1,5 @@
-use clap::error;
 use communities_core::{
-    application::MessageRoutingConfig,
-    domain::outbox::entities::{OutboxMessage, OutboxMessageStream},
+    application::MessageRoutingConfig, domain::outbox::entities::OutboxMessageStream,
 };
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use std::future::Future;

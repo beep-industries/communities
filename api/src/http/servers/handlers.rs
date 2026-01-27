@@ -5,7 +5,10 @@ use axum::{
 use communities_core::domain::{
     common::GetPaginated,
     server::{
-        entities::{CreateServerRequest, SearchServerQuery, Server, ServerId, ServerVisibility, UpdateServerRequest},
+        entities::{
+            CreateServerRequest, SearchServerQuery, Server, ServerId, ServerVisibility,
+            UpdateServerRequest,
+        },
         ports::ServerService,
     },
 };
@@ -62,11 +65,6 @@ pub async fn get_server(
     let server = state.service.get_server(&server_id).await?;
 
     user_identity.can_view_server(server_id).await?;
-
-    // Only allow access to public servers or if user is the owner
-    if server.visibility != ServerVisibility::Public && server.owner_id != user_identity.user_id {
-        return Err(ApiError::Forbidden);
-    }
 
     Ok(Response::ok(server))
 }

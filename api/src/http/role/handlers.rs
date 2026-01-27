@@ -133,6 +133,34 @@ pub async fn list_roles_by_server(
 }
 
 #[utoipa::path(
+     get,
+     path = "/servers/{server_id}/roles/@me",
+     tag = "roles",
+     params(
+         ("server_id" = String, Path, description = "Server ID")
+     ),
+     responses(
+         (status = 200, description = "User roles retrieved successfully", body = Vec<Role>),
+         (status = 401, description = "Unauthorized"),
+         (status = 403, description = "Forbidden - Not a member of the server"),
+         (status = 404, description = "Server not found"),
+         (status = 500, description = "Internal server error")
+     )
+ )]
+pub async fn get_user_roles_in_server(
+    Path(server_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Extension(user_identity): Extension<UserIdentity>,
+) -> Result<Response<Vec<Role>>, ApiError> {
+    let roles = state
+        .service
+        .list_roles_by_user_and_server(user_identity.user_id, ServerId(server_id))
+        .await
+        .map_err(Into::<ApiError>::into)?;
+    Ok(Response::ok(roles))
+}
+
+#[utoipa::path(
     put,
     path = "/roles/{role_id}",
     tag = "roles",

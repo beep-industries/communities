@@ -152,6 +152,9 @@ routing:
   memberAssignToRole: "member.assign.role"
   memberUnassignFromRole: "member.unassign.role"
 
+content:
+  url: "http://content:80"
+
 # Health check configuration
 healthCheck:
   enabled: true

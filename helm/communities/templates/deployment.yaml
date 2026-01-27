@@ -77,6 +77,8 @@ spec:
               containerPort: {{ .Values.service.healthPort }}
               protocol: TCP
           env:
+            - name: CONTENT_URL
+              value: {{ .Values.content.url | quote }}
             - name: USER_SERVICE_URL
               value: {{ .Values.config.user_service.url | quote }}
             - name: ENVIRONMENT

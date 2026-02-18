@@ -34,6 +34,7 @@ use crate::http::server::{ApiError, AppState, Response, middleware::auth::entiti
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn create_invitation(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -64,6 +65,7 @@ pub async fn create_invitation(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state, _user_identity))]
 pub async fn get_invitation(
     Path(invitation_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -89,6 +91,7 @@ pub async fn get_invitation(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn accept_invitation(
     Path(invitation_id): Path<Uuid>,
     State(state): State<AppState>,

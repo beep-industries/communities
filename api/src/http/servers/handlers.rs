@@ -31,6 +31,7 @@ use crate::http::server::{
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn create_server(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -56,6 +57,7 @@ pub async fn create_server(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
@@ -82,6 +84,7 @@ pub async fn get_server(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %_user_identity.user_id))]
 pub async fn list_servers(
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,
@@ -111,6 +114,7 @@ pub async fn list_servers(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn list_user_servers(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -147,6 +151,7 @@ pub async fn list_user_servers(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn update_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
@@ -180,6 +185,7 @@ pub async fn update_server(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn delete_server(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
@@ -211,6 +217,7 @@ pub async fn delete_server(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %_user_identity.user_id))]
 pub async fn search_or_discover_servers(
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,

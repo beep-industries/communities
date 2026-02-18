@@ -40,6 +40,7 @@ use crate::{
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn create_role(
     State(state): State<AppState>,
     Path(server_id): Path<Uuid>,
@@ -78,6 +79,7 @@ pub async fn create_role(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -110,6 +112,7 @@ pub async fn get_role(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn list_roles_by_server(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -147,6 +150,7 @@ pub async fn list_roles_by_server(
          (status = 500, description = "Internal server error")
      )
  )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_user_roles_in_server(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -177,6 +181,7 @@ pub async fn get_user_roles_in_server(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state, request), fields(user_id = %user_identity.user_id))]
 pub async fn update_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -215,6 +220,7 @@ pub async fn update_role(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn delete_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -248,6 +254,7 @@ pub async fn delete_role(
          (status = 500, description = "Internal server error")
      )
  )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn assign_role(
     Path((role_id, member_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
@@ -281,6 +288,7 @@ pub async fn assign_role(
          (status = 500, description = "Internal server error")
      )
  )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn unassign_role(
     Path((role_id, member_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
@@ -313,6 +321,7 @@ pub async fn unassign_role(
          (status = 500, description = "Internal server error")
      )
  )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn list_members_by_role(
     Path(role_id): Path<Uuid>,
     State(state): State<AppState>,

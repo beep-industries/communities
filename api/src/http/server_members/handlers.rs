@@ -51,6 +51,7 @@ pub struct UpdateMemberRequest {
     ),
     security(("bearer_auth" = []))
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn create_member(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -91,6 +92,7 @@ pub async fn create_member(
     ),
     security(("bearer_auth" = []))
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn list_members(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -132,6 +134,7 @@ pub async fn list_members(
     ),
     security(("bearer_auth" = []))
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn update_member(
     Path((server_id, user_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
@@ -173,6 +176,7 @@ pub async fn update_member(
     ),
     security(("bearer_auth" = []))
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn delete_member(
     Path((server_id, user_id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,

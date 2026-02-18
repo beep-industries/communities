@@ -34,6 +34,7 @@ use crate::http::server::{
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_friends(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -65,6 +66,7 @@ pub async fn get_friends(
         (status = 404, description = "Friend not found"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn delete_friend(
     Path(friend_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -96,6 +98,7 @@ pub async fn delete_friend(
         (status = 401, description = "Unauthorized"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_friend_requests(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -129,6 +132,7 @@ pub async fn get_friend_requests(
         (status = 401, description = "Unauthorized"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_friend_invitations(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -162,6 +166,7 @@ pub async fn get_friend_invitations(
         (status = 409, description = "Friend request already exists"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn create_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -188,6 +193,7 @@ pub async fn create_friend_request(
         (status = 404, description = "Friend request not found"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn accept_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -213,6 +219,7 @@ pub async fn accept_friend_request(
         (status = 404, description = "Friend request not found"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn decline_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,
@@ -239,6 +246,7 @@ pub async fn decline_friend_request(
         (status = 404, description = "Friend request not found"),
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn delete_friend_request(
     State(state): State<AppState>,
     Extension(user_identity): Extension<UserIdentity>,

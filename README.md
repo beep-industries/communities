@@ -7,6 +7,7 @@ It will handle:
 - Members
 - Roles
 - Channels
+- Friendships
 
 ## Prerequisites
 
@@ -16,31 +17,22 @@ It will handle:
 
 ## Quickstart
 
-Create the .env file from the example:
+1. Create the .env file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Create network & start rabbitmq:
+2. Start the dependencies:
 
-```bash
-docker network create authz_communities
-docker network create content_communities
-docker compose --profile lazy up rabbitmq rabbitmq-init -d
+Clone the [Central](https://github.com/beep-industries/central) repository and start the dependencies:
+```
+git clone https://github.com/beep-industries/central.git
+cd central
+docker compose --profile communities up -d --build
 ```
 
-Start the [user service](https://github.com/beep-industries/user)
-Start the [authz service](https://github.com/beep-industries/authz)
-Start the [content service](https://github.com/beep-industries/content)
-
-You are almost done, start the app & db:
-
-```bash
-docker compose --profile lazy up -d
-```
-
-The application runs two servers on separate ports:
+3. The application runs two servers on separate ports (with the specified `API_PORT` and `HEALTH_PORT`):
 
 - **Health server** on `http://localhost:9090`
 - **API server** on `http://localhost:3003` - Main application endpoints
@@ -90,7 +82,7 @@ In dev mode it should be enabled automatically due to the init script you can fi
 
 The sql migration files are located in the [`core/migrations`](core/migrations) folder.
 
-## Apply Database Migrations
+### Apply Database Migrations
 
 Before running the API in development (or when setting up a fresh DB), apply the migrations:
 
@@ -105,7 +97,7 @@ sqlx migrate run --source core/migrations --database-url postgres://postgres:pas
 sqlx migrate info --source core/migrations --database-url postgres://postgres:password@localhost:5432/communities
 ```
 
-## How to create a SQLx migration
+### How to create a SQLx migration
 
 ```
 sqlx migrate add <migration-name> --source core/migrations

@@ -26,6 +26,7 @@ cp .env.example .env
 2. Start the dependencies:
 
 Clone the [Central](https://github.com/beep-industries/central) repository and start the dependencies:
+
 ```bash
 git clone https://github.com/beep-industries/central.git
 cd central

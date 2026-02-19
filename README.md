@@ -26,7 +26,7 @@ cp .env.example .env
 2. Start the dependencies:
 
 Clone the [Central](https://github.com/beep-industries/central) repository and start the dependencies:
-```
+```bash
 git clone https://github.com/beep-industries/central.git
 cd central
 docker compose --profile communities up -d --build
@@ -112,10 +112,14 @@ There are two kinds of tests in this repo:
 
 Recommended workflow for all tests (infrastructure + domain):
 
-```zsh
-# Start Postgres from docker-compose & run the migration
-docker compose up -d
+Start the [user service](https://github.com/beep-industries/user)
+Start the [authz service](https://github.com/beep-industries/authz)
+Start the [content service](https://github.com/beep-industries/content)
 
+```bash
+docker network create authz_communities
+docker network create content_communities
+docker compose --profile lazy up -d
 sqlx migrate run --source core/migrations
 
 # Run the test

@@ -141,8 +141,8 @@ Notes:
 
 ## Project Governance
 
-[License](https://github.com/beep-industries/user/blob/main/LICENSE)
+[License](https://github.com/beep-industries/.github/blob/main/LICENSE)
 
-[Contributing Guide](https://github.com/beep-industrie/.github/blob/main/CONTRIBUTING.md)
+[Contributing Guide](https://github.com/beep-industries/.github/blob/main/CONTRIBUTING.md)
 
-[Code of Conduct](https://github.com/beep-industrie/.github/blob/main/CODE_OF_CONDUCT.md)
+[Code of Conduct](https://github.com/beep-industries/.github/blob/main/CODE_OF_CONDUCT.md)

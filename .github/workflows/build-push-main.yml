@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  packages: write
+  contents: write
+
 jobs:
   build-and-push:
     uses: beep-industries/actions/.github/workflows/build-push-main.yml@0.0.5

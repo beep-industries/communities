@@ -1,10 +1,17 @@
 use axum::{
     http::{
-        HeaderValue, Method,
+        HeaderValue, Method, Request, Response,
         header::{AUTHORIZATION, CONTENT_TYPE},
     },
     middleware::from_extractor_with_state,
 };
+use std::time::Duration;
+use tower::ServiceBuilder;
+use tower_http::{
+    request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
+    trace::TraceLayer,
+};
+use tracing::Span;
 use communities_core::{
     application::{BeepServicesConfig, CommunitiesRepositories},
     create_repositories,
@@ -137,7 +144,34 @@ impl App {
         let dispatch = Dispatcher::new(outbox_stream, config.routing.clone(), rabbit_client);
         let app_router = app_router
             .with_state(state.clone())
-            .merge(Scalar::with_url("/scalar", api));
+            .merge(Scalar::with_url("/scalar", api))
+            .layer(
+                ServiceBuilder::new()
+                    .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
+                    .layer(PropagateRequestIdLayer::x_request_id())
+                    .layer(
+                        TraceLayer::new_for_http()
+                            .make_span_with(|req: &Request<_>| {
+                                let request_id = req
+                                    .headers()
+                                    .get("x-request-id")
+                                    .and_then(|v| v.to_str().ok())
+                                    .unwrap_or("unknown");
+                                tracing::info_span!(
+                                    "http_request",
+                                    request_id = %request_id,
+                                    method     = %req.method(),
+                                    uri        = %req.uri(),
+                                )
+                            })
+                            .on_response(|res: &Response<_>, latency: Duration, _span: &Span| {
+                                tracing::info!(status = res.status().as_u16(), latency = ?latency, "response sent");
+                            })
+                            .on_failure(|error, latency: Duration, _span: &Span| {
+                                tracing::error!(error = %error, latency = ?latency, "request failed");
+                            }),
+                    ),
+            );
         // Write OpenAPI spec to file in development environment
         if matches!(config.environment, crate::config::Environment::Development) {
             std::fs::write("openapi.json", &openapi_json).map_err(|e| ApiError::StartupError {

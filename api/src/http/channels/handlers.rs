@@ -33,6 +33,7 @@ use uuid::Uuid;
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn create_server_channel(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -64,6 +65,7 @@ pub async fn create_server_channel(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state, _user_identity))]
 pub async fn create_private_channel(
     State(state): State<AppState>,
     Extension(_user_identity): Extension<UserIdentity>,
@@ -88,6 +90,7 @@ pub async fn create_private_channel(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn list_channels(
     Path(server_id): Path<Uuid>,
     State(state): State<AppState>,
@@ -116,6 +119,7 @@ pub async fn list_channels(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn get_channel(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
@@ -148,6 +152,7 @@ pub async fn get_channel(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn update_channel(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
@@ -183,6 +188,7 @@ pub async fn update_channel(
         (status = 500, description = "Internal server error")
     )
 )]
+#[tracing::instrument(skip(state), fields(user_id = %user_identity.user_id))]
 pub async fn delete_channel(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
